@@ -10,7 +10,7 @@ export default function AuthCallbackPage() {
     <Suspense
       fallback={
         <div className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
-          正在完成登录…
+          Loading...
         </div>
       }
     >

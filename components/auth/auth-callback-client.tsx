@@ -28,7 +28,7 @@ function readMergedParams(): URLSearchParams {
  */
 export function AuthCallbackClient() {
   const router = useRouter()
-  const [message, setMessage] = useState("正在完成登录…")
+  const [message, setMessage] = useState("Loading...")
 
   useEffect(() => {
     let cancelled = false
