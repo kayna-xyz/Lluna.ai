@@ -7,7 +7,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Lume AI - MedSpa Assistant',
+  title: 'Lluna AI - MedSpa Assistant',
   description: 'AI-powered MedSpa assistant that helps you prepare before meeting your consultant',
   generator: 'v0.app',
   icons: {

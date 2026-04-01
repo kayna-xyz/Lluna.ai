@@ -1,4 +1,4 @@
-# Supabase 一次性配置（Lume）
+# Supabase 一次性配置（Lluna）
 
 在项目根目录 `.env.local` 配置：
 

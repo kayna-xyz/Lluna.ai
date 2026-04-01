@@ -677,7 +677,7 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           }}
         />
         <p style={{ margin: 0, marginTop: 8, fontSize: 11, color: '#C8C2BB', lineHeight: 1.5 }}>
-          Lume will detect the treatment, clinic, and date and add it to your timeline automatically.
+          Lluna will detect the treatment, clinic, and date and add it to your timeline automatically.
         </p>
         <button
           onClick={() => { onSubmit(text); onClose() }}
@@ -1123,7 +1123,7 @@ function MyJourneyPage({
           <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px dashed #C8C2BB', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
           <div>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>Log a visit</p>
-            <p style={{ margin: 0, fontSize: 12, color: '#C8C2BB', marginTop: 2 }}>No QR? Type what you had — Lume will organize it.</p>
+            <p style={{ margin: 0, fontSize: 12, color: '#C8C2BB', marginTop: 2 }}>No QR? Type what you had — Lluna will organize it.</p>
           </div>
         </div>
       </div>
@@ -1174,16 +1174,16 @@ function MyProfilePage({ state }: { state: AppState }) {
         </div>
         <p style={{ margin: 0, fontSize: 12, color: '#9E9A94' }}>📷</p>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#1C1C1E', marginTop: 8, marginBottom: 4 }}>
-          {state.name || 'Lume Member'}
+          {state.name || 'Lluna Member'}
         </h2>
-        <p style={{ margin: 0, fontSize: 13, color: '#9E9A94' }}>Lume member since {memberSince}</p>
+        <p style={{ margin: 0, fontSize: 13, color: '#9E9A94' }}>Lluna member since {memberSince}</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 28 }}>
         {[
           { num: String(allVisits.length), label: 'Visits logged' },
           { num: String(uniqueClinics.length), label: 'Clinics visited' },
-          { num: `${daysSinceJoin} days`, label: 'With Lume' },
+          { num: `${daysSinceJoin} days`, label: 'With Lluna' },
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: 'center', padding: '12px 0', borderRight: i < 2 ? '1px solid #E8E4DF' : 'none' }}>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1C1C1E' }}>{s.num}</p>
@@ -1216,7 +1216,7 @@ function MyProfilePage({ state }: { state: AppState }) {
       ))}
 
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY FOOTPRINT</p>
-      <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginBottom: 16 }}>Clinics you&apos;ve visited through Lume</p>
+      <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginBottom: 16 }}>Clinics you&apos;ve visited through Lluna</p>
       <div style={{ background: '#EDE9E4', borderRadius: 14, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E8E4DF', marginBottom: 12 }}>
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: 32 }}>🗺️</span>
@@ -2031,7 +2031,7 @@ function PrivacyPolicyScreen({ onBack }: { onBack: () => void }) {
         </p>
         
         <p style={{ marginBottom: 16 }}>
-          Lume AI ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and services.
+          Lluna AI ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and services.
         </p>
         
         <h2 style={{ fontSize: 16, fontWeight: 600, marginTop: 24, marginBottom: 12 }}>
@@ -2082,7 +2082,7 @@ function PrivacyPolicyScreen({ onBack }: { onBack: () => void }) {
         </p>
         
         <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 32 }}>
-          2026 Lume AI. All rights reserved.
+          2026 Lluna AI. All rights reserved.
         </p>
       </div>
     </div>
@@ -2154,7 +2154,7 @@ function WelcomeScreen({
           </span>
         </p>
         <p style={{ fontSize: 11, color: COLORS.muted, textAlign: 'center', marginTop: 8 }}>
-          @2026 Lume AI. All rights reserved
+          @2026 Lluna AI. All rights reserved
         </p>
       </div>
     </div>
@@ -2906,7 +2906,7 @@ function GeneratingScreen({
           } catch {
             /* ignore */
           }
-          console.warn('[Lume] /api/recommend non-ok:', response.status, details.slice(0, 300))
+          console.warn('[Lluna] /api/recommend non-ok:', response.status, details.slice(0, 300))
           if (!cancelled) {
             setState((s) => ({ ...s, aiRecommendation: fallback }))
             setReportProgress(70)
@@ -2920,7 +2920,7 @@ function GeneratingScreen({
           setReportProgress(70)
         }
       } catch (e) {
-        console.warn('[Lume] /api/recommend error:', e)
+        console.warn('[Lluna] /api/recommend error:', e)
         if (!cancelled) {
           setState((s) => ({ ...s, aiRecommendation: fallback }))
           setReportProgress(70)
@@ -3042,7 +3042,7 @@ function GeneratingScreen({
         padding: '0 28px',
         zIndex: 10,
       }}>
-        2026 Lume AI. We never share your photo.
+        2026 Lluna AI. We never share your photo.
       </p>
     </div>
   )
@@ -3222,7 +3222,7 @@ function ProfileScreen({
                 setReportProgress(80)
                 const result = await syncReportToBackend(sid, slice)
                 if (!result.ok) {
-                  console.warn('[Lume] /api/new-report failed:', result.status, result.error)
+                  console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
                 }
                 setReportProgress(95)
               }
@@ -4183,7 +4183,7 @@ export default function LumeApp({
         aiRecommendation: state.aiRecommendation!,
       }).then((result) => {
         if (!result.ok) {
-          console.warn('[Lume] /api/new-report failed:', result.status, result.error)
+          console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
         }
       })
     }, 700)
@@ -4681,7 +4681,7 @@ export default function LumeApp({
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center' }}
-                aria-label="Lume"
+                aria-label="Lluna"
               >
                 <img
                   src="/brand-logo.png"

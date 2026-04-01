@@ -1,4 +1,4 @@
-# Lume AI（MedSpa 助手）
+# Lluna AI（MedSpa 助手）
 
 单仓库 **Next.js** 应用：用户端问卷/报告 + 诊所顾问端 Dashboard，API 在 `app/api`，数据默认走 **Supabase**。
 
@@ -16,7 +16,7 @@
 在项目根目录执行：
 
 ```bash
-cd Lume-AI-V1-main
+cd Lluna-AI-V1-main
 pnpm install
 ```
 

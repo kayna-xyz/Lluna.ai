@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { ClinicAuthForm } from "@/components/clinicside/clinic-auth-form"
 
 export const metadata = {
-  title: "Enterprise sign-in — Lume AI",
+  title: "Enterprise sign-in — Lluna AI",
 }
 
 export default function ClinicsideAuthPage() {

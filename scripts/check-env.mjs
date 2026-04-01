@@ -11,7 +11,7 @@ const required = [
 const recommended = ['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'ANTHROPIC_API_KEY']
 
 let ok = true
-console.log('Lume — 环境变量检查 (.env.local)\n')
+console.log('Lluna — 环境变量检查 (.env.local)\n')
 
 for (const k of required) {
   const v = process.env[k]

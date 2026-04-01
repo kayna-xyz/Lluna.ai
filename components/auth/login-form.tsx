@@ -47,9 +47,9 @@ export function LoginForm() {
     <div className="relative flex h-full w-full items-center justify-center bg-background">
       <LoginOauthRecovery />
       <div className="absolute top-6 left-6 md:top-8 md:left-8">
-        <svg viewBox="0 0 120 32" className="h-5 w-auto md:h-6" aria-label="Lume logo">
+        <svg viewBox="0 0 120 32" className="h-5 w-auto md:h-6" aria-label="Lluna logo">
           <text x="0" y="26" fontFamily="serif" fontSize="28" fontWeight="600" fill="currentColor">
-            Lume
+            Lluna
           </text>
         </svg>
       </div>
@@ -98,7 +98,7 @@ export function LoginForm() {
       </div>
 
       <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8">
-        <p className="text-xs text-muted-foreground">© 2026 Lume AI. All Rights Reserved.</p>
+        <p className="text-xs text-muted-foreground">© 2026 Lluna AI. All Rights Reserved.</p>
       </div>
     </div>
   )

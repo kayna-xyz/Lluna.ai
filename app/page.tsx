@@ -2,7 +2,7 @@ import { GradientCanvas } from "@/components/auth/gradient-canvas"
 import { LoginForm } from "@/components/auth/login-form"
 
 export const metadata = {
-  title: "Sign in — Lume AI",
+  title: "Sign in — Lluna AI",
 }
 
 export default function LoginPage() {

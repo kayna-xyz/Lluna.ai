@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           from: fromEmail,
           to: [toEmail],
-          subject: 'New Lume clinic feedback',
+          subject: 'New Lluna clinic feedback',
           text: [
             `Clinic: ${payload.clinicName || 'N/A'}`,
             `Email: ${payload.clinicEmail || 'N/A'}`,

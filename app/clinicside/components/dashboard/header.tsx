@@ -49,12 +49,12 @@ export function DashboardHeader({
       <div className="flex items-center gap-2">
         <Image 
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brand%20%287%29-fG9OZuGtqNEmM06j1pjaJfkF3ukRfr.png"
-          alt="Lume"
+          alt="Lluna"
           width={28}
           height={28}
           className="rounded"
         />
-        <span className="font-semibold">Lume</span>
+        <span className="font-semibold">Lluna</span>
       </div>
 
       <div className="flex items-center gap-1">

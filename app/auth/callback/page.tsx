@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { AuthCallbackClient } from "@/components/auth/auth-callback-client"
 
 export const metadata = {
-  title: "Signing in — Lume AI",
+  title: "Signing in — Lluna AI",
 }
 
 export default function AuthCallbackPage() {
