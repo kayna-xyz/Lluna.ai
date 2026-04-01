@@ -51,30 +51,6 @@ export async function middleware(request: NextRequest) {
 
   // --- Consumer auth ---
 
-  // / is the login page. Authenticated users go straight to /app.
-  if (pathname === '/' && user) {
-    const { data: staffRow, error: staffErr } = await supabase
-      .from('clinic_staff_profiles')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (!staffErr && staffRow?.user_id) {
-      const dashUrl = request.nextUrl.clone()
-      dashUrl.pathname = '/clinicside/app'
-      dashUrl.search = ''
-      if (clinic) dashUrl.searchParams.set('clinic', clinic)
-      return NextResponse.redirect(dashUrl)
-    }
-
-    // Regular consumer — send to /app
-    const appUrl = request.nextUrl.clone()
-    appUrl.pathname = '/app'
-    appUrl.search = ''
-    if (clinic) appUrl.searchParams.set('clinic', clinic)
-    return NextResponse.redirect(appUrl)
-  }
-
   // /join: already authenticated → skip OAuth, go straight to /app.
   if (pathname === '/join' && user) {
     const appUrl = request.nextUrl.clone()
