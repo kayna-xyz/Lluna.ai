@@ -69,12 +69,12 @@ export function PartnerSection() {
           <p className="text-[15px] leading-[1.75] text-muted-foreground mb-10 max-w-lg">
             Bring your clients closer — and keep them longer. Lluna&apos;s 24/7 AI consultant becomes an extension of your practice.
           </p>
-          <button
-            onClick={() => alert('Coming soon')}
-            className="bg-foreground text-background px-8 h-12 text-[15px] hover:bg-gold transition-colors duration-300"
+          <a
+            href="mailto:kayna@lluna.ai"
+            className="inline-block bg-foreground text-background px-8 h-12 leading-[48px] text-[15px] hover:bg-gold transition-colors duration-300"
           >
             Become a Partner
-          </button>
+          </a>
         </div>
 
         <div className="space-y-16">
