@@ -42,8 +42,8 @@ export const CLINIC_MENU: ClinicMenu = {
       units: 'session',
     },
     {
-      id: 'ipl_stellar_m22_by_lumenis',
-      name: 'IPL Stellar M22 by Lumenis',
+      id: 'ipl_stellar_m22_by_llunanis',
+      name: 'IPL Stellar M22 by Llunanis',
       category: 'Laser Treatment',
       description:
         'Broadband light to target redness, sun damage, and uneven tone. Best for photodamage and vascular appearance with little downtime.',

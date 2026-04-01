@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
-import { LUME_CLINIC_SLUG_KEY } from "@/lib/consumer-clinic"
+import { LLUNA_CLINIC_SLUG_KEY } from "@/lib/consumer-clinic"
 
 /**
  * /join?clinic=<slug>
@@ -22,7 +22,7 @@ export default function JoinPage() {
     const clinic = (searchParams.get("clinic") || "default").trim()
 
     // Persist clinic context so it survives the OAuth round-trip.
-    try { localStorage.setItem(LUME_CLINIC_SLUG_KEY, clinic) } catch { /* ignore */ }
+    try { localStorage.setItem(LLUNA_CLINIC_SLUG_KEY, clinic) } catch { /* ignore */ }
 
     const supabase = getBrowserSupabase()
     if (!supabase) { router.replace("/"); return }

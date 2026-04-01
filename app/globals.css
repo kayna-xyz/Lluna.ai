@@ -4,15 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --lume-bg: #F5F2EE;
-  --lume-outer-bg: #EEEBE6;
-  --lume-text: #2C2C2C;
-  --lume-muted: #9E9A94;
-  --lume-accent: #8B8070;
-  --lume-nav-bg: #EDE9E4;
-  --lume-white: #FFFFFF;
-  --lume-border: #E2DDD8;
-  --lume-success: #6B7E6B;
+  --lluna-bg: #F5F2EE;
+  --lluna-outer-bg: #EEEBE6;
+  --lluna-text: #2C2C2C;
+  --lluna-muted: #9E9A94;
+  --lluna-accent: #8B8070;
+  --lluna-nav-bg: #EDE9E4;
+  --lluna-white: #FFFFFF;
+  --lluna-border: #E2DDD8;
+  --lluna-success: #6B7E6B;
   
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

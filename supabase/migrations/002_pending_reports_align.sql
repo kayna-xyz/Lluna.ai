@@ -1,5 +1,5 @@
 -- Align `pending_reports` with app code (`/api/new-report`, `/api/clients`, `/api/final-solution`).
--- Run after `001_lume_core.sql` in SQL Editor or via Supabase CLI.
+-- Run after `001_lluna_core.sql` in SQL Editor or via Supabase CLI.
 
 -- Columns used by inserts/selects but missing from 001
 alter table public.pending_reports

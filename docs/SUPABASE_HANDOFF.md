@@ -9,7 +9,7 @@
 | 执行日期 | |
 | 执行人 | |
 
-- [ ] `001_lume_core.sql`
+- [ ] `001_lluna_core.sql`
 - [ ] `002_pending_reports_align.sql`
 - [ ] `005_treatment_assets_bucket.sql`
 - [ ] `006_consultant_events.sql`

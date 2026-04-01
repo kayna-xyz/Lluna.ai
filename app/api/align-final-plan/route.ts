@@ -1,5 +1,5 @@
 import { generateText, Output } from 'ai'
-import { getLumeAnthropicModel } from '@/lib/anthropic-model'
+import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import { z } from 'zod'
 import { CLINIC_MENU, MENU_BY_ID } from '@/lib/clinic-menu'
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   try {
     const { output } = await generateText({
-      model: getLumeAnthropicModel(),
+      model: getLlunaAnthropicModel(),
       output: Output.object({ schema: resultSchema }),
       system: `You map a consultant's free-text plan to the clinic menu. Only use treatment ids from the list. Sum linePrice into total_price reasonably from menu pricing JSON.`,
       messages: [

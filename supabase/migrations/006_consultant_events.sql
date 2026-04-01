@@ -1,5 +1,5 @@
   -- Realtime: consultant pushes → consumer app reacts (report / Google review prompt).
--- Run in SQL Editor after 001_lume_core.sql.
+-- Run in SQL Editor after 001_lluna_core.sql.
 
 create table if not exists public.consultant_events (
   id uuid primary key default gen_random_uuid(),

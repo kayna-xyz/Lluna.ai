@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'lume_advisor_clinic_slug'
+const STORAGE_KEY = 'lluna_advisor_clinic_slug'
 
 /** Persist tenant slug after staff login / bootstrap (overrides `default`). */
 export function setAdvisorClinicSlug(slug: string): void {

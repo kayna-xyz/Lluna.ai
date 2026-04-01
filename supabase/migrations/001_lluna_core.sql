@@ -1,4 +1,4 @@
--- Lume: clients, pending reports, menu store, settings
+-- Lluna: clients, pending reports, menu store, settings
 -- Run in Supabase SQL Editor if you do not use CLI migrations.
 
 create extension if not exists "pgcrypto";

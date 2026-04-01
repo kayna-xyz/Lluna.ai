@@ -1,5 +1,5 @@
 import { generateText, Output } from 'ai'
-import { getLumeAnthropicModel } from '@/lib/anthropic-model'
+import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import { z } from 'zod'
 import { getServiceSupabase } from '@/lib/supabase/admin'
 import { resolveClinicForRequest } from '@/lib/tenant'
@@ -107,7 +107,7 @@ Constraints:
 
   try {
     const { output } = await generateText({
-      model: getLumeAnthropicModel(),
+      model: getLlunaAnthropicModel(),
       output: Output.object({ schema: salesSchema }),
       system:
         'You are a medspa CRM sales coach. Return only salesMethodology with exactly three fields.',

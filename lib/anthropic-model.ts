@@ -7,7 +7,7 @@ import { anthropic } from '@ai-sdk/anthropic'
  *
  * @see https://docs.claude.com/en/docs/about-claude/models/overview
  */
-export function getLumeAnthropicModel() {
+export function getLlunaAnthropicModel() {
   const id = process.env.ANTHROPIC_MODEL?.trim() || 'claude-sonnet-4-6'
   return anthropic(id)
 }

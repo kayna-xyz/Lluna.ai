@@ -1,5 +1,5 @@
 import { generateText, Output } from 'ai'
-import { getLumeAnthropicModel } from '@/lib/anthropic-model'
+import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import { z } from 'zod'
 import { getServiceSupabase } from '@/lib/supabase/admin'
 import { resolveClinicForRequest } from '@/lib/tenant'
@@ -101,7 +101,7 @@ User info:
   let consultantProfileSummary = ''
   try {
     const { output } = await generateText({
-      model: getLumeAnthropicModel(),
+      model: getLlunaAnthropicModel(),
       output: Output.object({ schema: briefSchema }),
       system:
         'You write consultant-facing CRM scoring notes.\n' +

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { Button } from "@/components/ui/button"
-import { LUME_CLINIC_SLUG_KEY } from "@/lib/consumer-clinic"
+import { LLUNA_CLINIC_SLUG_KEY } from "@/lib/consumer-clinic"
 import { LoginOauthRecovery } from "@/components/auth/login-oauth-recovery"
 
 export function LoginForm() {
@@ -20,7 +20,7 @@ export function LoginForm() {
     setClinicSlug(slug)
     setRole(r)
     if (slug) {
-      localStorage.setItem(LUME_CLINIC_SLUG_KEY, slug)
+      localStorage.setItem(LLUNA_CLINIC_SLUG_KEY, slug)
     }
   }, [])
 

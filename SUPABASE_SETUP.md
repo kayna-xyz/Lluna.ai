@@ -26,7 +26,7 @@ SUPABASE_SERVICE_ROLE_KEY=service_role（仅服务端，勿提交）
 
 | 顺序 | 文件 | 说明 |
 |------|------|------|
-| 1 | `supabase/migrations/001_lume_core.sql` | 核心业务表 + RLS |
+| 1 | `supabase/migrations/001_lluna_core.sql` | 核心业务表 + RLS |
 | 2 | `supabase/migrations/002_pending_reports_align.sql` | **必跑**：与当前 Next API 对齐（`pending_reports` 列、去掉 `session_id` 唯一约束等） |
 | 3 | `supabase/migrations/005_treatment_assets_bucket.sql` | Storage 桶 `treatment-assets` |
 | 4 | `supabase/migrations/006_consultant_events.sql` | `consultant_events` 表 + Realtime |

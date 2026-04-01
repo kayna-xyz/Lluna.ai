@@ -4,7 +4,7 @@
 
 | Step | 文件 | 执行后自检 |
 |------|------|------------|
-| 1 | [migrations/001_lume_core.sql](migrations/001_lume_core.sql) | Table Editor 出现 `pending_reports`, `clients`, `clinic_menu_store`, `clinic_settings` |
+| 1 | [migrations/001_lluna_core.sql](migrations/001_lluna_core.sql) | Table Editor 出现 `pending_reports`, `clients`, `clinic_menu_store`, `clinic_settings` |
 | 2 | [migrations/002_pending_reports_align.sql](migrations/002_pending_reports_align.sql) | `pending_reports` 含 `client_name`, `phone`, `email`, `status_text`；`session_id` 无 UNIQUE（应用层：`/api/new-report` 对「仍待处理」的同会话行做 UPDATE） |
 | 3 | [migrations/005_treatment_assets_bucket.sql](migrations/005_treatment_assets_bucket.sql) | **Storage** → Buckets 有 `treatment-assets` |
 | 4 | [migrations/006_consultant_events.sql](migrations/006_consultant_events.sql) | 表 `consultant_events`；**Database → Replication** 中该表已启用（若已在 publication 中报错可忽略） |
@@ -21,7 +21,7 @@
 执行日期: _______________
 执行人:   _______________
 
-[ ] 001_lume_core.sql
+[ ] 001_lluna_core.sql
 [ ] 002_pending_reports_align.sql
 [ ] 005_treatment_assets_bucket.sql
 [ ] 006_consultant_events.sql

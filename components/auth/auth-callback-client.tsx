@@ -6,7 +6,7 @@ import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
 import { syncUserProfileAfterAuth } from "@/lib/auth/sync-user-profile"
 
-const PKCE_STORAGE_PREFIX = "lume_pkce_"
+const PKCE_STORAGE_PREFIX = "lluna_pkce_"
 
 function parseHashParams(): URLSearchParams | null {
   if (typeof window === "undefined") return null

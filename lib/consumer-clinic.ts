@@ -1,7 +1,7 @@
-export const LUME_CLINIC_SLUG_KEY = 'lume_clinic_slug'
+export const LLUNA_CLINIC_SLUG_KEY = 'lluna_clinic_slug'
 
 /** Session flag: user opened the app with `?clinic=` / `?clinicSlug=` (e.g. QR). Enables Clinic menu + Report flows. */
-export const LUME_CONSUMER_VIA_CLINIC_LINK_KEY = 'lume_consumer_via_clinic_link'
+export const LLUNA_CONSUMER_VIA_CLINIC_LINK_KEY = 'lluna_consumer_via_clinic_link'
 
 /**
  * Sync per-tab session flag from the current URL.
@@ -14,10 +14,10 @@ export function syncConsumerClinicLinkSession(): boolean {
     const params = new URLSearchParams(window.location.search)
     const fromUrl = params.get('clinic')?.trim() || params.get('clinicSlug')?.trim()
     if (fromUrl) {
-      sessionStorage.setItem(LUME_CONSUMER_VIA_CLINIC_LINK_KEY, '1')
+      sessionStorage.setItem(LLUNA_CONSUMER_VIA_CLINIC_LINK_KEY, '1')
       return true
     }
-    sessionStorage.removeItem(LUME_CONSUMER_VIA_CLINIC_LINK_KEY)
+    sessionStorage.removeItem(LLUNA_CONSUMER_VIA_CLINIC_LINK_KEY)
     return false
   } catch {
     return false
@@ -27,7 +27,7 @@ export function syncConsumerClinicLinkSession(): boolean {
 export function consumerHasClinicLinkSession(): boolean {
   if (typeof window === 'undefined') return false
   try {
-    return sessionStorage.getItem(LUME_CONSUMER_VIA_CLINIC_LINK_KEY) === '1'
+    return sessionStorage.getItem(LLUNA_CONSUMER_VIA_CLINIC_LINK_KEY) === '1'
   } catch {
     return false
   }
@@ -42,12 +42,12 @@ export function syncConsumerClinicFromLocation(): string {
   try {
     const params = new URLSearchParams(window.location.search)
     const fromUrl = params.get('clinic')?.trim() || params.get('clinicSlug')?.trim()
-    const prevStored = localStorage.getItem(LUME_CLINIC_SLUG_KEY)
+    const prevStored = localStorage.getItem(LLUNA_CLINIC_SLUG_KEY)
     if (fromUrl) {
       if (prevStored && prevStored !== fromUrl) {
-        localStorage.setItem('lume_session_id', crypto.randomUUID())
+        localStorage.setItem('lluna_session_id', crypto.randomUUID())
       }
-      localStorage.setItem(LUME_CLINIC_SLUG_KEY, fromUrl)
+      localStorage.setItem(LLUNA_CLINIC_SLUG_KEY, fromUrl)
       return fromUrl
     }
     return prevStored || 'default'
@@ -59,7 +59,7 @@ export function syncConsumerClinicFromLocation(): string {
 export function getConsumerClinicSlug(): string {
   if (typeof window === 'undefined') return 'default'
   try {
-    return localStorage.getItem(LUME_CLINIC_SLUG_KEY) || 'default'
+    return localStorage.getItem(LLUNA_CLINIC_SLUG_KEY) || 'default'
   } catch {
     return 'default'
   }

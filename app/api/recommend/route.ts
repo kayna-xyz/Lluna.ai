@@ -1,5 +1,5 @@
 import { generateText, Output } from 'ai'
-import { getLumeAnthropicModel } from '@/lib/anthropic-model'
+import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import { z } from 'zod'
 import { getServiceSupabase } from '@/lib/supabase/admin'
 import { resolveClinicForRequest } from '@/lib/tenant'
@@ -203,7 +203,7 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
 
   try {
     const { output: brief } = await generateText({
-      model: getLumeAnthropicModel(),
+      model: getLlunaAnthropicModel(),
       output: Output.object({ schema: consultantBriefSchema }),
       system: consultantSystem,
       messages: [{ role: 'user', content: surveyBlock }],
@@ -218,7 +218,7 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
 
   try {
     const { output } = await generateText({
-      model: getLumeAnthropicModel(),
+      model: getLlunaAnthropicModel(),
       output: Output.object({ schema: recommendationSchema }),
       system: patientSystem,
       messages: [{ role: 'user', content: patientUser }],
