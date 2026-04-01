@@ -15,6 +15,8 @@ import { type NextRequest, NextResponse } from 'next/server'
  * If the user is already signed in they are sent straight to /app?clinic=<slug>.
  */
 export async function GET(request: NextRequest) {
+  console.log('[/join] hit', request.nextUrl.toString())
+
   const { searchParams, origin } = request.nextUrl
   const clinic = (searchParams.get('clinic') || 'default').trim()
 
@@ -44,6 +46,7 @@ export async function GET(request: NextRequest) {
 
   // Already signed in — skip OAuth entirely.
   const { data: { user } } = await supabase.auth.getUser()
+  console.log('[/join] user already signed in:', !!user)
   if (user) {
     const dest = new URL('/app', origin)
     dest.searchParams.set('clinic', clinic)
@@ -55,6 +58,7 @@ export async function GET(request: NextRequest) {
   callbackUrl.searchParams.set('clinic', clinic)
   callbackUrl.searchParams.set('role', 'consumer')
 
+  console.log('[/join] calling signInWithOAuth, callbackUrl:', callbackUrl.toString())
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -62,9 +66,10 @@ export async function GET(request: NextRequest) {
       skipBrowserRedirect: true,
     },
   })
+  console.log('[/join] signInWithOAuth result — url:', data?.url ?? null, 'error:', error?.message ?? null)
 
   if (error || !data.url) {
-    // Fallback: show login page so the user can sign in manually.
+    console.error('[/join] OAuth init failed, falling back to login page. error:', error)
     const fallback = new URL('/', origin)
     fallback.searchParams.set('clinic', clinic)
     fallback.searchParams.set('role', 'consumer')
