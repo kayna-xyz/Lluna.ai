@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getReadOnlySessionSupabase } from '@/lib/supabase/server-auth'
-import LumeApp from '../consumer-home'
+import LlunaApp from '../consumer-home'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,5 +35,5 @@ export default async function AppPage(props: {
     redirect(q.toString() ? `/?${q.toString()}` : '/')
   }
 
-  return <LumeApp initialViaClinicLink={initialViaClinicLink} />
+  return <LlunaApp initialViaClinicLink={initialViaClinicLink} />
 }

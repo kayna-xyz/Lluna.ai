@@ -4032,7 +4032,7 @@ function ReportScreen({
 }
 
 // Main App Component
-export default function LumeApp({
+export default function LlunaApp({
   initialViaClinicLink = false,
 }: {
   /** 与首页 URL 一致：由服务端读 `?clinic=` / `?clinicSlug=`，避免 SSR 与客户端 hydration 不一致。 */
