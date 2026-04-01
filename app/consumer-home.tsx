@@ -4666,7 +4666,7 @@ export default function LlunaApp({
               }}
             >
               <a
-                href="https://v0-optimus-the-ai-platform-to-bu-rosy-chi.vercel.app/"
+                href="https://www.lluna.ai/"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center' }}
