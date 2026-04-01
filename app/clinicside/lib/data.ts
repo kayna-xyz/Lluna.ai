@@ -101,7 +101,7 @@ export const mockClients: Client[] = [
     lastTreatment: "Botox - Forehead",
     recommendedNext: "Filler - Nasolabial folds",
     budgetLevel: "Medium-High ($1,000-2,000/visit)",
-    targetConcern: "Fine lines, volluna loss",
+    targetConcern: "Fine lines, volume loss",
     referralPotential: "Medium",
     ageRange: "40-45",
     lastThreeMonthsTherapies: ["Botox", "Vitamin IV"],

@@ -140,7 +140,7 @@ const CLINIC_MENU = {
       name: "Juvederm Filler",
       brand: "Allergan",
       fdaApproved: "2006",
-      tagline: "Restore volluna, define structure, smooth deep lines.",
+      tagline: "Restore volume, define structure, smooth deep lines.",
       description: "Hyaluronic acid filler family by Allergan. Multiple formulations for different needs: Volux (jawline definition, firmest), Voluma (cheeks/mid-face, 2 years duration), Vollure (nasolabial folds), Volbella (lips, fine lines). Each molecule size is engineered for specific facial zones.",
       fillerTypes: [
         { name: "Volux XC", area: "Jawline", duration: "18-24 months", molecule: "Largest" },
@@ -153,8 +153,8 @@ const CLINIC_MENU = {
       downtime: "1-3 days mild swelling",
       resultsLastMonths: { low: 12, high: 24 },
       synergyWith: ["t001"],
-      synergyNote: "Botox relaxes the muscle, filler restores volluna - together they address both causes of aging. Combo patients see 40% longer-lasting results.",
-      tags: ["volluna", "structure", "lips", "cheeks"],
+      synergyNote: "Botox relaxes the muscle, filler restores volume - together they address both causes of aging. Combo patients see 40% longer-lasting results.",
+      tags: ["volume", "structure", "lips", "cheeks"],
       recentlyDoneWithin: null,
       popularity: 90
     },
@@ -280,7 +280,7 @@ const CLINIC_MENU = {
       originalTotal: 2400,
       comboPrice: 1800,
       savings: 600,
-      synergyExplanation: "VI Peel resurfaces the top layer, addressing pigmentation and texture. Morpheus8 remodels deeper layers at 1-4mm depth, stimulating new collagen. Juvederm Voluma (2 syringes) restores lost mid-face volluna. This full-depth approach creates lasting change from surface to structure.",
+      synergyExplanation: "VI Peel resurfaces the top layer, addressing pigmentation and texture. Morpheus8 remodels deeper layers at 1-4mm depth, stimulating new collagen. Juvederm Voluma (2 syringes) restores lost mid-face volume. This full-depth approach creates lasting change from surface to structure.",
       maintenanceNote: "Results compound over time - expect continuous improvement for 6 months post-treatment. After the initial series, patients typically need only annual Morpheus8 and filler touch-ups at 18-24 months. This combo provides the longest-lasting transformation in our menu with synergy extending duration by 40%.",
       permanenceNote: "After 2-3 sessions: Near-permanent collagen remodeling with 18-24 month filler duration",
       details: {
@@ -300,8 +300,8 @@ const CLINIC_MENU = {
       originalTotal: 1750,
       comboPrice: 1400,
       savings: 350,
-      synergyExplanation: "MiniFX contours the jawline using radiofrequency to tighten and define. Juvederm Volux (1 syringe) - the firmest filler in the Juvederm line - adds strategic volluna to the jawline for balanced facial harmony. The RF pre-treatment enhances filler longevity by improving tissue quality.",
-      maintenanceNote: "This combination lasts 12-18 months with proper aftercare. The synergy between RF tightening and volluna replacement creates a subtle lift effect without surgery. Patients consistently report looking 'refreshed, not done'. Schedule touch-up at 12 months for maintained results.",
+      synergyExplanation: "MiniFX contours the jawline using radiofrequency to tighten and define. Juvederm Volux (1 syringe) - the firmest filler in the Juvederm line - adds strategic volume to the jawline for balanced facial harmony. The RF pre-treatment enhances filler longevity by improving tissue quality.",
+      maintenanceNote: "This combination lasts 12-18 months with proper aftercare. The synergy between RF tightening and volume replacement creates a subtle lift effect without surgery. Patients consistently report looking 'refreshed, not done'. Schedule touch-up at 12 months for maintained results.",
       permanenceNote: "After 2 sessions: Semi-permanent jawline definition with annual maintenance",
       details: {
         minifxSessions: 1,
@@ -3305,8 +3305,8 @@ function generateReport(state: AppState) {
         ],
         totalCost: (botoxUnits * 15) + (fillerSyringes * 850) + 250,
         savings: 200,
-        whyThisPlan: "Botox relaxes muscles while filler restores volluna - together they create a natural, refreshed look that lasts 30-40% longer than either alone.",
-        synergyNote: "The gold standard combo: Botox prevents new lines while filler addresses volluna loss."
+        whyThisPlan: "Botox relaxes muscles while filler restores volume - together they create a natural, refreshed look that lasts 30-40% longer than either alone.",
+        synergyNote: "The gold standard combo: Botox prevents new lines while filler addresses volume loss."
       },
       {
         name: "Premium",
@@ -3318,7 +3318,7 @@ function generateReport(state: AppState) {
         ],
         totalCost: 4400,
         savings: 400,
-        whyThisPlan: "Full-face Botox, multi-area filler, plus Morpheus8 for skin tightening. This comprehensive approach addresses lines, volluna, and skin quality.",
+        whyThisPlan: "Full-face Botox, multi-area filler, plus Morpheus8 for skin tightening. This comprehensive approach addresses lines, volume, and skin quality.",
         synergyNote: "Morpheus8 stimulates collagen while injectables provide immediate results."
       }
     ],
@@ -3350,7 +3350,7 @@ function generateReport(state: AppState) {
       } else if (t.pricePerSyringe && t.typicalSyringes) {
         estimatedSyringes = t.typicalSyringes.low
         estimatedCost = t.pricePerSyringe * estimatedSyringes
-        dosageNote = `${estimatedSyringes} syringe${estimatedSyringes > 1 ? 's' : ''} for ${t.tags.includes('cheeks') ? 'mid-face volluna' : 'targeted enhancement'}`
+        dosageNote = `${estimatedSyringes} syringe${estimatedSyringes > 1 ? 's' : ''} for ${t.tags.includes('cheeks') ? 'mid-face volume' : 'targeted enhancement'}`
       } else if (t.pricePerSession && t.typicalSessions) {
         estimatedSessions = t.typicalSessions.low
         estimatedCost = t.pricePerSession * estimatedSessions
@@ -3373,7 +3373,7 @@ function generateReport(state: AppState) {
     }),
     whatToSkip: skipBotox || skipThermage || skipMorpheus
       ? `Since you mentioned having ${skipBotox ? 'Botox' : skipThermage ? 'Thermage' : 'Morpheus8'} recently, we are holding off on that for now. Doing it again too soon will not add benefit and could cause complications. We will revisit in 3-4 months when it is safe and effective to retreat.`
-      : "Avoid lip filler this visit - your lips have natural volluna. Adding more risks changing your face's balance. Revisit in 6 months if you still want it.",
+      : "Avoid lip filler this visit - your lips have natural volume. Adding more risks changing your face's balance. Revisit in 6 months if you still want it.",
     tldr,
     comboMultiplier: (recommendedCombo.comboPrice / userBudget).toFixed(1),
     skippedRecent: skipBotox || skipThermage || skipMorpheus

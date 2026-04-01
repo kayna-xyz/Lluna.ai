@@ -31,12 +31,11 @@ export function MyPageScreen() {
     try {
       const qs = new URLSearchParams(window.location.search)
       const slug = qs.get("clinic")?.trim() || qs.get("clinicSlug")?.trim()
-      const role = qs.get("role")?.trim()
-      const next = new URLSearchParams()
-      if (slug) next.set("clinic", slug)
-      if (role) next.set("role", role)
-      const q = next.toString()
-      router.replace(q ? `/?${q}` : "/")
+      if (slug) {
+        router.replace(`/join?clinic=${encodeURIComponent(slug)}`)
+      } else {
+        router.replace("/")
+      }
     } catch {
       router.replace("/")
     }
