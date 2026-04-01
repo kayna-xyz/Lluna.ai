@@ -17,13 +17,8 @@ export async function getAuthSupabase() {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          try {
-            for (const { name, value, options } of cookiesToSet) {
-              cookieStore.set(name, value, options)
-            }
-          } catch {
-            // Called from a Server Component — cookie writes are not allowed here.
-            // Middleware handles session refresh, so this is safe to ignore.
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options)
           }
         },
       },
