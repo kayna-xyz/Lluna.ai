@@ -11,8 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 function resolveNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/")) return "/clinicside/app"
@@ -25,6 +23,7 @@ export function ClinicAuthForm() {
   const searchParams = useSearchParams()
   const nextPath = resolveNextPath(searchParams.get("next"))
 
+  const [tab, setTab] = useState<"login" | "register">("login")
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
   const [regEmail, setRegEmail] = useState("")
@@ -130,128 +129,154 @@ export function ClinicAuthForm() {
   )
 
   return (
-    <div lang="en" className="flex min-h-dvh w-full flex-col items-center justify-center bg-muted/30 px-4 py-12">
-      <div className="mb-8 text-center">
-        <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back
-        </Link>
-        <h1 className="mt-4 font-serif text-2xl font-semibold tracking-tight">Clinic · Enterprise</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign up or sign in with email to access the advisor dashboard.
-        </p>
-      </div>
+    <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12">
 
-      <Card className="w-full max-w-md border bg-card shadow-sm">
-        <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="text-lg">Account</CardTitle>
-          <CardDescription>Email and password are managed by Supabase Auth (email provider).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign in</TabsTrigger>
-              <TabsTrigger value="register">Sign up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login" className="mt-4 space-y-4">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    autoComplete="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="you@clinic.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Please wait…" : "Sign in"}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="register" className="mt-4 space-y-4">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    autoComplete="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="you@clinic.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-clinic-name">Clinic name</Label>
-                  <Input
-                    id="reg-clinic-name"
-                    type="text"
-                    autoComplete="organization"
-                    value={regClinicName}
-                    onChange={(e) => setRegClinicName(e.target.value)}
-                    placeholder="Your clinic or practice name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-phone">Phone</Label>
-                  <Input
-                    id="reg-phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    placeholder="Phone number"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
-                  <Input
-                    id="reg-password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-address">Address</Label>
-                  <Textarea
-                    id="reg-address"
-                    value={regAddress}
-                    onChange={(e) => setRegAddress(e.target.value)}
-                    placeholder="Clinic or contact address"
-                    rows={3}
-                    required
-                    className="resize-y min-h-[80px]"
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Please wait…" : "Sign up"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      {/* Back — top-left */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← Back
+      </Link>
+
+      <div className="w-full max-w-sm">
+        {/* Title */}
+        <div className="mb-8">
+          <h1 className="text-xl font-normal tracking-tight text-foreground">
+            Clinic · Enterprise
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Sign up or sign in with email to access the advisor dashboard.
+          </p>
+        </div>
+
+        {/* Tab toggle */}
+        <div className="flex items-center gap-6 mb-8">
+          <button
+            type="button"
+            onClick={() => setTab("login")}
+            className={`text-sm pb-1 transition-colors duration-200 ${
+              tab === "login"
+                ? "border-b border-foreground text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("register")}
+            className={`text-sm pb-1 transition-colors duration-200 ${
+              tab === "register"
+                ? "border-b border-foreground text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sign up
+          </button>
+        </div>
+
+        {/* Sign in form */}
+        {tab === "login" && (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="login-email" className="text-sm text-muted-foreground">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="you@clinic.com"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="login-password" className="text-sm text-muted-foreground">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full mt-2" disabled={loading}>
+              {loading ? "Please wait…" : "Sign in"}
+            </Button>
+          </form>
+        )}
+
+        {/* Sign up form */}
+        {tab === "register" && (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-email" className="text-sm text-muted-foreground">Email</Label>
+              <Input
+                id="reg-email"
+                type="email"
+                autoComplete="email"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                placeholder="you@clinic.com"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-clinic-name" className="text-sm text-muted-foreground">Clinic name</Label>
+              <Input
+                id="reg-clinic-name"
+                type="text"
+                autoComplete="organization"
+                value={regClinicName}
+                onChange={(e) => setRegClinicName(e.target.value)}
+                placeholder="Your clinic or practice name"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-phone" className="text-sm text-muted-foreground">Phone</Label>
+              <Input
+                id="reg-phone"
+                type="tel"
+                autoComplete="tel"
+                value={regPhone}
+                onChange={(e) => setRegPhone(e.target.value)}
+                placeholder="Phone number"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-password" className="text-sm text-muted-foreground">Password</Label>
+              <Input
+                id="reg-password"
+                type="password"
+                autoComplete="new-password"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-address" className="text-sm text-muted-foreground">Address</Label>
+              <Textarea
+                id="reg-address"
+                value={regAddress}
+                onChange={(e) => setRegAddress(e.target.value)}
+                placeholder="Clinic or contact address"
+                rows={3}
+                required
+                className="resize-y min-h-[80px]"
+              />
+            </div>
+            <Button type="submit" className="w-full mt-2" disabled={loading}>
+              {loading ? "Please wait…" : "Sign up"}
+            </Button>
+          </form>
+        )}
+      </div>
     </div>
   )
 }
