@@ -1,19 +1,31 @@
-import { GradientCanvas } from "@/components/auth/gradient-canvas"
-import { LoginForm } from "@/components/auth/login-form"
+import { Navigation } from "@/components/landing/navigation";
+import { HeroSection } from "@/components/landing/hero-section";
+import { AccentLine } from "@/components/landing/accent-line";
+import { StatsBar } from "@/components/landing/stats-bar";
+import { HowLumeWorksSection } from "@/components/landing/how-lume-works-section";
+import { PricingSection } from "@/components/landing/pricing-section";
+import { PartnerSection } from "@/components/landing/partner-section";
+import { FaqSection } from "@/components/landing/faq-section";
+import { FooterSection } from "@/components/landing/footer-section";
+import { CursorRipple } from "@/components/landing/cursor-ripple";
 
 export const metadata = {
-  title: "Sign in — Lluna AI",
-}
+  title: "Lluna AI — Aesthetics, meet intelligence.",
+};
 
-export default function LoginPage() {
+export default function Home() {
   return (
-    <main className="w-screen h-screen flex flex-col md:flex-row">
-      <div className="flex-1 md:w-1/2 md:h-full">
-        <LoginForm />
-      </div>
-      <div className="h-48 md:h-full md:w-1/2">
-        <GradientCanvas />
-      </div>
+    <main className="relative min-h-screen overflow-x-hidden bg-[#F2EFE9]">
+      <CursorRipple />
+      <Navigation />
+      <HeroSection />
+      <AccentLine />
+      <StatsBar />
+      <HowLumeWorksSection />
+      <PricingSection />
+      <PartnerSection />
+      <FaqSection />
+      <FooterSection />
     </main>
-  )
+  );
 }

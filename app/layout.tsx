@@ -1,14 +1,19 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: '--font-instrument-serif',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Lluna AI - MedSpa Assistant',
-  description: 'AI-powered MedSpa assistant that helps you prepare before meeting your consultant',
+  title: 'Lluna AI - The Smarter Way to Approach Aesthetic Medicine',
+  description: 'Lluna gives patients the knowledge and context they need to make confident, informed decisions — before they ever sit down with a consultant.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -35,10 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={instrumentSerif.variable}>
       <body className="font-sans antialiased">
         {children}
         <Analytics />
