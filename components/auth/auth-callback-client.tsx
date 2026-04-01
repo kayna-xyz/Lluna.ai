@@ -43,7 +43,7 @@ export function AuthCallbackClient() {
     void (async () => {
       const supabase = getBrowserSupabase()
       if (!supabase) {
-        router.replace("/login")
+        router.replace("/")
         return
       }
 
@@ -91,7 +91,7 @@ export function AuthCallbackClient() {
           }
           sessionStorage.removeItem(key)
           setMessage("登录失败，请重试")
-          router.replace(`/login?error=${encodeURIComponent(error.message)}`)
+          router.replace(`/?error=${encodeURIComponent(error.message)}`)
           return
         }
 
@@ -119,7 +119,7 @@ export function AuthCallbackClient() {
             return
           }
           setMessage("登录失败，请重试")
-          router.replace(`/login?error=${encodeURIComponent(error.message)}`)
+          router.replace(`/?error=${encodeURIComponent(error.message)}`)
           return
         }
         window.history.replaceState(
@@ -133,7 +133,7 @@ export function AuthCallbackClient() {
 
       if (cancelled) return
       setMessage("缺少授权信息，返回登录页")
-      router.replace("/login")
+      router.replace("/")
     })()
 
     return () => {

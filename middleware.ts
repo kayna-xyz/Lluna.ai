@@ -15,6 +15,7 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
   const clinic = searchParams.get('clinic') || searchParams.get('clinicSlug') || ''
 
+  // --- Clinicside auth ---
   if (
     pathname.startsWith('/clinicside') &&
     !pathname.startsWith('/clinicside/auth') &&
@@ -24,8 +25,7 @@ export async function middleware(request: NextRequest) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/clinicside/auth'
     loginUrl.search = ''
-    const destination =
-      pathname + (request.nextUrl.search || '')
+    const destination = pathname + (request.nextUrl.search || '')
     loginUrl.searchParams.set('next', destination)
     return NextResponse.redirect(loginUrl)
   }
@@ -49,20 +49,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashUrl)
   }
 
-  // Home (/) is the login entry: unauthenticated users always go to /login first.
-  if (pathname === '/' && !user) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    const p = new URLSearchParams(request.nextUrl.searchParams)
-    if (p.get('clinic') || p.get('clinicSlug')) {
-      p.set('role', 'consumer')
-      p.set('next', '/')
-    }
-    loginUrl.search = p.toString()
-    return NextResponse.redirect(loginUrl)
-  }
+  // --- Consumer auth ---
 
-  if (pathname === '/login' && user) {
+  // / is the login page. Authenticated users go straight to /app.
+  if (pathname === '/' && user) {
     const { data: staffRow, error: staffErr } = await supabase
       .from('clinic_staff_profiles')
       .select('user_id')
@@ -77,25 +67,30 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(dashUrl)
     }
 
-    const role = searchParams.get('role') || 'consumer'
-    const next = searchParams.get('next')
-    if (role === 'consumer' || next === '/') {
-      const dest = request.nextUrl.clone()
-      dest.pathname = '/'
-      dest.search = ''
-      if (clinic) dest.searchParams.set('clinic', clinic)
-      return NextResponse.redirect(dest)
+    // Regular consumer — send to /app
+    const appUrl = request.nextUrl.clone()
+    appUrl.pathname = '/app'
+    appUrl.search = ''
+    if (clinic) appUrl.searchParams.set('clinic', clinic)
+    return NextResponse.redirect(appUrl)
+  }
+
+  // /app requires auth — unauthenticated users go to / (login page).
+  if (pathname === '/app' && !user) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/'
+    const p = new URLSearchParams(request.nextUrl.searchParams)
+    if (p.get('clinic') || p.get('clinicSlug')) {
+      p.set('role', 'consumer')
+      p.set('next', '/app')
     }
-    const dashUrl = request.nextUrl.clone()
-    dashUrl.pathname = '/clinicside/app'
-    dashUrl.search = ''
-    if (clinic) dashUrl.searchParams.set('clinic', clinic)
-    return NextResponse.redirect(dashUrl)
+    loginUrl.search = p.toString()
+    return NextResponse.redirect(loginUrl)
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/', '/clinicside/:path*', '/login'],
+  matcher: ['/', '/app', '/clinicside/:path*'],
 }

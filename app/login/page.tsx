@@ -1,19 +1,6 @@
-import { GradientCanvas } from "@/components/auth/gradient-canvas"
-import { LoginForm } from "@/components/auth/login-form"
+import { redirect } from 'next/navigation'
 
-export const metadata = {
-  title: "Sign in — Lume AI",
-}
-
-export default function LoginPage() {
-  return (
-    <main className="w-screen h-screen flex flex-col md:flex-row">
-      <div className="flex-1 md:w-1/2 md:h-full">
-        <LoginForm />
-      </div>
-      <div className="h-48 md:h-full md:w-1/2">
-        <GradientCanvas />
-      </div>
-    </main>
-  )
+// /login has moved to / — redirect old links permanently.
+export default function LoginRedirect() {
+  redirect('/')
 }

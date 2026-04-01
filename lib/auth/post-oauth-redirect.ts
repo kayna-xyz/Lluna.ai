@@ -17,8 +17,8 @@ export function getPostOAuthRedirectPath(searchParams: URLSearchParams): string 
     return dest.pathname + dest.search
   }
 
-  if (role === 'consumer' || next === '/') {
-    const dest = new URL('/', 'http://localhost')
+  if (role === 'consumer' || next === '/app') {
+    const dest = new URL('/app', 'http://localhost')
     if (clinic) dest.searchParams.set('clinic', clinic)
     return dest.pathname + dest.search
   }

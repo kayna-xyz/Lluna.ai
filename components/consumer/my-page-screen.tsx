@@ -36,9 +36,9 @@ export function MyPageScreen() {
       if (slug) next.set("clinic", slug)
       if (role) next.set("role", role)
       const q = next.toString()
-      router.replace(q ? `/login?${q}` : "/login")
+      router.replace(q ? `/?${q}` : "/")
     } catch {
-      router.replace("/login")
+      router.replace("/")
     }
   }
 

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   // Already signed in — skip OAuth and go straight to the consumer app.
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
-    const dest = new URL('/', origin)
+    const dest = new URL('/app', origin)
     if (clinic) dest.searchParams.set('clinic', clinic)
     return NextResponse.redirect(dest)
   }
