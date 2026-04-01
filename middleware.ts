@@ -75,16 +75,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(appUrl)
   }
 
-  // /app requires auth — unauthenticated users go to / (login page).
+  // /join: already authenticated → skip OAuth, go straight to /app.
+  if (pathname === '/join' && user) {
+    const appUrl = request.nextUrl.clone()
+    appUrl.pathname = '/app'
+    appUrl.search = ''
+    if (clinic) appUrl.searchParams.set('clinic', clinic)
+    return NextResponse.redirect(appUrl)
+  }
+
+  // /app requires auth.
   if (pathname === '/app' && !user) {
+    // QR scan: clinic param present → auto-trigger Google OAuth via /join.
+    if (clinic) {
+      const joinUrl = request.nextUrl.clone()
+      joinUrl.pathname = '/join'
+      joinUrl.search = ''
+      joinUrl.searchParams.set('clinic', clinic)
+      return NextResponse.redirect(joinUrl)
+    }
+    // No clinic context → show the login page.
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/'
-    const p = new URLSearchParams(request.nextUrl.searchParams)
-    if (p.get('clinic') || p.get('clinicSlug')) {
-      p.set('role', 'consumer')
-      p.set('next', '/app')
-    }
-    loginUrl.search = p.toString()
+    loginUrl.search = ''
     return NextResponse.redirect(loginUrl)
   }
 
@@ -92,5 +105,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/app', '/clinicside/:path*'],
+  matcher: ['/', '/app', '/join', '/clinicside/:path*'],
 }
