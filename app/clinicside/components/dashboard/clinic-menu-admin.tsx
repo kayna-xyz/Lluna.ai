@@ -273,6 +273,7 @@ export function ClinicMenuAdmin({
           tipTimeoutRef.current = null
         }
         setImportProcessing(false)
+        setImportProgress(0)
         setImportTip(null)
         setImportResultText(null)
         toast.error(data.error || "Parse failed")
@@ -346,6 +347,7 @@ export function ClinicMenuAdmin({
         resultTimeoutRef.current = null
       }
       setImportProcessing(false)
+      setImportProgress(0)
       setImportTip(null)
       setImportResultText(null)
       toast.error("Upload failed")

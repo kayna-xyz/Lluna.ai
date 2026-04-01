@@ -5,6 +5,7 @@ import { generateText, Output } from 'ai'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 function bufToUtf8(buf: Buffer): string {
   return buf.toString('utf8').replace(/^\uFEFF/, '')

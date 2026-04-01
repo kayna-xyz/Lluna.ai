@@ -12,9 +12,9 @@ export function getLlunaAnthropicModel() {
   return anthropic(id)
 }
 
-/** PDF / image menu extraction in `/api/menu/parse` only. Default: Claude 3.5 Sonnet. */
+/** PDF / image menu extraction in `/api/menu/parse` only. Default: Claude Sonnet 4.6. */
 export function getMenuVisionAnthropicModel() {
   const id =
-    process.env.ANTHROPIC_MENU_VISION_MODEL?.trim() || 'claude-3-5-sonnet-20241022'
+    process.env.ANTHROPIC_MENU_VISION_MODEL?.trim() || 'claude-sonnet-4-6'
   return anthropic(id)
 }
