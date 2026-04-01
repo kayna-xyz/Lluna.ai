@@ -1691,17 +1691,6 @@ function ClinicMenuScreen({
             ) : null}
           </div>
         </div>
-        <button
-          onClick={() => setShowHelpPopup(true)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 8
-          }}
-        >
-          <HelpCircle size={22} color={COLORS.muted} />
-        </button>
       </div>
       
       {/* Rolling Activities - Compact */}
