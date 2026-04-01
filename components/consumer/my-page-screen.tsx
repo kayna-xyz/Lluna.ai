@@ -27,27 +27,13 @@ export function MyPageScreen() {
   const [error, setError] = useState<string | null>(null)
   const [entryViaQr, setEntryViaQr] = useState(false)
 
-  const goToLoginAfterSignOut = () => {
-    try {
-      const qs = new URLSearchParams(window.location.search)
-      const slug = qs.get("clinic")?.trim() || qs.get("clinicSlug")?.trim()
-      if (slug) {
-        router.replace(`/join?clinic=${encodeURIComponent(slug)}`)
-      } else {
-        router.replace("/")
-      }
-    } catch {
-      router.replace("/")
-    }
-  }
-
   const handleSignOut = async () => {
     if (signingOut) return
     setSigningOut(true)
     try {
       const supabase = getBrowserSupabase()
       if (supabase) await supabase.auth.signOut()
-      goToLoginAfterSignOut()
+      router.replace("/")
     } finally {
       setSigningOut(false)
     }
