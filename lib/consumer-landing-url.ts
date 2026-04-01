@@ -1,7 +1,7 @@
 /**
  * Customer-facing landing URL with `?clinic=` bound to a specific tenant.
  *
- * The QR code leads to `/api/auth/google?clinic=<slug>` which immediately
+ * The QR code leads to `/join?clinic=<slug>` which immediately
  * initiates Google OAuth — skipping the /login landing page entirely.
  * After OAuth the user lands on /auth/callback with the clinic param preserved.
  *
@@ -16,7 +16,7 @@ export function getConsumerLandingUrl(clinicSlug: string): string {
       : ''
   if (publicBase) {
     const u = new URL(publicBase.includes('://') ? publicBase : `https://${publicBase}`)
-    u.pathname = '/api/auth/google'
+    u.pathname = '/join'
     u.hash = ''
     u.search = ''
     u.searchParams.set('clinic', slug)
@@ -25,12 +25,12 @@ export function getConsumerLandingUrl(clinicSlug: string): string {
   }
   if (typeof window !== 'undefined' && window.location?.origin) {
     const u = new URL(window.location.origin)
-    u.pathname = '/api/auth/google'
+    u.pathname = '/join'
     u.hash = ''
     u.search = ''
     u.searchParams.set('clinic', slug)
     u.searchParams.set('role', 'consumer')
     return u.href
   }
-  return `/api/auth/google?clinic=${encodeURIComponent(slug)}&role=consumer`
+  return `/join?clinic=${encodeURIComponent(slug)}&role=consumer`
 }
