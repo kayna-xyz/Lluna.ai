@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
-import { getBrowserSupabase } from "@/lib/supabase/browser-client"
+import { upload } from "@vercel/blob/client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -286,27 +286,11 @@ export function ClinicMenuAdmin({
     }
 
     try {
-      const supabase = getBrowserSupabase()
-      if (!supabase) {
-        throw new Error("Supabase is not configured in the browser")
-      }
-
-      const safeName = sanitizeUploadFilename(file.name || "upload")
-      const objectPath = `${clinicId}/${Date.now()}-${safeName}`
-      const { error: uploadError } = await supabase.storage.from("menus").upload(objectPath, file, {
-        cacheControl: "3600",
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/menu/upload-token",
       })
-      if (uploadError) {
-        throw new Error(uploadError.message)
-      }
-
-      const { data: publicUrlData } = supabase.storage.from("menus").getPublicUrl(objectPath)
-      const fileUrl = publicUrlData.publicUrl
-      if (!fileUrl) {
-        throw new Error("Failed to get uploaded file URL")
-      }
+      const fileUrl = blob.url
 
       const res = await clinicFetch("/api/menu/parse", {
         method: "POST",
