@@ -1160,7 +1160,6 @@ export function ActivitiesTab() {
 
         <TabsContent value="info" className="mt-0">
           <div className="space-y-4">
-            <ClinicQrCard />
             <Card className="border-primary/15">
               <CardHeader className="pb-3 flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -1440,27 +1439,16 @@ export function ActivitiesTab() {
               </CardContent>
             </Card>
 
+            <ClinicQrCard />
+
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Feedback</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  placeholder="Write feedbacks on here and our customer will reachout you soon"
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                />
-                <Button type="button" onClick={() => void sendFeedback()} disabled={sendingFeedback || !feedbackText.trim()}>
-                  {sendingFeedback ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending…
-                    </>
-                  ) : (
-                    "Send"
-                  )}
-                </Button>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">
+                  If you have any questions or ideas, feel free to reach out via{" "}
+                  <a href="mailto:kayna@lluna.ai" className="text-primary underline underline-offset-2">
+                    kayna@lluna.ai
+                  </a>
+                </p>
               </CardContent>
             </Card>
           </div>

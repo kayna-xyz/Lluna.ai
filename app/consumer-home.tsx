@@ -1614,6 +1614,7 @@ function ClinicMenuScreen({
   const { tagline, activities, testimonials, clinicPhone, clinicWorkTime, logoUrl, mdTeam } = useContext(ConsumerClinicUiContext)
   const [activityIndex, setActivityIndex] = useState(0)
   const [treatmentSearch, setTreatmentSearch] = useState("")
+  const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
 
   useEffect(() => {
     setActivityIndex((i) => {
@@ -1678,11 +1679,56 @@ function ClinicMenuScreen({
   return (
     <div style={{ paddingTop: 20, paddingBottom: 60 }}>
       {showHelpPopup && (
-        <HelpPopup 
+        <HelpPopup
           onClose={() => setShowHelpPopup(false)}
           helpRequest={helpRequest}
           setHelpRequest={setHelpRequest}
         />
+      )}
+
+      {selectedTreatment && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.55)', zIndex: 2000,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }} onClick={() => setSelectedTreatment(null)}>
+          <div style={{
+            background: COLORS.white, borderRadius: '20px 20px 0 0',
+            width: '100%', maxWidth: 480, maxHeight: '85vh',
+            overflowY: 'auto', paddingBottom: 40,
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 0' }}>
+              <button onClick={() => setSelectedTreatment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X size={22} color={COLORS.muted} />
+              </button>
+            </div>
+            {selectedTreatment.posterUrl && (
+              <img src={selectedTreatment.posterUrl} alt="Poster" style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 240 }} />
+            )}
+            {selectedTreatment.beforeAfterUrl && (
+              <img src={selectedTreatment.beforeAfterUrl} alt="Before / After" style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 240, marginTop: selectedTreatment.posterUrl ? 2 : 0 }} />
+            )}
+            {!selectedTreatment.posterUrl && !selectedTreatment.beforeAfterUrl && (
+              <div style={{ height: 120, background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 12, color: COLORS.muted }}>No photos uploaded yet</span>
+              </div>
+            )}
+            <div style={{ padding: '20px 20px 0' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 500, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, margin: 0 }}>
+                {selectedTreatment.name}
+              </h2>
+              <p style={{ fontSize: 12, color: COLORS.accent, margin: '4px 0 0' }}>{selectedTreatment.category}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '10px 0 0' }}>
+                {getPrimaryPriceLabel(selectedTreatment)}
+              </p>
+              {selectedTreatment.description && (
+                <p style={{ fontSize: 13, color: COLORS.muted, margin: '10px 0 0', lineHeight: 1.6 }}>
+                  {selectedTreatment.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -2018,9 +2064,11 @@ function ClinicMenuScreen({
           visibleTreatments.map((treatment) => (
           <div
             key={treatment.id}
+            onClick={() => setSelectedTreatment(treatment)}
             style={{
               padding: '14px 0',
-              borderBottom: `1px solid ${COLORS.border}`
+              borderBottom: `1px solid ${COLORS.border}`,
+              cursor: 'pointer',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -2032,13 +2080,16 @@ function ClinicMenuScreen({
                   {treatment.category}
                 </span>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                 <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: 'block' }}>
                   {getPrimaryPriceLabel(treatment)}
                 </span>
                 <span style={{ fontSize: 10, color: COLORS.muted }}>
                   {treatment.units}
                 </span>
+                {(treatment.posterUrl || treatment.beforeAfterUrl) && (
+                  <span style={{ fontSize: 9, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
+                )}
               </div>
             </div>
             <p style={{ fontSize: 12, color: COLORS.text, margin: 0, marginTop: 8, lineHeight: 1.5 }}>
@@ -4062,24 +4113,30 @@ function ReportScreen({
 
       {(() => {
         if (!aiRec || !aiRec.plans || aiRec.plans.length === 0) return null
-        const treatmentIds = aiRec.plans[0].treatments.slice(0, 2).map(t => t.treatmentId)
+        const withPhotos = aiRec.plans[0].treatments
+          .map(t =>
+            clinicMenu?.treatments.find(m => m.id === t.treatmentId) ||
+            FALLBACK_REPORT_MENU.treatments.find(m => m.id === t.treatmentId)
+          )
+          .filter((t): t is ClinicMenuTreatment => !!t && !!(t.posterUrl || t.beforeAfterUrl))
+        if (withPhotos.length === 0) return null
         return (
           <div style={{ marginBottom: 32 }}>
-            <p style={{ 
-              fontSize: 11, 
-              fontWeight: 500, 
-              letterSpacing: '0.1em', 
-              color: COLORS.muted,
-              marginBottom: 12 
-            }}>
-              CASE STUDIES
+            <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', color: COLORS.muted, marginBottom: 12 }}>
+              TREATMENT PHOTOS
             </p>
-            <p style={{ fontSize: 12, color: COLORS.muted, marginBottom: 12 }}>
-              Real results from {displayClinicName} clients
-            </p>
-            
-            {treatmentIds.map(id => (
-              <CaseStudyCard key={id} treatmentId={id} clinicMenu={clinicMenu} />
+            {withPhotos.map(treatment => (
+              <div key={treatment.id} style={{ marginBottom: 12, borderRadius: 12, overflow: 'hidden', border: `1px solid ${COLORS.border}` }}>
+                {treatment.posterUrl && (
+                  <img src={treatment.posterUrl} alt={treatment.name} style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220 }} />
+                )}
+                {treatment.beforeAfterUrl && (
+                  <img src={treatment.beforeAfterUrl} alt={`${treatment.name} before/after`} style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220, marginTop: treatment.posterUrl ? 2 : 0 }} />
+                )}
+                <div style={{ padding: '8px 12px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: COLORS.text, margin: 0 }}>{treatment.name}</p>
+                </div>
+              </div>
             ))}
           </div>
         )
