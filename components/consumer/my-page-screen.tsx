@@ -26,6 +26,8 @@ export function MyPageScreen() {
   const [sessions, setSessions] = useState<MeActivitySession[]>([])
   const [error, setError] = useState<string | null>(null)
   const [entryViaQr, setEntryViaQr] = useState(false)
+  const [userName, setUserName] = useState("")
+  const [userEmail, setUserEmail] = useState("")
 
   const handleSignOut = async () => {
     if (signingOut) return
@@ -67,6 +69,12 @@ export function MyPageScreen() {
         return
       }
       setLoggedIn(true)
+      setUserName(
+        (session.user.user_metadata?.full_name as string) ||
+        (session.user.user_metadata?.name as string) ||
+        ""
+      )
+      setUserEmail(session.user.email || "")
 
       const focus = params.get("clinic")?.trim() || params.get("clinicSlug")?.trim()
       const viaQr = params.has("clinic") || params.has("clinicSlug")
@@ -127,18 +135,31 @@ export function MyPageScreen() {
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: COLORS.muted, margin: "0 0 8px" }}>
         MY
       </p>
-      <h2 style={{ fontSize: 22, fontWeight: 600, color: COLORS.text, margin: "0 0 12px" }}>
-        {showFullFootprint ? "Your footprint" : "This clinic"}
+      <h2 style={{ fontSize: 22, fontWeight: 600, color: COLORS.text, margin: "0 0 4px" }}>
+        {userName || "My"}
       </h2>
-      <p style={{ fontSize: 13, color: COLORS.muted, margin: "0 0 28px", lineHeight: 1.55 }}>
-        {showFullFootprint
-          ? "Clinics you have scanned or visited, and treatments recorded from the consultant final plan."
-          : "From a QR link you see this clinic only. Open My from the home tab without a clinic QR for your full footprint."}
-      </p>
+      {userEmail ? (
+        <p style={{ fontSize: 13, color: COLORS.muted, margin: "0 0 28px" }}>{userEmail}</p>
+      ) : (
+        <div style={{ marginBottom: 28 }} />
+      )}
 
       {error ? (
         <p style={{ fontSize: 13, color: "#b45309" }}>{error}</p>
       ) : null}
+
+      <p
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: COLORS.text,
+          marginBottom: 16,
+          borderBottom: `1px solid ${COLORS.border}`,
+          paddingBottom: 8,
+        }}
+      >
+        History
+      </p>
 
       {visits.length === 0 && sessions.length === 0 ? (
         <p style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, margin: 0 }}>
