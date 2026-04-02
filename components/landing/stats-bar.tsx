@@ -41,7 +41,7 @@ export function StatsBar() {
       </div>
 
       <div
-        className={`max-w-[760px] mx-auto px-8 transition-all duration-[600ms] ${
+        className={`max-w-[980px] mx-auto px-6 sm:px-8 transition-all duration-[600ms] ${
           isVisible
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-5"
@@ -52,11 +52,11 @@ export function StatsBar() {
           YOUR REVENUE HACKER
         </p>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-y-10 gap-x-8 xl:gap-x-10">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className={`flex flex-col transition-all duration-[600ms] ${
+              className={`min-w-0 flex flex-col transition-all duration-[600ms] ${
                 isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-4"
@@ -66,10 +66,10 @@ export function StatsBar() {
                 transitionDelay: isVisible ? `${index * 80}ms` : "0ms",
               }}
             >
-              <span className="text-[36px] lg:text-[44px] font-display font-normal text-[#B87879] leading-none mb-2">
+              <span className="text-[34px] sm:text-[38px] lg:text-[42px] xl:text-[44px] font-display font-normal text-[#B87879] leading-none tracking-[-0.02em] mb-2">
                 {stat.value}
               </span>
-              <span className="text-[13px] leading-[1.5] text-muted-foreground">
+              <span className="max-w-[16rem] text-[13px] leading-[1.55] text-muted-foreground">
                 {stat.label}
               </span>
             </div>
