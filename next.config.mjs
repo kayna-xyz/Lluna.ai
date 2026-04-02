@@ -5,7 +5,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['xlsx', '@supabase/supabase-js'],
+  serverExternalPackages: ['xlsx', '@supabase/supabase-js', 'pdfjs-dist'],
   typescript: {
     ignoreBuildErrors: true,
   },

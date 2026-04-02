@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 import { parseMenuTextToDraft } from '@/lib/menu-file-parser'
 import { getMenuVisionAnthropicModel } from '@/lib/anthropic-model'
+import { extractTextFromPdf } from '@/lib/pdf-to-text'
 import { generateText, Output } from 'ai'
 import { z } from 'zod'
 
@@ -111,30 +112,28 @@ export async function POST(req: Request) {
     }
   }
 
-  const extractMenuWithAI = async (mimeType: string) => {
-    const extractedSchema = z.object({
-      extractedText: z
-        .string()
-        .describe('Pipe-delimited menu rows: Treatment Name | Category | $Price | Description (one row per line).'),
-    })
+  const menuSchema = z.object({
+    extractedText: z
+      .string()
+      .describe('Pipe-delimited menu rows: Treatment Name | Category | $Price | Description (one row per line).'),
+  })
 
+  // Image path: send image bytes directly to gpt-4o-mini vision.
+  const extractMenuFromImage = async (mimeType: string) => {
     const { output } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
         'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item. No commentary.',
-      output: Output.object({ schema: extractedSchema }),
+      output: Output.object({ schema: menuSchema }),
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text:
-                'Extract the entire menu. For each item, ensure the line contains: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
+              text: 'Extract the entire menu. For each item, ensure the line contains: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
             },
             {
-              // 'image' is the correct content type for Azure OpenAI / OpenAI-compatible providers.
-              // Anthropic used 'file' with mediaType; Azure uses 'image' with mimeType.
               type: 'image',
               image: buf,
               mimeType: mimeType,
@@ -143,25 +142,58 @@ export async function POST(req: Request) {
         },
       ],
     })
-
     return output.extractedText
   }
 
-  // PDF is not supported by Azure OpenAI (gpt-4o-mini does not accept raw PDF inputs).
-  // Anthropic's Claude natively supported PDFs; Azure OpenAI requires image or text input.
-  // Workaround: convert the PDF to an image before uploading, or use CSV/XLSX/TXT format.
+  // Text path: used for PDFs after text extraction. No vision needed.
+  const extractMenuFromText = async (pdfText: string) => {
+    const { output } = await generateText({
+      model: getMenuVisionAnthropicModel(),
+      system:
+        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item: Treatment Name | Category | $Price | Description. No commentary.',
+      output: Output.object({ schema: menuSchema }),
+      messages: [
+        {
+          role: 'user',
+          content: `Extract the menu from this text:\n\n${pdfText}`,
+        },
+      ],
+    })
+    return output.extractedText
+  }
+
+  // PDF: extract text with pdfjs-dist (pure JS, no system binaries, Vercel-compatible).
+  // Works for text-based PDFs (Word, InDesign exports). For scanned/image-only PDFs,
+  // ask the user to upload a PNG/JPG screenshot instead.
   if (lower.endsWith('.pdf')) {
-    return Response.json(
-      {
-        error:
-          'PDF upload is not supported with the current AI provider. Please upload an image (PNG, JPG, WebP) or a spreadsheet (CSV, XLSX) instead.',
-      },
-      { status: 415 },
-    )
+    let pdfResult
+    try {
+      pdfResult = await extractTextFromPdf(buf)
+    } catch (e) {
+      console.error('[menu/parse] PDF text extraction failed:', e)
+      return Response.json({ error: 'Could not read the PDF. The file may be corrupted or password-protected.' }, { status: 400 })
+    }
+
+    if (pdfResult.isLikelyScanned) {
+      return Response.json(
+        {
+          error:
+            'This PDF appears to be a scanned image and cannot be parsed as text. Please take a screenshot of the menu and upload it as a PNG or JPG instead.',
+        },
+        { status: 415 },
+      )
+    }
+
+    const extractedText = await extractMenuFromText(pdfResult.text)
+    return Response.json({
+      text: extractedText,
+      format: 'pdf',
+      draftMenu: parseMenuTextToDraft(extractedText),
+    })
   }
 
   if (/\.(png|jpe?g|webp)$/i.test(lower)) {
-    const extractedText = await extractMenuWithAI(
+    const extractedText = await extractMenuFromImage(
       lower.endsWith('.png')
         ? 'image/png'
         : lower.endsWith('.webp')
