@@ -3809,34 +3809,7 @@ function ReportScreen({
   clientSessionId: string
   clinicSlug: string
 }) {
-  const [consultantFinalPlan, setConsultantFinalPlan] = useState<ConsultantFinalPlanPayload | null>(null)
   const [lightboxPhoto, setLightboxPhoto] = useState<{ src: string; label: string } | null>(null)
-
-  useEffect(() => {
-    const sid = clientSessionId.trim()
-    if (!sid) return
-    let cancelled = false
-    const load = async () => {
-      try {
-        const q = new URLSearchParams({
-          session_id: sid,
-          clinic: clinicSlug,
-        })
-        const r = await fetch(`/api/client-final-plan?${q}`)
-        const d = (await r.json()) as { finalPlan?: ConsultantFinalPlanPayload | null }
-        if (cancelled) return
-        if (d.finalPlan) setConsultantFinalPlan(d.finalPlan)
-      } catch {
-        /* ignore */
-      }
-    }
-    void load()
-    const t = setInterval(load, 6000)
-    return () => {
-      cancelled = true
-      clearInterval(t)
-    }
-  }, [clientSessionId, clinicSlug])
 
   const { clinicName: displayClinicName } = useContext(ConsumerClinicUiContext)
 
@@ -4106,9 +4079,6 @@ function ReportScreen({
         })()}
       </div>
 
-      {consultantFinalPlan ? (
-        <ConsultantFinalPlanSection plan={consultantFinalPlan} getTreatment={getTreatment} />
-      ) : null}
       
       {aiRec?.holdOffNote && (
         <div style={{ 
