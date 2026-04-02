@@ -128,7 +128,18 @@ export async function POST(req: Request) {
   const { menuById } = menuToMaps(menu)
   const { recommendationSchema } = buildRecommendationSchemas(menuById)
 
-  const menuText = menu.treatments
+  // Goal-based menu filtering — only affects what the AI sees, not schema validation
+  const goalsLower = (goals || '').toLowerCase()
+  const FACE_SIGNALS = ['slim', 'face', 'lift', 'contour', 'jaw', 'nose', 'wrinkle', 'volume', 'filler', 'botox', 'skin', 'glow', 'pore', 'acne', 'anti-aging', 'forehead', 'cheek', 'chin', 'eye', 'neck', 'sculpt']
+  const BODY_SIGNALS = ['leg', 'arm', 'stomach', 'back', 'body', 'hair removal', 'bikini', 'underarm', 'chest hair', 'laser hair']
+  const BODY_CATEGORY_EXCLUDE = ['hair removal', 'body', 'laser hair removal']
+  const hasFaceSignal = FACE_SIGNALS.some((kw) => goalsLower.includes(kw))
+  const hasBodySignal = BODY_SIGNALS.some((kw) => goalsLower.includes(kw))
+  const filteredTreatments = hasFaceSignal && !hasBodySignal
+    ? menu.treatments.filter((t) => !BODY_CATEGORY_EXCLUDE.some((ex) => t.category.toLowerCase().includes(ex)))
+    : menu.treatments
+
+  const menuText = filteredTreatments
     .map(
       (t) =>
         `- id: ${t.id}\n  name: ${t.name}\n  category: ${t.category}\n  description: ${t.description}\n  pricing: ${JSON.stringify(t.pricing)}`,
@@ -227,6 +238,13 @@ Forbidden: "structured plans", "strict ordering", "conservative path", "3-layer"
 
 MENU:
 ${menuText}
+
+ANTI-HALLUCINATION RULES — MANDATORY:
+1. Every treatmentId and treatmentName in your output MUST exactly match an entry in the MENU above. Copy them verbatim — no paraphrasing, no invented names, no brand substitutions.
+2. Every cost value MUST be derived from the pricing field in the MENU. For per-unit pricing (e.g. perUnit: 14), multiply by a clinically plausible unit count and state the units field. For single-session pricing, use the exact number.
+3. Do NOT recommend a treatment that is not in the MENU above, even if it would be clinically ideal. If the best clinical option is missing from the menu, note it in whyThisPlan and pick the closest available alternative.
+4. The three plans MUST have meaningfully different totalCost values. Essential < Optimal < Premium. If you output two plans at the same price, that is an error.
+5. Before finalizing each plan, verify: does the sum of treatment costs equal the totalCost? If not, correct it.
 
 PLAN COST TARGETS — MANDATORY, NOT A SUGGESTION:
 - Essential: total cost MUST be between $${Math.round(budgetNum * 1.35)} and $${Math.round(budgetNum * 1.65)}
