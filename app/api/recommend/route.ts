@@ -179,7 +179,39 @@ STRICT GROUNDING:
 2) Use menu pricing for cost estimates; keep units/syringes/sessions clinically plausible.
 3) Botox-type: prefer realistic unit ranges; if goals/photo don't support injectables, say so briefly in summary only (not in consultant-style third person — you are writing TO the patient in summary).
 4) If confidence is low, say "more information needed in consultation" in the summary — do not guess wildly.
-5) At most 3 treatments per plan as specified in schema.
+
+TREATMENT SELECTION LOGIC — apply in this order for each plan:
+1. DIRECT (role: 'direct'): The treatment that most directly addresses the patient's stated concern today.
+2. SYNERGY (role: 'synergy'): A treatment that enhances or prolongs the effect of the first. Must be clinically justified, not just upsell.
+3. REVENUE (role: 'revenue'): One affordable skincare, hydration, or entry-level treatment that adds value without significantly raising total cost (e.g. hydrafacial, skinbooster, peel, blackhead cleaning).
+
+Do NOT recommend treatments the patient has done in the last 3 months unless their stated demand explicitly asks for a repeat.
+
+CLINICAL FORMULA LIBRARY — when patient goals match, prioritize these proven combinations (only use treatments that exist in the clinic menu):
+
+SLIMMING / CONTOURING / LIFTING goals:
+- Energy device (thermage / morpheus8 / onda / inmode / any RF or laser contouring device)
++ Full-face botox/toxin lift (xeomin / botox / any neurotoxin, ~100U full face)
++ Collagen stimulator (Sculptra / Radiesse / any biostimulator, light dose)
++ Jawline filler (Volux / Voluma / Juvederm / Restylane, for definition)
++ Cleansing treatment (hydrafacial / aqua peel / any entry-level skin treatment)
+
+NOSE RESHAPING / DEFINITION goals:
+- Nose tip botox (~20U nasal flare reduction)
++ Nose filler (Volux / Voluma / any HA filler for bridge/tip definition)
++ Blackhead / pore cleansing treatment (aqua peel / hydrafacial / BHA peel)
+
+SKIN QUALITY / GLOW goals:
+- Skinbooster (Profhilo / Juvederm Volite / Restylane Skin Booster / any HA skinbooster)
++ Energy device or peel (laser / IPL / chemical peel)
++ Cleansing or brightening treatment
+
+ANTI-AGING / VOLUME LOSS goals:
+- Mid-face filler (Voluma / Volift / any cheek HA filler)
++ Neurotoxin for dynamic lines (botox / xeomin / any toxin)
++ Collagen stimulator or skinbooster
+
+Note: these are formulas, not rigid rules. Always cross-check against the actual clinic menu — only recommend treatments that exist. Adapt based on patient's specific concern, budget tier, and what's available.
 
 THERAPEUTIC STYLE:
 - No superlatives like "best" or "guaranteed"; use hedged clinical language.
@@ -192,8 +224,12 @@ Reference their goals (their words), budget, experience, 3-layer logic briefly. 
 MENU:
 ${menuText}
 
-PLAN COST TARGETS (flex ±15%):
-- Essential ≈ ${Math.round(budgetNum * 1.6)}, Optimal ≈ ${Math.round(budgetNum * 1.8)}, Premium ≈ ${Math.round(budgetNum * 2)}.`
+PLAN COST TARGETS — MANDATORY, NOT A SUGGESTION:
+- Essential: total cost MUST be between $${Math.round(budgetNum * 1.35)} and $${Math.round(budgetNum * 1.65)}
+- Optimal: total cost MUST be between $${Math.round(budgetNum * 1.8)} and $${Math.round(budgetNum * 2.2)}
+- Premium: total cost MUST be between $${Math.round(budgetNum * 2.2)} and $${Math.round(budgetNum * 2.8)}
+
+Never output all three plans at the same price point. If menu options are limited, pick the closest available and explain in whyThisPlan.`
 
   const patientUser = `${surveyBlock}
 
@@ -216,6 +252,18 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
       `budget $${budgetNum}; experience ${experience || 'n/a'}; goals excerpt: "${(goals || '').slice(0, 120)}".`
   }
 
+  const essentialRange = { min: budgetNum * 1.35, max: budgetNum * 1.65 }
+  const optimalRange  = { min: budgetNum * 1.8,  max: budgetNum * 2.2  }
+  const premiumRange  = { min: budgetNum * 2.2,  max: budgetNum * 2.8  }
+
+  function plansAreCollapsed(plans: RecommendationOutput['plans']): boolean {
+    if (plans.length < 3) return false
+    const costs = plans.map((p) => p.totalCost)
+    const maxCost = Math.max(...costs)
+    const minCost = Math.min(...costs)
+    return maxCost === 0 || (maxCost - minCost) / maxCost < 0.2
+  }
+
   try {
     const { output } = await generateText({
       model: getLlunaAnthropicModel(),
@@ -223,7 +271,31 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
       system: patientSystem,
       messages: [{ role: 'user', content: patientUser }],
     })
-    const normalized = normalizeRecommendation(output, menuById)
+    let normalized = normalizeRecommendation(output, menuById)
+
+    if (plansAreCollapsed(normalized.plans)) {
+      const retryUserMsg = `${patientUser}
+
+IMPORTANT: Your previous response had all 3 plans at similar price points. Essential MUST be ~$${Math.round(budgetNum * 1.5)}, Optimal MUST be ~$${Math.round(budgetNum * 2)}, Premium MUST be ~$${Math.round(budgetNum * 2.5)}. Please regenerate with correct price tiers.`
+
+      try {
+        const { output: retryOutput } = await generateText({
+          model: getLlunaAnthropicModel(),
+          output: Output.object({ schema: recommendationSchema }),
+          system: patientSystem,
+          messages: [{ role: 'user', content: retryUserMsg }],
+        })
+        const retryNormalized = normalizeRecommendation(retryOutput, menuById)
+        if (plansAreCollapsed(retryNormalized.plans)) {
+          retryNormalized.summary += ' Note: limited menu options near your budget — consultant will adjust in session.'
+        }
+        normalized = retryNormalized
+      } catch {
+        // retry failed — keep original, append note
+        normalized.summary += ' Note: limited menu options near your budget — consultant will adjust in session.'
+      }
+    }
+
     return Response.json({
       recommendation: { ...normalized, consultantProfileSummary },
     })
