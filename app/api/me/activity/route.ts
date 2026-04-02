@@ -63,6 +63,12 @@ export async function GET(req: Request) {
       const c = pickClinic(row.clinics)
       const slug = String(c?.slug ?? '')
       if (focusSlug && slug !== focusSlug) return null
+      // Only surface records where the consultant has submitted a final plan
+      const rd = row.report_data && typeof row.report_data === 'object'
+        ? (row.report_data as Record<string, unknown>)
+        : {}
+      const hasSubmission = rd.consultantFinalPlan != null || (row.total_price != null && row.total_price !== '')
+      if (!hasSubmission) return null
       return {
         clinic_name: String(c?.name ?? '—'),
         clinic_slug: slug,

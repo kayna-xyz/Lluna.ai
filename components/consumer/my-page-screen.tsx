@@ -171,25 +171,44 @@ export function MyPageScreen() {
             <li
               key={`${s.clinic_slug}-${s.updated_at}-${i}`}
               style={{
-                padding: "14px 16px",
+                padding: "16px",
                 background: COLORS.outer,
                 borderRadius: 12,
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLORS.text }}>{s.clinic_name}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 11, color: COLORS.muted }}>Updated {fmtDate(s.updated_at)}</p>
+              {/* Clinic + date */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>{s.clinic_name}</p>
+                <p style={{ margin: 0, fontSize: 11, color: COLORS.muted, whiteSpace: "nowrap" }}>{fmtDate(s.updated_at)}</p>
+              </div>
+
+              {/* Total price */}
               {s.total_price != null && Number.isFinite(s.total_price) && s.total_price > 0 ? (
-                <p style={{ margin: "8px 0 0", fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-                  ${Math.round(s.total_price)}
+                <p style={{ margin: "10px 0 0", fontSize: 22, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.02em" }}>
+                  ${Math.round(s.total_price).toLocaleString()}
                 </p>
               ) : null}
+
+              {/* Treatment pills */}
               {s.treatments.length > 0 ? (
-                <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
+                <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {s.treatments.map((t) => (
-                    <li key={t}>{t}</li>
+                    <span
+                      key={t}
+                      style={{
+                        fontSize: 11,
+                        color: COLORS.text,
+                        background: COLORS.bg,
+                        border: `1px solid ${COLORS.border}`,
+                        borderRadius: 20,
+                        padding: "3px 10px",
+                      }}
+                    >
+                      {t}
+                    </span>
                   ))}
-                </ul>
+                </div>
               ) : null}
             </li>
           ))}
