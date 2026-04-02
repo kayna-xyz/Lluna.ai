@@ -6,6 +6,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['xlsx', '@supabase/supabase-js', 'pdfjs-dist'],
+  experimental: {
+    proxyClientMaxBodySize: '50mb',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

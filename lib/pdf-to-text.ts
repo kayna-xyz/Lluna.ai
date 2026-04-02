@@ -9,6 +9,8 @@
  * check `isLikelyScanned` and handle accordingly.
  */
 
+import { createRequire } from 'module'
+
 const MAX_PAGES = 5
 const MIN_TEXT_CHARS = 80 // below this threshold → assume scanned/image-only
 
@@ -26,8 +28,10 @@ export async function extractTextFromPdf(buf: Buffer): Promise<PdfTextResult> {
     'pdfjs-dist/legacy/build/pdf.mjs'
   ) as typeof import('pdfjs-dist')
 
-  // Disable the web worker — not available in Node.js serverless environment.
-  GlobalWorkerOptions.workerSrc = ''
+  // pdfjs-dist v5 requires an explicit workerSrc — empty string no longer works.
+  // Resolve the worker file path at runtime so it works in both local and Vercel environments.
+  const req = createRequire(import.meta.url)
+  GlobalWorkerOptions.workerSrc = req.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
 
   const loadingTask = getDocument({
     data: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),

@@ -7,21 +7,51 @@ import { generateText } from 'ai'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
+
 function bufToUtf8(buf: Buffer): string {
   return buf.toString('utf8').replace(/^\uFEFF/, '')
+}
+
+function getFileName(file: File): string {
+  return typeof file.name === 'string' && file.name.trim() ? file.name : 'upload'
+}
+
+function isPdfUpload(file: File, lowerName: string): boolean {
+  return lowerName.endsWith('.pdf') || file.type === 'application/pdf'
+}
+
+function isImageUpload(file: File, lowerName: string): boolean {
+  return /\.(png|jpe?g|webp)$/i.test(lowerName) || SUPPORTED_IMAGE_TYPES.has(file.type)
+}
+
+async function readUploadedFile(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer()
+  return Buffer.from(arrayBuffer)
 }
 
 export async function POST(req: Request) {
   const form = await req.formData().catch(() => null)
   const file = form?.get('file')
-  if (!file || !(file instanceof Blob)) {
+  if (!file || !(file instanceof File)) {
     return Response.json({ error: 'file field required' }, { status: 400 })
   }
 
-  const name = 'name' in file && typeof (file as File).name === 'string' ? (file as File).name : 'upload'
+  if (file.size <= 0) {
+    return Response.json({ error: 'Uploaded file is empty' }, { status: 400 })
+  }
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return Response.json(
+      { error: `File too large. Max upload size is ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))}MB.` },
+      { status: 413 },
+    )
+  }
+
+  const name = getFileName(file)
   const lower = name.toLowerCase()
-  const ab = await file.arrayBuffer()
-  const buf = Buffer.from(ab)
+  const buf = await readUploadedFile(file)
 
   // CSV: treat as spreadsheet for more reliable parsing (Excel exports often include quotes/commas).
   if (lower.endsWith('.csv')) {
@@ -130,7 +160,7 @@ export async function POST(req: Request) {
             {
               type: 'image',
               image: buf,
-              mimeType: mimeType,
+              mediaType: mimeType,
             },
           ],
         },
@@ -162,7 +192,7 @@ export async function POST(req: Request) {
   // PDF: extract text with pdfjs-dist (pure JS, no system binaries, Vercel-compatible).
   // Works for text-based PDFs (Word, InDesign exports). For scanned/image-only PDFs,
   // ask the user to upload a PNG/JPG screenshot instead.
-  if (lower.endsWith('.pdf')) {
+  if (isPdfUpload(file, lower)) {
     let pdfResult
     try {
       pdfResult = await extractTextFromPdf(buf)
@@ -197,13 +227,13 @@ export async function POST(req: Request) {
     })
   }
 
-  if (/\.(png|jpe?g|webp)$/i.test(lower)) {
+  if (isImageUpload(file, lower)) {
     let extractedText: string
     try {
       extractedText = await extractMenuFromImage(
-        lower.endsWith('.png')
+        file.type === 'image/png' || lower.endsWith('.png')
           ? 'image/png'
-          : lower.endsWith('.webp')
+          : file.type === 'image/webp' || lower.endsWith('.webp')
             ? 'image/webp'
             : 'image/jpeg',
       )

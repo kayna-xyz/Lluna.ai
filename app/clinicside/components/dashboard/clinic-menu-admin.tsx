@@ -32,6 +32,8 @@ type MenuTreatment = {
 
 type FullMenu = { clinicName: string; treatments: MenuTreatment[] }
 
+const MAX_MENU_IMPORT_BYTES = 50 * 1024 * 1024
+
 export function ClinicMenuAdmin({
   onAppendPricingHistory,
 }: {
@@ -238,6 +240,11 @@ export function ClinicMenuAdmin({
   }
 
   const importFile = async (file: File) => {
+    if (file.size > MAX_MENU_IMPORT_BYTES) {
+      toast.error("File too large. Maximum upload size is 50MB.")
+      return
+    }
+
     const lowerName = (file.name || "").toLowerCase()
     const likelyClaudeExtraction =
       lowerName.endsWith(".pdf") || /\.(png|jpe?g|webp)$/.test(lowerName)
