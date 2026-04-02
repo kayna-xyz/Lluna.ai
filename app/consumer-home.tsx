@@ -4090,14 +4090,9 @@ export default function LlunaApp({
   // const reviewShownRef = useRef(false)
   const [clientSessionId, setClientSessionId] = useState('')
   const [clinicSlug, setClinicSlug] = useState('default')
-  // Timestamp (ms) of when the user first reached screen 10.
-  // Used by the polling effect to ignore pre-existing sessions with total_price.
-  const screenTenEnteredAt = useRef<number>(0)
-
   // 45-minute timeout — starts when the report screen (screen 10) is shown.
   useEffect(() => {
     if (state.screen !== 10) return
-    screenTenEnteredAt.current = Date.now()
     const id = setTimeout(() => {
       window.location.href = 'https://www.lluna.ai'
     }, 45 * 60 * 1000)
@@ -4460,38 +4455,6 @@ export default function LlunaApp({
     }
   }, [state.screen, clientSessionId])
 
-  // Polling: redirect to lluna.ai when clinic advisor submits total_price
-  // (service role writes don't trigger realtime, so polling is the reliable path)
-  useEffect(() => {
-    if (state.screen !== 10 || !clientSessionId.trim()) return
-    console.log('[lluna] polling: starting /api/me/activity poll for total_price, session_id=', clientSessionId)
-
-    const check = async () => {
-      try {
-        const res = await fetch('/api/me/activity', { credentials: 'same-origin' })
-        if (!res.ok) return
-        const data = (await res.json()) as { sessions?: Array<{ total_price: number | null; updated_at?: string }> }
-        const enteredAt = screenTenEnteredAt.current
-        const hasPriceSubmitted = data.sessions?.some(
-          (s) =>
-            s.total_price != null &&
-            s.total_price > 0 &&
-            new Date(s.updated_at ?? 0).getTime() > enteredAt
-        )
-        if (hasPriceSubmitted) {
-          console.log('[lluna] polling: total_price found, redirecting')
-          clearInterval(id)
-          window.location.href = 'https://www.lluna.ai'
-        }
-      } catch {
-        // ignore network errors — next tick will retry
-      }
-    }
-
-    const id = setInterval(() => { void check() }, 10_000)
-
-    return () => clearInterval(id)
-  }, [state.screen, clientSessionId])
 
   const getActiveTab = () => {
     if (state.showClinicMenu) return "Clinic menu"
