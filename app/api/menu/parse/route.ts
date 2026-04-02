@@ -2,8 +2,7 @@ import * as XLSX from 'xlsx'
 import { parseMenuTextToDraft } from '@/lib/menu-file-parser'
 import { getMenuVisionAnthropicModel } from '@/lib/anthropic-model'
 import { extractTextFromPdf } from '@/lib/pdf-to-text'
-import { generateText, Output } from 'ai'
-import { z } from 'zod'
+import { generateText } from 'ai'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -112,26 +111,21 @@ export async function POST(req: Request) {
     }
   }
 
-  const menuSchema = z.object({
-    extractedText: z
-      .string()
-      .describe('Pipe-delimited menu rows: Treatment Name | Category | $Price | Description (one row per line).'),
-  })
-
   // Image path: send image bytes directly to gpt-4o-mini vision.
+  // Uses plain text output (not Output.object) — Azure API 2024-07-18 does not support
+  // response_format:json_schema. Plain pipe-delimited text is sufficient for parseMenuTextToDraft.
   const extractMenuFromImage = async (mimeType: string) => {
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item. No commentary.',
-      output: Output.object({ schema: menuSchema }),
+        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary.',
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Extract the entire menu. For each item, ensure the line contains: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
+              text: 'Extract the entire menu. For each item output: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
             },
             {
               type: 'image',
@@ -142,7 +136,7 @@ export async function POST(req: Request) {
         },
       ],
     })
-    return output.extractedText
+    return text.trim()
   }
 
   // Text path: used for PDFs after text extraction. No vision needed.
