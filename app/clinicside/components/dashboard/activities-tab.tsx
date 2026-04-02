@@ -1175,6 +1175,26 @@ export function ActivitiesTab() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Gift className="h-3 w-3" />
+                      Refer-a-friend bonus ($)
+                    </label>
+                    <span className="text-xs text-muted-foreground">{referAutoSaveText}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-8 w-24 text-sm"
+                      value={referBonus}
+                      onChange={(e) => setReferBonus(e.target.value)}
+                    />
+                    <span className="text-xs text-muted-foreground">Set $0 to hide referral rewards</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Subtitle (under clinic name)</label>
                   <Input
                     placeholder="e.g. Competitive pricing vs. other clinics in the area"
