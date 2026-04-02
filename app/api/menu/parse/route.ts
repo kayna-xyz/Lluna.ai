@@ -146,12 +146,15 @@ export async function POST(req: Request) {
   }
 
   // Text path: used for PDFs after text extraction. No vision needed.
+  // Deliberately avoids Output.object — Azure OpenAI API version 2024-07-18 does not
+  // support response_format:json_schema (requires 2024-08-01-preview or later).
+  // Plain text output works reliably across all API versions and is sufficient
+  // because parseMenuTextToDraft already handles pipe-delimited text.
   const extractMenuFromText = async (pdfText: string) => {
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item: Treatment Name | Category | $Price | Description. No commentary.',
-      output: Output.object({ schema: menuSchema }),
+        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item: Treatment Name | Category | $Price | Description. No JSON. No commentary. Each row on its own line.',
       messages: [
         {
           role: 'user',
@@ -159,7 +162,7 @@ export async function POST(req: Request) {
         },
       ],
     })
-    return output.extractedText
+    return text.trim()
   }
 
   // PDF: extract text with pdfjs-dist (pure JS, no system binaries, Vercel-compatible).
@@ -184,7 +187,14 @@ export async function POST(req: Request) {
       )
     }
 
-    const extractedText = await extractMenuFromText(pdfResult.text)
+    let extractedText: string
+    try {
+      extractedText = await extractMenuFromText(pdfResult.text)
+    } catch (e) {
+      console.error('[menu/parse] PDF AI extraction failed:', e)
+      return Response.json({ error: 'AI processing failed. Please try again or upload the menu as a CSV or image.' }, { status: 500 })
+    }
+
     return Response.json({
       text: extractedText,
       format: 'pdf',
