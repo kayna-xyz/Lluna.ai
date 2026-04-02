@@ -8,7 +8,8 @@ import { syncReportToBackend } from "@/lib/report-sync"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { MyPageScreen } from "@/components/consumer/my-page-screen"
 import { useState, useEffect, useRef, useCallback, createContext, useContext, useMemo } from "react"
-import type { PublicMenuActivity, PublicMenuTestimonial } from "@/lib/clinic-public-page"
+import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
+import { normalizeMdTeam } from "@/lib/clinic-public-page"
 import { Camera, Mic, Check, ChevronRight, ChevronLeft, Pencil, HelpCircle, X, ChevronDown, ChevronUp, Plus } from "lucide-react"
 
 type ClinicMenuTreatment = {
@@ -322,6 +323,10 @@ type ConsumerClinicUiValue = {
   activities: PublicMenuActivity[]
   testimonials: PublicMenuTestimonial[]
   referBonusUsd: number
+  clinicPhone: string
+  clinicWorkTime: string
+  logoUrl: string
+  mdTeam: PublicMdTeamMember[]
 }
 
 const ConsumerClinicUiContext = createContext<ConsumerClinicUiValue>({
@@ -330,6 +335,10 @@ const ConsumerClinicUiContext = createContext<ConsumerClinicUiValue>({
   activities: [],
   testimonials: [],
   referBonusUsd: 20,
+  clinicPhone: "",
+  clinicWorkTime: "",
+  logoUrl: "",
+  mdTeam: [],
 })
 
 interface PlanTreatment {
@@ -1602,7 +1611,7 @@ function ClinicMenuScreen({
   setTreatmentFilter: (v: 'popular' | 'price-low' | 'price-high' | 'comprehensive') => void
   clinicMenu: ClinicMenu | null
 }) {
-  const { tagline, activities, testimonials } = useContext(ConsumerClinicUiContext)
+  const { tagline, activities, testimonials, clinicPhone, clinicWorkTime, logoUrl, mdTeam } = useContext(ConsumerClinicUiContext)
   const [activityIndex, setActivityIndex] = useState(0)
   const [treatmentSearch, setTreatmentSearch] = useState("")
 
@@ -1678,6 +1687,20 @@ function ClinicMenuScreen({
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={clinicMenu?.clinicName || "Clinic"}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: `1px solid ${COLORS.border}`,
+                flexShrink: 0,
+              }}
+            />
+          ) : null}
           <div>
             <h1 style={{
               fontSize: 20,
@@ -1690,6 +1713,12 @@ function ClinicMenuScreen({
             </h1>
             {tagline ? (
               <p style={{ fontSize: 12, color: COLORS.success, margin: 0 }}>{tagline}</p>
+            ) : null}
+            {clinicPhone ? (
+              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 2 }}>{clinicPhone}</p>
+            ) : null}
+            {clinicWorkTime ? (
+              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{clinicWorkTime}</p>
             ) : null}
           </div>
         </div>
@@ -1791,60 +1820,79 @@ function ClinicMenuScreen({
         </div>
       </div>
       
-      {/* Popular Treatments Section */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ 
-          fontSize: 11, 
-          fontWeight: 500, 
-          letterSpacing: '0.1em', 
-          color: COLORS.muted,
-          marginBottom: 12 
-        }}>
-          POPULAR TREATMENTS
-        </p>
-        
-        <div className="hide-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-          {popularTreatmentsTop.length === 0 ? (
-            <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-              Upload your menu in the advisor portal to show treatments here.
-            </p>
-          ) : (
-            popularTreatmentsTop.map((treatment) => {
-              const pop = typeof (treatment as { popularity?: number }).popularity === 'number'
-                ? (treatment as { popularity?: number }).popularity
-                : null
-              return (
+      {/* MD Team Section */}
+      {mdTeam.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.1em',
+            color: COLORS.muted,
+            marginBottom: 12
+          }}>
+            MD TEAM
+          </p>
+          <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+            {mdTeam.map((member) => (
               <div
-                key={treatment.id}
+                key={member.id}
                 style={{
-                  minWidth: 140,
+                  minWidth: 160,
                   background: COLORS.bg,
                   borderRadius: 12,
-                  padding: 12,
-                  border: `1px solid ${COLORS.border}`
+                  padding: 14,
+                  border: `1px solid ${COLORS.border}`,
+                  flexShrink: 0,
                 }}
               >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt={member.name}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      marginBottom: 10,
+                      border: `1px solid ${COLORS.border}`,
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: COLORS.navBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 10,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: COLORS.accent,
+                  }}>
+                    {member.name.split(/\s+/).filter(Boolean).map((n: string) => n[0]).join('') || '?'}
+                  </div>
+                )}
                 <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: 'block' }}>
-                  {treatment.name}
+                  {member.name}
                 </span>
-                <span style={{ fontSize: 11, color: COLORS.muted, display: 'block', marginTop: 4 }}>
-                  {getPrimaryPriceLabel(treatment)}
-                </span>
-                <span style={{ 
-                  fontSize: 10, 
-                  color: COLORS.success, 
-                  display: 'block', 
-                  marginTop: 6,
-                  fontWeight: 500
-                }}>
-                  {pop != null ? `${pop}% popular` : 'Featured'}
-                </span>
+                {member.experience ? (
+                  <span style={{ fontSize: 11, color: COLORS.accent, display: 'block', marginTop: 2 }}>
+                    {member.experience}
+                  </span>
+                ) : null}
+                {member.about ? (
+                  <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 6, lineHeight: 1.4 }}>
+                    {member.about}
+                  </p>
+                ) : null}
               </div>
-            )
-            })
-          )}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Famous Visitors Section */}
       <div style={{ marginBottom: 24 }}>
@@ -2090,22 +2138,39 @@ function WelcomeScreen({
   onPrivacyClick: () => void
   clinicName: string
 }) {
+  const { logoUrl } = useContext(ConsumerClinicUiContext)
   return (
     <div style={{ paddingTop: 80, paddingBottom: 120, position: 'relative', minHeight: 'calc(100vh - 80px)' }}>
-      <div
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: '50%',
-          margin: '0 auto 16px',
-          background: `
-            repeating-linear-gradient(0deg, ${COLORS.border} 0px, ${COLORS.border} 4px, ${COLORS.navBg} 4px, ${COLORS.navBg} 8px),
-            repeating-linear-gradient(90deg, ${COLORS.border} 0px, ${COLORS.border} 4px, ${COLORS.navBg} 4px, ${COLORS.navBg} 8px)
-          `,
-          backgroundBlendMode: 'difference',
-        }}
-        aria-hidden
-      />
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={clinicName}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            objectFit: 'cover',
+            display: 'block',
+            margin: '0 auto 16px',
+            border: `1px solid ${COLORS.border}`,
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            margin: '0 auto 16px',
+            background: `
+              repeating-linear-gradient(0deg, ${COLORS.border} 0px, ${COLORS.border} 4px, ${COLORS.navBg} 4px, ${COLORS.navBg} 8px),
+              repeating-linear-gradient(90deg, ${COLORS.border} 0px, ${COLORS.border} 4px, ${COLORS.navBg} 4px, ${COLORS.navBg} 8px)
+            `,
+            backgroundBlendMode: 'difference',
+          }}
+          aria-hidden
+        />
+      )}
       <h1
         style={{
           fontSize: 28,
@@ -4073,7 +4138,11 @@ export default function LlunaApp({
     activities: PublicMenuActivity[]
     testimonials: PublicMenuTestimonial[]
     referBonusUsd: number
-  }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20 })
+    clinicPhone: string
+    clinicWorkTime: string
+    logoUrl: string
+    mdTeam: PublicMdTeamMember[]
+  }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [] })
   const [navTabs, setNavTabs] = useState<string[]>(() =>
     initialViaClinicLink ? ["Clinic menu", "Report", "My"] : ["My"],
   )
@@ -4262,6 +4331,34 @@ export default function LlunaApp({
       } catch {
         if (!cancelled) setClinicMenu(null)
       }
+      let phone = ""
+      let workTime = ""
+      let logoUrl = ""
+      let mdTeam: PublicMdTeamMember[] = []
+      try {
+        const infoRes = await fetch(`/api/clinic-info?${q}`)
+        const infoData = (await infoRes.json()) as {
+          info?: {
+            clinicPhone?: string
+            clinicWorkTime?: string
+            logoDataUrl?: string
+            mdTeam?: Array<{ id?: string; name?: string; about?: string; experience?: string; photoDataUrl?: string }>
+          }
+        }
+        if (infoRes.ok && infoData.info) {
+          phone = String(infoData.info.clinicPhone || "").trim()
+          workTime = String(infoData.info.clinicWorkTime || "").trim()
+          logoUrl = String(infoData.info.logoDataUrl || "").trim()
+          mdTeam = normalizeMdTeam(
+            (infoData.info.mdTeam ?? []).map((m) => ({
+              ...m,
+              photo_url: m.photoDataUrl || "",
+            }))
+          )
+        }
+      } catch {
+        /* clinic info optional */
+      }
       try {
         const settingsRes = await fetch(`/api/clinic-settings?${q}`)
         const settingsData = (await settingsRes.json()) as {
@@ -4285,6 +4382,10 @@ export default function LlunaApp({
               ? settingsData.publicTestimonials
               : [],
             referBonusUsd: bonus,
+            clinicPhone: phone,
+            clinicWorkTime: workTime,
+            logoUrl,
+            mdTeam,
           })
         }
       } catch {
@@ -4303,6 +4404,10 @@ export default function LlunaApp({
       activities: clinicPublicUi.activities,
       testimonials: clinicPublicUi.testimonials,
       referBonusUsd: clinicPublicUi.referBonusUsd,
+      clinicPhone: clinicPublicUi.clinicPhone,
+      clinicWorkTime: clinicPublicUi.clinicWorkTime,
+      logoUrl: clinicPublicUi.logoUrl,
+      mdTeam: clinicPublicUi.mdTeam,
     }),
     [clinicMenu?.clinicName, clinicPublicUi],
   )
