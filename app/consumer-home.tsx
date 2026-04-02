@@ -4087,13 +4087,16 @@ export default function LlunaApp({
   const [clientSessionId, setClientSessionId] = useState('')
   const [clinicSlug, setClinicSlug] = useState('default')
 
-  // 45-minute session timeout — redirect to lluna.ai regardless of state
+  // 45-minute timeout starting from when the report is shown (screen 10).
+  // Previously started on mount, which caused early redirects if the user
+  // spent a long time filling the intake form before reaching the report.
   useEffect(() => {
+    if (state.screen !== 10) return
     const id = setTimeout(() => {
       window.location.href = 'https://www.lluna.ai'
     }, 45 * 60 * 1000)
     return () => clearTimeout(id)
-  }, [])
+  }, [state.screen])
 
   useEffect(() => {
     try {
