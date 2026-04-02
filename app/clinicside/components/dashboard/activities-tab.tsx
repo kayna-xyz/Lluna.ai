@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Menu, Calendar, Sparkles, Loader2, Info, History, Check, Gift, Repeat, Plus, Trash2, Smartphone } from "lucide-react"
+import { Menu, Calendar, Sparkles, Loader2, Info, History, Check, Gift, Repeat, Plus, Trash2, Smartphone, Lock } from "lucide-react"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -726,17 +726,17 @@ export function ActivitiesTab() {
             <Menu className="h-3 w-3" />
             Clinic menu
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0">
-            <Sparkles className="h-3 w-3" />
-            Dynamic Pricing
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0">
-            <Calendar className="h-3 w-3" />
-            Campaigns
-          </TabsTrigger>
           <TabsTrigger value="info" className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0">
             <Info className="h-3 w-3" />
             Info
+          </TabsTrigger>
+          <TabsTrigger value="pricing" disabled className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 opacity-40 cursor-not-allowed">
+            <Lock className="h-3 w-3" />
+            Dynamic Pricing
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" disabled className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 opacity-40 cursor-not-allowed">
+            <Lock className="h-3 w-3" />
+            Campaigns
           </TabsTrigger>
         </TabsList>
 
@@ -1329,112 +1329,111 @@ export function ActivitiesTab() {
                     ))
                   )}
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => void savePublicMenuSettings()}>
-                  Save now
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm">Clinic Info</CardTitle>
-                <span className="text-xs text-muted-foreground">{autoSaveText}</span>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {loadingInfo && <p className="text-sm text-muted-foreground">Loading…</p>}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Clinic name</label>
-                    <Input value={clinicName} onChange={(e) => setClinicName(e.target.value)} placeholder="Your clinic name" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Telephone</label>
-                    <Input value={clinicPhone} onChange={(e) => setClinicPhone(e.target.value)} placeholder="Clinic phone" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Email</label>
-                    <Input value={clinicEmail} onChange={(e) => setClinicEmail(e.target.value)} placeholder="Clinic email" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Work time</label>
-                    <Input value={clinicWorkTime} onChange={(e) => setClinicWorkTime(e.target.value)} placeholder="e.g. Mon-Fri 9:00-18:00" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Google review link</label>
-                    <Input value={googleReviewLink} onChange={(e) => setGoogleReviewLink(e.target.value)} placeholder="https://..." />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Clinic logo (PNG/JPEG)</label>
-                  <Input type="file" accept="image/png,image/jpeg" onChange={(e) => void handleLogoSelect(e.target.files?.[0] || null)} />
-                  {logoDataUrl && (
-                    <img src={logoDataUrl} alt="Clinic logo" className="h-12 w-12 rounded border object-cover" />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm">MD Team</CardTitle>
-                <span className="text-xs text-muted-foreground">{autoSaveText}</span>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mdTeam.map((m) => (
-                  <div key={m.id} className="rounded-lg border p-3 space-y-2">
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <Input
-                        placeholder="MD name"
-                        value={m.name}
-                        onChange={(e) => setMdField(m.id, "name", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Experience (e.g. 8 years)"
-                        value={m.experience}
-                        onChange={(e) => setMdField(m.id, "experience", e.target.value)}
-                      />
+                <div className="pt-3 border-t space-y-3">
+                  <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                    Clinic info
+                    <span className="font-normal">{autoSaveText}</span>
+                  </span>
+                  {loadingInfo && <p className="text-xs text-muted-foreground">Loading…</p>}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Clinic name</label>
+                      <Input className="h-9 text-sm" value={clinicName} onChange={(e) => setClinicName(e.target.value)} placeholder="Your clinic name" />
                     </div>
-                    <Textarea
-                      placeholder="About this MD"
-                      value={m.about}
-                      onChange={(e) => setMdField(m.id, "about", e.target.value)}
-                      className="min-h-[72px] resize-none"
-                    />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground min-w-fit">Upload avatar</span>
-                      <Input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={(e) => void handleMdPhotoSelect(m.id, e.target.files?.[0] || null)}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setMdTeam((rows) => rows.filter((x) => x.id !== m.id))}
-                        disabled={mdTeam.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Telephone</label>
+                      <Input className="h-9 text-sm" value={clinicPhone} onChange={(e) => setClinicPhone(e.target.value)} placeholder="Clinic phone" />
                     </div>
-                    {m.photoDataUrl && (
-                      <img src={m.photoDataUrl} alt={m.name || "MD"} className="h-14 w-14 rounded border object-cover" />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Email</label>
+                      <Input className="h-9 text-sm" value={clinicEmail} onChange={(e) => setClinicEmail(e.target.value)} placeholder="Clinic email" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Work time</label>
+                      <Input className="h-9 text-sm" value={clinicWorkTime} onChange={(e) => setClinicWorkTime(e.target.value)} placeholder="e.g. Mon-Fri 9:00-18:00" />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground">Google review link</label>
+                      <Input className="h-9 text-sm" value={googleReviewLink} onChange={(e) => setGoogleReviewLink(e.target.value)} placeholder="https://..." />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Clinic logo (PNG/JPEG)</label>
+                    <Input type="file" accept="image/png,image/jpeg" onChange={(e) => void handleLogoSelect(e.target.files?.[0] || null)} />
+                    {logoDataUrl && (
+                      <img src={logoDataUrl} alt="Clinic logo" className="h-12 w-12 rounded border object-cover" />
                     )}
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    setMdTeam((rows) => [
-                      ...rows,
-                      { id: `md_${Date.now()}_${rows.length}`, name: "", about: "", experience: "", photoDataUrl: "" },
-                    ])
-                  }
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add MD
+                </div>
+
+                <div className="pt-3 border-t space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">MD team</span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() =>
+                        setMdTeam((rows) => [
+                          ...rows,
+                          { id: `md_${Date.now()}_${rows.length}`, name: "", about: "", experience: "", photoDataUrl: "" },
+                        ])
+                      }
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add MD
+                    </Button>
+                  </div>
+                  {mdTeam.map((m) => (
+                    <div key={m.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Input
+                          placeholder="MD name"
+                          className="h-8 text-sm"
+                          value={m.name}
+                          onChange={(e) => setMdField(m.id, "name", e.target.value)}
+                        />
+                        <Input
+                          placeholder="Experience (e.g. 8 years)"
+                          className="h-8 text-sm"
+                          value={m.experience}
+                          onChange={(e) => setMdField(m.id, "experience", e.target.value)}
+                        />
+                      </div>
+                      <Textarea
+                        placeholder="About this MD"
+                        value={m.about}
+                        onChange={(e) => setMdField(m.id, "about", e.target.value)}
+                        className="min-h-[72px] resize-none text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground min-w-fit">Photo</span>
+                        <Input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          onChange={(e) => void handleMdPhotoSelect(m.id, e.target.files?.[0] || null)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => setMdTeam((rows) => rows.filter((x) => x.id !== m.id))}
+                          disabled={mdTeam.length <= 1}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {m.photoDataUrl && (
+                        <img src={m.photoDataUrl} alt={m.name || "MD"} className="h-14 w-14 rounded border object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Button type="button" variant="outline" size="sm" onClick={() => { void savePublicMenuSettings(); void saveClinicInfo() }}>
+                  Save now
                 </Button>
               </CardContent>
             </Card>
