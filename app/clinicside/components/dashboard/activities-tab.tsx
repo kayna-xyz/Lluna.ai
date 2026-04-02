@@ -497,22 +497,24 @@ export function ActivitiesTab() {
     })()
   }, [])
 
-  const readImageAsDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(String(reader.result || ""))
-      reader.onerror = () => reject(new Error("read failed"))
-      reader.readAsDataURL(file)
-    })
-
   const handleLogoSelect = async (file: File | null) => {
     if (!file) return
-    if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
-      toast.error("Logo must be PNG or JPEG")
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      toast.error("Logo must be PNG, JPEG, or WebP")
       return
     }
-    const dataUrl = await readImageAsDataUrl(file)
-    setLogoDataUrl(dataUrl)
+    try {
+      const fd = new FormData()
+      fd.set("file", file)
+      fd.set("kind", "logo")
+      const res = await clinicFetch("/api/clinic-branding-asset", { method: "POST", body: fd })
+      const data = (await res.json().catch(() => ({}))) as { publicUrl?: string; error?: string }
+      if (!res.ok) throw new Error(data.error || "upload failed")
+      if (!data.publicUrl) throw new Error("missing publicUrl")
+      setLogoDataUrl(data.publicUrl)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Logo upload failed")
+    }
   }
 
   const setMdField = (id: string, key: "name" | "about" | "experience" | "photoDataUrl", value: string) => {
@@ -521,12 +523,23 @@ export function ActivitiesTab() {
 
   const handleMdPhotoSelect = async (id: string, file: File | null) => {
     if (!file) return
-    if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
-      toast.error("MD photo must be PNG or JPEG")
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      toast.error("Photo must be PNG, JPEG, or WebP")
       return
     }
-    const dataUrl = await readImageAsDataUrl(file)
-    setMdField(id, "photoDataUrl", dataUrl)
+    try {
+      const fd = new FormData()
+      fd.set("file", file)
+      fd.set("kind", "md")
+      fd.set("mdMemberId", id)
+      const res = await clinicFetch("/api/clinic-branding-asset", { method: "POST", body: fd })
+      const data = (await res.json().catch(() => ({}))) as { publicUrl?: string; error?: string }
+      if (!res.ok) throw new Error(data.error || "upload failed")
+      if (!data.publicUrl) throw new Error("missing publicUrl")
+      setMdField(id, "photoDataUrl", data.publicUrl)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Photo upload failed")
+    }
   }
 
   const saveClinicInfo = async (opts?: { silent?: boolean }) => {

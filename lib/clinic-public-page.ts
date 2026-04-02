@@ -48,3 +48,29 @@ export function normalizeTestimonials(raw: unknown): PublicMenuTestimonial[] {
     })
     .filter(Boolean) as PublicMenuTestimonial[]
 }
+
+/** Stored in `clinic_settings.public_md_team` (photo_url = Storage public URL). */
+export type PublicMdTeamMember = {
+  id: string
+  name: string
+  about: string
+  experience: string
+  photo_url: string
+}
+
+export function normalizeMdTeam(raw: unknown): PublicMdTeamMember[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((x, idx) => {
+      if (!x || typeof x !== 'object') return null
+      const o = x as Record<string, unknown>
+      const id = String(o.id || '').trim() || `md_${idx}`
+      const name = String(o.name || '').trim()
+      const about = String(o.about || '').trim()
+      const experience = String(o.experience || '').trim()
+      const photo_url = String(o.photo_url || o.photoUrl || '').trim()
+      if (!name && !about && !experience && !photo_url) return null
+      return { id, name, about, experience, photo_url }
+    })
+    .filter(Boolean) as PublicMdTeamMember[]
+}

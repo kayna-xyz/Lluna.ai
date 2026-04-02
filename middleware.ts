@@ -8,9 +8,9 @@ function clinicsideAuthBypassed(): boolean {
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = supabase
+    ? (await supabase.auth.getUser()).data.user
+    : null
 
   const { pathname, searchParams } = request.nextUrl
   const clinic = searchParams.get('clinic') || searchParams.get('clinicSlug') || ''

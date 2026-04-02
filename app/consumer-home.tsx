@@ -321,6 +321,7 @@ type ConsumerClinicUiValue = {
   tagline: string | null
   activities: PublicMenuActivity[]
   testimonials: PublicMenuTestimonial[]
+  referBonusUsd: number
 }
 
 const ConsumerClinicUiContext = createContext<ConsumerClinicUiValue>({
@@ -328,6 +329,7 @@ const ConsumerClinicUiContext = createContext<ConsumerClinicUiValue>({
   tagline: null,
   activities: [],
   testimonials: [],
+  referBonusUsd: 20,
 })
 
 interface PlanTreatment {
@@ -3056,6 +3058,7 @@ function ProfileScreen({
   clinicSlug: string
 }) {
   const [reportLoading, setReportLoading] = useState(false)
+  const { referBonusUsd } = useContext(ConsumerClinicUiContext)
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -3136,7 +3139,7 @@ function ProfileScreen({
             style={inputStyle}
           />
           <p style={{ fontSize: 11, color: COLORS.muted, marginTop: 4 }}>
-            A friend's number - you will both get $20 off
+            {`A friend's number — you will both get $${Math.round(referBonusUsd)} off`}
           </p>
         </div>
       </div>
@@ -4069,7 +4072,8 @@ export default function LlunaApp({
     tagline: string | null
     activities: PublicMenuActivity[]
     testimonials: PublicMenuTestimonial[]
-  }>({ tagline: null, activities: [], testimonials: [] })
+    referBonusUsd: number
+  }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20 })
   const [navTabs, setNavTabs] = useState<string[]>(() =>
     initialViaClinicLink ? ["Clinic menu", "Report", "My"] : ["My"],
   )
@@ -4264,9 +4268,14 @@ export default function LlunaApp({
           tagline?: string | null
           publicActivities?: PublicMenuActivity[]
           publicTestimonials?: PublicMenuTestimonial[]
+          referBonusUsd?: number
           error?: string
         }
         if (!cancelled && !settingsData.error) {
+          const bonus =
+            typeof settingsData.referBonusUsd === 'number' && Number.isFinite(settingsData.referBonusUsd)
+              ? Math.max(0, settingsData.referBonusUsd)
+              : 20
           setClinicPublicUi({
             tagline: settingsData.tagline ?? null,
             activities: Array.isArray(settingsData.publicActivities)
@@ -4275,6 +4284,7 @@ export default function LlunaApp({
             testimonials: Array.isArray(settingsData.publicTestimonials)
               ? settingsData.publicTestimonials
               : [],
+            referBonusUsd: bonus,
           })
         }
       } catch {
@@ -4292,6 +4302,7 @@ export default function LlunaApp({
       tagline: clinicPublicUi.tagline,
       activities: clinicPublicUi.activities,
       testimonials: clinicPublicUi.testimonials,
+      referBonusUsd: clinicPublicUi.referBonusUsd,
     }),
     [clinicMenu?.clinicName, clinicPublicUi],
   )
