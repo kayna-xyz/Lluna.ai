@@ -1,15 +1,6 @@
 import type { Metadata } from 'next'
-import { Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-  variable: '--font-instrument-serif',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Lluna AI - The Smarter Way to Approach Aesthetic Medicine',
@@ -40,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={instrumentSerif.variable}>
+    <html lang="en">
       <body className="font-sans antialiased">
         {children}
         <Analytics />

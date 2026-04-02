@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
+import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -33,6 +34,12 @@ type MenuTreatment = {
 type FullMenu = { clinicName: string; treatments: MenuTreatment[] }
 
 const MAX_MENU_IMPORT_BYTES = 50 * 1024 * 1024
+const MAX_MENU_PDF_BYTES = 10 * 1024 * 1024
+
+function sanitizeUploadFilename(name: string): string {
+  const trimmed = name.trim() || "upload"
+  return trimmed.replace(/[^a-zA-Z0-9._-]+/g, "-")
+}
 
 export function ClinicMenuAdmin({
   onAppendPricingHistory,
@@ -43,6 +50,7 @@ export function ClinicMenuAdmin({
   const [saving, setSaving] = useState(false)
   const [menuJson, setMenuJson] = useState("")
   const [working, setWorking] = useState<FullMenu | null>(null)
+  const [clinicId, setClinicId] = useState<string | null>(null)
 
   const [expandedTreatmentId, setExpandedTreatmentId] = useState<string | null>(null)
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null)
@@ -138,6 +146,7 @@ export function ClinicMenuAdmin({
       const res = await clinicFetch("/api/menu")
       const data = await res.json()
       const m = data.menu as FullMenu
+      setClinicId(typeof data.clinicId === "string" ? data.clinicId : null)
       setWorking(m)
       setMenuJson(JSON.stringify(m, null, 2))
     } catch {
@@ -240,12 +249,24 @@ export function ClinicMenuAdmin({
   }
 
   const importFile = async (file: File) => {
+    const lowerName = (file.name || "").toLowerCase()
+    const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf"
+
+    if (isPdf && file.size > MAX_MENU_PDF_BYTES) {
+      toast.error("PDF too large. Maximum upload size is 10MB.")
+      return
+    }
+
     if (file.size > MAX_MENU_IMPORT_BYTES) {
       toast.error("File too large. Maximum upload size is 50MB.")
       return
     }
 
-    const lowerName = (file.name || "").toLowerCase()
+    if (!clinicId) {
+      toast.error("Missing clinic context")
+      return
+    }
+
     const likelyClaudeExtraction =
       lowerName.endsWith(".pdf") || /\.(png|jpe?g|webp)$/.test(lowerName)
 
@@ -264,10 +285,34 @@ export function ClinicMenuAdmin({
       }, 6000)
     }
 
-    const fd = new FormData()
-    fd.set("file", file)
     try {
-      const res = await clinicFetch("/api/menu/parse", { method: "POST", body: fd })
+      const supabase = getBrowserSupabase()
+      if (!supabase) {
+        throw new Error("Supabase is not configured in the browser")
+      }
+
+      const safeName = sanitizeUploadFilename(file.name || "upload")
+      const objectPath = `${clinicId}/${Date.now()}-${safeName}`
+      const { error: uploadError } = await supabase.storage.from("menus").upload(objectPath, file, {
+        cacheControl: "3600",
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      })
+      if (uploadError) {
+        throw new Error(uploadError.message)
+      }
+
+      const { data: publicUrlData } = supabase.storage.from("menus").getPublicUrl(objectPath)
+      const fileUrl = publicUrlData.publicUrl
+      if (!fileUrl) {
+        throw new Error("Failed to get uploaded file URL")
+      }
+
+      const res = await clinicFetch("/api/menu/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, clinicId }),
+      })
       const data = await res.json()
       if (!res.ok) {
         stopProgressTimer()
@@ -343,7 +388,7 @@ export function ClinicMenuAdmin({
           setImportResultText(null)
         }, 1200)
       }
-    } catch {
+    } catch (e) {
       stopProgressTimer()
       if (tipTimeoutRef.current) {
         clearTimeout(tipTimeoutRef.current)
@@ -357,7 +402,7 @@ export function ClinicMenuAdmin({
       setImportProgress(0)
       setImportTip(null)
       setImportResultText(null)
-      toast.error("Upload failed")
+      toast.error(e instanceof Error ? e.message : "Upload failed")
     }
   }
 

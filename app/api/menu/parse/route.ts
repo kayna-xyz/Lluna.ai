@@ -2,56 +2,124 @@ import * as XLSX from 'xlsx'
 import { parseMenuTextToDraft } from '@/lib/menu-file-parser'
 import { getMenuVisionAnthropicModel } from '@/lib/anthropic-model'
 import { extractTextFromPdf } from '@/lib/pdf-to-text'
+import { getServiceSupabase } from '@/lib/supabase/admin'
+import { resolveClinicForRequest } from '@/lib/tenant'
 import { generateText } from 'ai'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+const MAX_FETCH_BYTES = 50 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
 function bufToUtf8(buf: Buffer): string {
   return buf.toString('utf8').replace(/^\uFEFF/, '')
 }
 
-function getFileName(file: File): string {
-  return typeof file.name === 'string' && file.name.trim() ? file.name : 'upload'
+function getFileNameFromUrl(fileUrl: string): string {
+  try {
+    const pathname = new URL(fileUrl).pathname
+    const last = pathname.split('/').filter(Boolean).pop()
+    return last ? decodeURIComponent(last) : 'upload'
+  } catch {
+    return 'upload'
+  }
 }
 
-function isPdfUpload(file: File, lowerName: string): boolean {
-  return lowerName.endsWith('.pdf') || file.type === 'application/pdf'
+function isPdfUpload(contentType: string, lowerName: string): boolean {
+  return lowerName.endsWith('.pdf') || contentType === 'application/pdf'
 }
 
-function isImageUpload(file: File, lowerName: string): boolean {
-  return /\.(png|jpe?g|webp)$/i.test(lowerName) || SUPPORTED_IMAGE_TYPES.has(file.type)
+function isImageUpload(contentType: string, lowerName: string): boolean {
+  return /\.(png|jpe?g|webp)$/i.test(lowerName) || SUPPORTED_IMAGE_TYPES.has(contentType)
 }
 
-async function readUploadedFile(file: File): Promise<Buffer> {
-  const arrayBuffer = await file.arrayBuffer()
-  return Buffer.from(arrayBuffer)
+function isAllowedRemoteUrl(fileUrl: string): boolean {
+  try {
+    const url = new URL(fileUrl)
+    return url.protocol === 'https:' || url.hostname === 'localhost'
+  } catch {
+    return false
+  }
+}
+
+function parseMenusStoragePath(fileUrl: string): string | null {
+  try {
+    const pathname = new URL(fileUrl).pathname
+    const marker = '/storage/v1/object/public/menus/'
+    const index = pathname.indexOf(marker)
+    if (index === -1) return null
+    const raw = pathname.slice(index + marker.length).replace(/^\/+/, '')
+    return raw ? decodeURIComponent(raw) : null
+  } catch {
+    return null
+  }
+}
+
+async function fetchRemoteFile(fileUrl: string): Promise<{ buf: Buffer; contentType: string; contentLength: number | null }> {
+  const response = await fetch(fileUrl, { cache: 'no-store' })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file: ${response.status}`)
+  }
+
+  const contentType = (response.headers.get('content-type') || '').split(';')[0]?.trim().toLowerCase() || ''
+  const contentLengthHeader = response.headers.get('content-length')
+  const contentLength =
+    contentLengthHeader && /^\d+$/.test(contentLengthHeader) ? Number(contentLengthHeader) : null
+
+  if (contentLength != null && contentLength > MAX_FETCH_BYTES) {
+    throw new Error(`File too large. Max upload size is ${Math.floor(MAX_FETCH_BYTES / (1024 * 1024))}MB.`)
+  }
+
+  const buf = Buffer.from(await response.arrayBuffer())
+  if (!buf.byteLength) {
+    throw new Error('Uploaded file is empty')
+  }
+  if (buf.byteLength > MAX_FETCH_BYTES) {
+    throw new Error(`File too large. Max upload size is ${Math.floor(MAX_FETCH_BYTES / (1024 * 1024))}MB.`)
+  }
+
+  return { buf, contentType, contentLength }
 }
 
 export async function POST(req: Request) {
-  const form = await req.formData().catch(() => null)
-  const file = form?.get('file')
-  if (!file || !(file instanceof File)) {
-    return Response.json({ error: 'file field required' }, { status: 400 })
+  const body = (await req.json().catch(() => null)) as { fileUrl?: unknown; clinicId?: unknown; clinicSlug?: unknown } | null
+  const fileUrl = typeof body?.fileUrl === 'string' ? body.fileUrl.trim() : ''
+  if (!fileUrl) {
+    return Response.json({ error: 'fileUrl required' }, { status: 400 })
+  }
+  if (!isAllowedRemoteUrl(fileUrl)) {
+    return Response.json({ error: 'Invalid fileUrl' }, { status: 400 })
   }
 
-  if (file.size <= 0) {
-    return Response.json({ error: 'Uploaded file is empty' }, { status: 400 })
+  const supabase = getServiceSupabase()
+  if (supabase) {
+    const tenant = await resolveClinicForRequest(supabase, req, (body || {}) as Record<string, unknown>)
+    if (!tenant.ok) {
+      return Response.json({ error: tenant.error }, { status: tenant.status })
+    }
+    const storagePath = parseMenusStoragePath(fileUrl)
+    if (!storagePath) {
+      return Response.json({ error: 'fileUrl must point to the public menus bucket' }, { status: 400 })
+    }
+    const storagePrefix = storagePath.split('/').filter(Boolean)[0] || ''
+    if (storagePrefix !== tenant.clinic.id) {
+      return Response.json({ error: 'fileUrl does not belong to this clinic' }, { status: 403 })
+    }
   }
 
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return Response.json(
-      { error: `File too large. Max upload size is ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))}MB.` },
-      { status: 413 },
-    )
+  let remoteFile
+  try {
+    remoteFile = await fetchRemoteFile(fileUrl)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const status = msg.includes('File too large') ? 413 : 400
+    return Response.json({ error: msg }, { status })
   }
 
-  const name = getFileName(file)
+  const name = getFileNameFromUrl(fileUrl)
   const lower = name.toLowerCase()
-  const buf = await readUploadedFile(file)
+  const { buf, contentType } = remoteFile
 
   // CSV: treat as spreadsheet for more reliable parsing (Excel exports often include quotes/commas).
   if (lower.endsWith('.csv')) {
@@ -192,7 +260,7 @@ export async function POST(req: Request) {
   // PDF: extract text with pdfjs-dist (pure JS, no system binaries, Vercel-compatible).
   // Works for text-based PDFs (Word, InDesign exports). For scanned/image-only PDFs,
   // ask the user to upload a PNG/JPG screenshot instead.
-  if (isPdfUpload(file, lower)) {
+  if (isPdfUpload(contentType, lower)) {
     let pdfResult
     try {
       pdfResult = await extractTextFromPdf(buf)
@@ -227,13 +295,13 @@ export async function POST(req: Request) {
     })
   }
 
-  if (isImageUpload(file, lower)) {
+  if (isImageUpload(contentType, lower)) {
     let extractedText: string
     try {
       extractedText = await extractMenuFromImage(
-        file.type === 'image/png' || lower.endsWith('.png')
+        contentType === 'image/png' || lower.endsWith('.png')
           ? 'image/png'
-          : file.type === 'image/webp' || lower.endsWith('.webp')
+          : contentType === 'image/webp' || lower.endsWith('.webp')
             ? 'image/webp'
             : 'image/jpeg',
       )
