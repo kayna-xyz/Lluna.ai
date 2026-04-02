@@ -31,16 +31,8 @@ export function HeroSection() {
     };
   }, []);
 
-  const handleStart = async () => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    setLoading(true);
-    const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
-    callbackUrl.searchParams.set("role", "consumer");
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl.toString() },
-    });
+  const handleStart = () => {
+    alert("Currently only available for enterprises.");
   };
 
   const handleEnterprise = () => {
