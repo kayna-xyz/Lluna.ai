@@ -1,5 +1,4 @@
 import { getServiceSupabase } from '@/lib/supabase/admin'
-import { getAuthSupabase } from '@/lib/supabase/server-auth'
 import { resolveClinicForRequest } from '@/lib/tenant'
 
 function mergeReportData(
@@ -15,12 +14,6 @@ export async function POST(req: Request) {
   if (!supabase) {
     return Response.json({ error: 'Supabase not configured' }, { status: 503 })
   }
-
-  const authSb = await getAuthSupabase()
-  const {
-    data: { user: authUser },
-  } = await authSb.auth.getUser()
-  const authUserId = authUser?.id ?? null
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
@@ -81,7 +74,6 @@ export async function POST(req: Request) {
       .update({
         report_data,
         total_price,
-        ...(authUserId ? { auth_user_id: authUserId } : {}),
       })
       .eq('clinic_id', clinicId)
       .eq('session_id', sessionId)
@@ -95,7 +87,6 @@ export async function POST(req: Request) {
       session_id: sessionId,
       report_data,
       total_price,
-      ...(authUserId ? { auth_user_id: authUserId } : {}),
     })
     if (ins) {
       console.error('final-solution insert clients', ins)
