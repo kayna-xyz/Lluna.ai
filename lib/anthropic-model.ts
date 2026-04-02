@@ -1,20 +1,41 @@
-import { anthropic } from '@ai-sdk/anthropic'
+import { createAzure } from '@ai-sdk/azure'
 
 /**
- * Single place to configure the Anthropic model for all `/api/*` AI routes.
+ * Azure OpenAI client for all `/api/*` AI routes.
+ * Replaces the previous @ai-sdk/anthropic provider — function names kept identical
+ * so no API route changes are required.
  *
- * Default: Claude Sonnet 4.6 (`claude-sonnet-4-6`). Override with `ANTHROPIC_MODEL` if needed.
- *
- * @see https://docs.claude.com/en/docs/about-claude/models/overview
+ * Required environment variables:
+ *   AZURE_OPENAI_ENDPOINT    — e.g. https://your-resource.openai.azure.com
+ *   AZURE_OPENAI_API_KEY     — Azure OpenAI API key
+ *   AZURE_OPENAI_DEPLOYMENT  — deployment name, e.g. gpt-4o-mini
+ *   AZURE_OPENAI_API_VERSION — API version, e.g. 2024-07-18
  */
-export function getLlunaAnthropicModel() {
-  const id = process.env.ANTHROPIC_MODEL?.trim() || 'claude-sonnet-4-6'
-  return anthropic(id)
+function getAzureModel() {
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT?.trim() || ''
+  const apiKey = process.env.AZURE_OPENAI_API_KEY?.trim() || ''
+  const apiVersion = process.env.AZURE_OPENAI_API_VERSION?.trim() || '2024-07-18'
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT?.trim() || 'gpt-4o-mini'
+
+  // Extract resource name from endpoint URL.
+  // e.g. https://lluna.openai.azure.com  →  resourceName = 'lluna'
+  let resourceName = ''
+  try {
+    resourceName = new URL(endpoint).hostname.split('.')[0]
+  } catch {
+    console.error('[AI] AZURE_OPENAI_ENDPOINT is not a valid URL:', endpoint)
+  }
+
+  const azure = createAzure({ resourceName, apiKey, apiVersion })
+  return azure(deployment)
 }
 
-/** PDF / image menu extraction in `/api/menu/parse` only. Default: Claude Sonnet 4.6. */
+/** Used by: recommend, consultant-brief, align-final-plan, sales-methodology. */
+export function getLlunaAnthropicModel() {
+  return getAzureModel()
+}
+
+/** Used by: menu/parse (image extraction). Same deployment as default model. */
 export function getMenuVisionAnthropicModel() {
-  const id =
-    process.env.ANTHROPIC_MENU_VISION_MODEL?.trim() || 'claude-sonnet-4-6'
-  return anthropic(id)
+  return getAzureModel()
 }

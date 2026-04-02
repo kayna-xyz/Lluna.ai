@@ -121,7 +121,7 @@ export async function POST(req: Request) {
     const { output } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from an uploaded document image/PDF. Output ONLY pipe-delimited rows, one per menu item. No commentary.',
+        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item. No commentary.',
       output: Output.object({ schema: extractedSchema }),
       messages: [
         {
@@ -133,10 +133,11 @@ export async function POST(req: Request) {
                 'Extract the entire menu. For each item, ensure the line contains: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
             },
             {
-              type: 'file',
-              data: buf,
-              mediaType: mimeType,
-              filename: name,
+              // 'image' is the correct content type for Azure OpenAI / OpenAI-compatible providers.
+              // Anthropic used 'file' with mediaType; Azure uses 'image' with mimeType.
+              type: 'image',
+              image: buf,
+              mimeType: mimeType,
             },
           ],
         },
@@ -146,13 +147,17 @@ export async function POST(req: Request) {
     return output.extractedText
   }
 
+  // PDF is not supported by Azure OpenAI (gpt-4o-mini does not accept raw PDF inputs).
+  // Anthropic's Claude natively supported PDFs; Azure OpenAI requires image or text input.
+  // Workaround: convert the PDF to an image before uploading, or use CSV/XLSX/TXT format.
   if (lower.endsWith('.pdf')) {
-    const extractedText = await extractMenuWithAI('application/pdf')
-    return Response.json({
-      text: extractedText,
-      format: 'pdf',
-      draftMenu: parseMenuTextToDraft(extractedText),
-    })
+    return Response.json(
+      {
+        error:
+          'PDF upload is not supported with the current AI provider. Please upload an image (PNG, JPG, WebP) or a spreadsheet (CSV, XLSX) instead.',
+      },
+      { status: 415 },
+    )
   }
 
   if (/\.(png|jpe?g|webp)$/i.test(lower)) {
