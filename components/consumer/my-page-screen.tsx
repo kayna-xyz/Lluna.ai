@@ -123,7 +123,7 @@ export function MyPageScreen() {
   const showFullFootprint = !entryViaQr
 
   return (
-    <div lang="en" style={{ paddingTop: 88, paddingBottom: 80, maxWidth: 520, margin: "0 auto" }}>
+    <div lang="en" className="md:!max-w-[720px] md:px-8" style={{ paddingTop: 88, paddingBottom: 80, maxWidth: 520, margin: "0 auto" }}>
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: COLORS.muted, margin: "0 0 8px" }}>
         MY
       </p>
@@ -140,6 +140,13 @@ export function MyPageScreen() {
         <p style={{ fontSize: 13, color: "#b45309" }}>{error}</p>
       ) : null}
 
+      {visits.length === 0 && sessions.length === 0 ? (
+        <p style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, margin: 0 }}>
+          Start your journey with clinics partnered with Lluna to unlock your life-long AI aesthetic facial consultant
+        </p>
+      ) : (
+      <>
+
       <section style={{ marginBottom: 28 }}>
         <p
           style={{
@@ -153,11 +160,7 @@ export function MyPageScreen() {
         >
           Visited clinics
         </p>
-        {visits.length === 0 ? (
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-            No visits yet. Scanning a clinic QR while signed in will record a visit.
-          </p>
-        ) : (
+        {visits.length === 0 ? null : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             {visits.map((v) => (
               <li
@@ -232,6 +235,9 @@ export function MyPageScreen() {
           </ul>
         )}
       </section>
+
+      </>
+      )}
 
       <div style={{ marginTop: 36, paddingTop: 24, borderTop: `1px solid ${COLORS.border}` }}>
         <button

@@ -4087,6 +4087,14 @@ export default function LlunaApp({
   const [clientSessionId, setClientSessionId] = useState('')
   const [clinicSlug, setClinicSlug] = useState('default')
 
+  // 45-minute session timeout — redirect to lluna.ai regardless of state
+  useEffect(() => {
+    const id = setTimeout(() => {
+      window.location.href = 'https://www.lluna.ai'
+    }, 45 * 60 * 1000)
+    return () => clearTimeout(id)
+  }, [])
+
   useEffect(() => {
     try {
       syncConsumerClinicLinkSession()
@@ -4396,6 +4404,74 @@ export default function LlunaApp({
       client.removeChannel(channel)
     }
   }, [clientSessionId, clinicSlug, hasFullConsumerUi])
+
+  // Realtime probe (debug only — service role writes bypass realtime publication)
+  useEffect(() => {
+    if (state.screen !== 10 || !clientSessionId.trim()) return
+    const supabase = getBrowserSupabase()
+    if (!supabase) return
+    console.log('[lluna] realtime probe: subscribing to clients, session_id=', clientSessionId)
+
+    const channel = supabase
+      .channel(`client-price-${clientSessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'clients',
+          filter: `session_id=eq.${clientSessionId}`,
+        },
+        (payload) => {
+          console.log('[lluna] realtime payload received:', payload)
+          const updated = payload.new as { total_price?: number | null }
+          const previous = payload.old as { total_price?: number | null }
+          if (
+            updated.total_price != null &&
+            (previous.total_price == null || previous.total_price === 0)
+          ) {
+            console.log('[lluna] realtime: total_price set, redirecting')
+            window.location.href = 'https://www.lluna.ai'
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[lluna] realtime channel status:', status)
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [state.screen, clientSessionId])
+
+  // Polling: redirect to lluna.ai when clinic advisor submits total_price
+  // (service role writes don't trigger realtime, so polling is the reliable path)
+  useEffect(() => {
+    if (state.screen !== 10 || !clientSessionId.trim()) return
+    console.log('[lluna] polling: starting /api/me/activity poll for total_price, session_id=', clientSessionId)
+
+    const check = async () => {
+      try {
+        const res = await fetch('/api/me/activity', { credentials: 'same-origin' })
+        if (!res.ok) return
+        const data = (await res.json()) as { sessions?: Array<{ total_price: number | null }> }
+        const hasPriceSubmitted = data.sessions?.some(
+          (s) => s.total_price != null && s.total_price > 0
+        )
+        if (hasPriceSubmitted) {
+          console.log('[lluna] polling: total_price found, redirecting')
+          clearInterval(id)
+          window.location.href = 'https://www.lluna.ai'
+        }
+      } catch {
+        // ignore network errors — next tick will retry
+      }
+    }
+
+    const id = setInterval(() => { void check() }, 10_000)
+
+    return () => clearInterval(id)
+  }, [state.screen, clientSessionId])
 
   const getActiveTab = () => {
     if (state.showClinicMenu) return "Clinic menu"
