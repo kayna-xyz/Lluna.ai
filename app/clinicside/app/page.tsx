@@ -12,7 +12,7 @@ import {
   TopReferrersSection,
 } from "../components/dashboard/report-tab"
 import { ReferralMemo } from "../components/dashboard/referral-memo"
-import { ClinicQrCard } from "../components/dashboard/clinic-qr-card"
+
 import { type Client } from "../lib/data"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { ensureStaffClinicSlug } from "@/app/clinicside/lib/ensure-staff-clinic"
@@ -191,9 +191,6 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">
                   {dbClients.length} clients (Supabase)
                 </p>
-              </div>
-              <div className="mb-6">
-                <ClinicQrCard />
               </div>
               <div className="rounded-lg border bg-card">
                 <ClientTable

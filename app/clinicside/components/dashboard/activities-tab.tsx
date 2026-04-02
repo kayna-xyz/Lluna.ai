@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ClinicMenuAdmin } from "./clinic-menu-admin"
+import { ClinicQrCard } from "./clinic-qr-card"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { PER_VISIT_PRICING_ROWS } from "../../lib/per-visit-tier"
 import type { PublicMenuActivity, PublicMenuTestimonial } from "@/lib/clinic-public-page"
@@ -1159,6 +1160,7 @@ export function ActivitiesTab() {
 
         <TabsContent value="info" className="mt-0">
           <div className="space-y-4">
+            <ClinicQrCard />
             <Card className="border-primary/15">
               <CardHeader className="pb-3 flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
                 <CardTitle className="text-sm flex items-center gap-2">

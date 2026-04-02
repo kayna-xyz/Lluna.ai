@@ -4142,7 +4142,8 @@ export default function LlunaApp({
     clinicWorkTime: string
     logoUrl: string
     mdTeam: PublicMdTeamMember[]
-  }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [] })
+    clinicInfoName: string
+  }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [], clinicInfoName: "" })
   const [navTabs, setNavTabs] = useState<string[]>(() =>
     initialViaClinicLink ? ["Clinic menu", "Report", "My"] : ["My"],
   )
@@ -4334,21 +4335,20 @@ export default function LlunaApp({
       let phone = ""
       let workTime = ""
       let logoUrl = ""
+      let infoClinicName = ""
       let mdTeam: PublicMdTeamMember[] = []
       try {
         const infoRes = await fetch(`/api/clinic-info?${q}`)
         const infoData = (await infoRes.json()) as {
           info?: {
-            clinicPhone?: string
-            clinicWorkTime?: string
-            logoDataUrl?: string
             mdTeam?: Array<{ id?: string; name?: string; about?: string; experience?: string; photoDataUrl?: string }>
           }
         }
         if (infoRes.ok && infoData.info) {
-          phone = String(infoData.info.clinicPhone || "").trim()
-          workTime = String(infoData.info.clinicWorkTime || "").trim()
-          logoUrl = String(infoData.info.logoDataUrl || "").trim()
+          phone = String((infoData.info as Record<string, unknown>).clinicPhone || "").trim()
+          workTime = String((infoData.info as Record<string, unknown>).clinicWorkTime || "").trim()
+          logoUrl = String((infoData.info as Record<string, unknown>).logoDataUrl || "").trim()
+          infoClinicName = String((infoData.info as Record<string, unknown>).clinicName || "").trim()
           mdTeam = normalizeMdTeam(
             (infoData.info.mdTeam ?? []).map((m) => ({
               ...m,
@@ -4386,6 +4386,7 @@ export default function LlunaApp({
             clinicWorkTime: workTime,
             logoUrl,
             mdTeam,
+            clinicInfoName: infoClinicName,
           })
         }
       } catch {
@@ -4399,7 +4400,7 @@ export default function LlunaApp({
 
   const consumerUiValue = useMemo<ConsumerClinicUiValue>(
     () => ({
-      clinicName: clinicMenu?.clinicName?.trim() || "Clinic",
+      clinicName: clinicPublicUi.clinicInfoName || clinicMenu?.clinicName?.trim() || "Clinic",
       tagline: clinicPublicUi.tagline,
       activities: clinicPublicUi.activities,
       testimonials: clinicPublicUi.testimonials,
@@ -4409,7 +4410,7 @@ export default function LlunaApp({
       logoUrl: clinicPublicUi.logoUrl,
       mdTeam: clinicPublicUi.mdTeam,
     }),
-    [clinicMenu?.clinicName, clinicPublicUi],
+    [clinicMenu?.clinicName, clinicPublicUi.clinicInfoName, clinicPublicUi],
   )
 
   const go = (n: number) => {

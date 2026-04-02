@@ -40,11 +40,11 @@ export async function POST(req: Request) {
   }
 
   const resendApiKey = process.env.RESEND_API_KEY
-  const toEmail = process.env.FEEDBACK_TO_EMAIL
+  const toEmail = process.env.FEEDBACK_TO_EMAIL || 'kayna@lluna.ai'
   const fromEmail = process.env.FEEDBACK_FROM_EMAIL || 'onboarding@resend.dev'
   let emailed = false
 
-  if (resendApiKey && toEmail) {
+  if (resendApiKey) {
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
