@@ -185,8 +185,9 @@ export async function POST(req: Request) {
     try {
       extractedText = await extractMenuFromText(pdfResult.text)
     } catch (e) {
-      console.error('[menu/parse] PDF AI extraction failed:', e)
-      return Response.json({ error: 'AI processing failed. Please try again or upload the menu as a CSV or image.' }, { status: 500 })
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[menu/parse] PDF AI extraction failed:', msg)
+      return Response.json({ error: `AI processing failed: ${msg}` }, { status: 500 })
     }
 
     return Response.json({
@@ -197,13 +198,20 @@ export async function POST(req: Request) {
   }
 
   if (/\.(png|jpe?g|webp)$/i.test(lower)) {
-    const extractedText = await extractMenuFromImage(
-      lower.endsWith('.png')
-        ? 'image/png'
-        : lower.endsWith('.webp')
-          ? 'image/webp'
-          : 'image/jpeg',
-    )
+    let extractedText: string
+    try {
+      extractedText = await extractMenuFromImage(
+        lower.endsWith('.png')
+          ? 'image/png'
+          : lower.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg',
+      )
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[menu/parse] image AI extraction failed:', msg)
+      return Response.json({ error: `AI processing failed: ${msg}` }, { status: 500 })
+    }
     return Response.json({
       text: extractedText,
       format: 'image',
