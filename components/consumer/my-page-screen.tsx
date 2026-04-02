@@ -161,103 +161,39 @@ export function MyPageScreen() {
         History
       </p>
 
-      {visits.length === 0 && sessions.length === 0 ? (
+      {sessions.length === 0 ? (
         <p style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, margin: 0 }}>
           Start your journey with clinics partnered with Lluna to unlock your life-long AI aesthetic facial consultant
         </p>
       ) : (
-      <>
-
-      <section style={{ marginBottom: 28 }}>
-        <p
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: COLORS.text,
-            marginBottom: 12,
-            borderBottom: `1px solid ${COLORS.border}`,
-            paddingBottom: 8,
-          }}
-        >
-          Visited clinics
-        </p>
-        {visits.length === 0 ? null : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-            {visits.map((v) => (
-              <li
-                key={v.clinic_slug + v.last_visited_at}
-                style={{
-                  padding: "12px 14px",
-                  background: COLORS.bg,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: 12,
-                }}
-              >
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: COLORS.text }}>{v.clinic_name}</p>
-                <p style={{ margin: "6px 0 0", fontSize: 12, color: COLORS.muted }}>
-                  Last visit {fmtDate(v.last_visited_at)}
-                  {v.entry_via_qr ? " · QR entry" : ""} · {v.visit_count} visit{v.visit_count === 1 ? "" : "s"}
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          {sessions.map((s, i) => (
+            <li
+              key={`${s.clinic_slug}-${s.updated_at}-${i}`}
+              style={{
+                padding: "14px 16px",
+                background: COLORS.outer,
+                borderRadius: 12,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLORS.text }}>{s.clinic_name}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 11, color: COLORS.muted }}>Updated {fmtDate(s.updated_at)}</p>
+              {s.total_price != null && Number.isFinite(s.total_price) && s.total_price > 0 ? (
+                <p style={{ margin: "8px 0 0", fontSize: 16, fontWeight: 700, color: COLORS.text }}>
+                  ${Math.round(s.total_price)}
                 </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <p
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: COLORS.text,
-            marginBottom: 12,
-            borderBottom: `1px solid ${COLORS.border}`,
-            paddingBottom: 8,
-          }}
-        >
-          Treatment plan (from clinic dashboard)
-        </p>
-        {sessions.length === 0 ? (
-          <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-            No confirmed plans yet. They appear here after the consultant submits the final plan.
-          </p>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-            {sessions.map((s, i) => (
-              <li
-                key={`${s.clinic_slug}-${s.updated_at}-${i}`}
-                style={{
-                  padding: "14px 16px",
-                  background: COLORS.outer,
-                  borderRadius: 12,
-                  border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLORS.text }}>{s.clinic_name}</p>
-                <p style={{ margin: "4px 0 0", fontSize: 11, color: COLORS.muted }}>Updated {fmtDate(s.updated_at)}</p>
-                {s.total_price != null && Number.isFinite(s.total_price) && s.total_price > 0 ? (
-                  <p style={{ margin: "8px 0 0", fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-                    ${Math.round(s.total_price)}
-                  </p>
-                ) : null}
-                {s.treatments.length > 0 ? (
-                  <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
-                    {s.treatments.map((t) => (
-                      <li key={t}>{t}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ margin: "8px 0 0", fontSize: 12, color: COLORS.muted }}>
-                    Line items will show after the consultant confirms the final plan.
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      </>
+              ) : null}
+              {s.treatments.length > 0 ? (
+                <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
+                  {s.treatments.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
       )}
 
       <div style={{ marginTop: 36, paddingTop: 24, borderTop: `1px solid ${COLORS.border}` }}>
