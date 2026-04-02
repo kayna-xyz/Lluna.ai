@@ -27,7 +27,7 @@ function getAzureModel() {
   }
 
   const azure = createAzure({ resourceName, apiKey, apiVersion })
-  return azure(deployment)
+  return azure.chat(deployment)
 }
 
 /** Used by: recommend, consultant-brief, align-final-plan, sales-methodology. */
