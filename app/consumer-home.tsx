@@ -4090,12 +4090,14 @@ export default function LlunaApp({
   // const reviewShownRef = useRef(false)
   const [clientSessionId, setClientSessionId] = useState('')
   const [clinicSlug, setClinicSlug] = useState('default')
+  // Timestamp (ms) of when the user first reached screen 10.
+  // Used by the polling effect to ignore pre-existing sessions with total_price.
+  const screenTenEnteredAt = useRef<number>(0)
 
-  // 45-minute timeout starting from when the report is shown (screen 10).
-  // Previously started on mount, which caused early redirects if the user
-  // spent a long time filling the intake form before reaching the report.
+  // 45-minute timeout — starts when the report screen (screen 10) is shown.
   useEffect(() => {
     if (state.screen !== 10) return
+    screenTenEnteredAt.current = Date.now()
     const id = setTimeout(() => {
       window.location.href = 'https://www.lluna.ai'
     }, 45 * 60 * 1000)
@@ -4468,9 +4470,13 @@ export default function LlunaApp({
       try {
         const res = await fetch('/api/me/activity', { credentials: 'same-origin' })
         if (!res.ok) return
-        const data = (await res.json()) as { sessions?: Array<{ total_price: number | null }> }
+        const data = (await res.json()) as { sessions?: Array<{ total_price: number | null; updated_at?: string }> }
+        const enteredAt = screenTenEnteredAt.current
         const hasPriceSubmitted = data.sessions?.some(
-          (s) => s.total_price != null && s.total_price > 0
+          (s) =>
+            s.total_price != null &&
+            s.total_price > 0 &&
+            new Date(s.updated_at ?? 0).getTime() > enteredAt
         )
         if (hasPriceSubmitted) {
           console.log('[lluna] polling: total_price found, redirecting')
