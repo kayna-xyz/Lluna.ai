@@ -286,6 +286,11 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
     return maxCost === 0 || (maxCost - minCost) / maxCost < 0.2
   }
 
+  console.log("=== RECOMMEND DEBUG ===")
+  console.log("BUDGET:", budgetNum)
+  console.log("GOAL:", body.goals || body.demand || body.concern)
+  console.log("MENU AFTER FILTER:", filteredTreatments?.map(t => t.name) ?? menu.treatments.map(t => t.name))
+
   try {
     const { output } = await generateText({
       model: getLlunaAnthropicModel(),
@@ -293,6 +298,8 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
       system: patientSystem,
       messages: [{ role: 'user', content: patientUser }],
     })
+    console.log("AI PLANS:", JSON.stringify(output.plans.map(p => ({ name: p.name, total: p.totalCost }))))
+    console.log("=== END DEBUG ===")
     let normalized = normalizeRecommendation(output, menuById)
 
     if (plansAreCollapsed(normalized.plans)) {
