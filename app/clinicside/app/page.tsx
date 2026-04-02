@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Database, Activity, FileText } from "lucide-react"
+import { Database, Activity, FileText, BarChart2, Gift } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader, type ClientNotification } from "../components/dashboard/header"
 import { ClientTable } from "../components/dashboard/client-table"
@@ -17,8 +17,12 @@ import { type Client } from "../lib/data"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { ensureStaffClinicSlug } from "@/app/clinicside/lib/ensure-staff-clinic"
 import { mapRowToClient } from "../lib/map-db-client"
+
+type DashboardSubTab = "data" | "referral"
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>("data")
   const [selectedClientReport, setSelectedClientReport] = useState<ClientNotification | null>(null)
   const [dbClients, setDbClients] = useState<Client[]>([])
   const [notifications, setNotifications] = useState<ClientNotification[]>([])
@@ -81,9 +85,6 @@ export default function DashboardPage() {
     return () => clearInterval(t)
   }, [tenantReady, loadClients, loadPending, POLL_MS])
 
-  // If the consultant is currently viewing a report, keep it in sync with the latest
-  // pending_reports row fetched by `loadPending()`. This ensures updates after final
-  // submission (status = final_plan_submitted) show up without manual refresh.
   useEffect(() => {
     if (!selectedClientReport) return
 
@@ -116,8 +117,6 @@ export default function DashboardPage() {
       return
     }
 
-    // Fallback: when the user opened a report from /api/clients (different row id),
-    // still try to sync by sessionId.
     if (selectedClientReport.sessionId) {
       const latestBySessionId = notifications.find((n) => n.sessionId === selectedClientReport.sessionId)
       if (latestBySessionId) setSelectedClientReport(latestBySessionId)
@@ -145,7 +144,6 @@ export default function DashboardPage() {
   }, [])
 
   const handleSelectClient = (client: Client) => {
-    // Always jump to the report page; never show the side panel.
     openClientReport(client)
   }
 
@@ -184,27 +182,52 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-1 overflow-hidden">
+          {/* Dashboard tab — inner sub-tabs */}
           <TabsContent value="dashboard" className="m-0 flex-1 overflow-auto data-[state=inactive]:hidden">
             <div className="p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">Database</h2>
-                <p className="text-sm text-muted-foreground">
-                  {dbClients.length} clients (Supabase)
-                </p>
-              </div>
-              <div className="rounded-lg border bg-card">
-                <ClientTable
-                  clients={dbClients}
-                  selectedClientId={selectedClientReport?.id ?? null}
-                  onSelectClient={handleSelectClient}
-                />
-              </div>
+              <Tabs value={dashboardSubTab} onValueChange={(v) => setDashboardSubTab(v as DashboardSubTab)}>
+                <TabsList className="mb-6 h-9 bg-secondary/50">
+                  <TabsTrigger
+                    value="data"
+                    className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0"
+                  >
+                    <BarChart2 className="h-3 w-3" />
+                    Data
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="referral"
+                    className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0"
+                  >
+                    <Gift className="h-3 w-3" />
+                    Referral Memo
+                  </TabsTrigger>
+                </TabsList>
 
-              <div className="mt-8 space-y-8">
-                <DashboardAnalyticsSection clients={dbClients} />
-                <ReferralMemo />
-                <TopReferrersSection />
-              </div>
+                <TabsContent value="data" className="mt-0 space-y-6">
+                  {/* 1. Key metrics */}
+                  <DashboardAnalyticsSection clients={dbClients} />
+
+                  {/* 2. Clients table */}
+                  <div>
+                    <div className="mb-3">
+                      <h2 className="text-sm font-medium">Clients</h2>
+                      <p className="text-xs text-muted-foreground">{dbClients.length} total</p>
+                    </div>
+                    <div className="rounded-lg border bg-card">
+                      <ClientTable
+                        clients={dbClients}
+                        selectedClientId={selectedClientReport?.id ?? null}
+                        onSelectClient={handleSelectClient}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="referral" className="mt-0 space-y-6">
+                  <ReferralMemo />
+                  <TopReferrersSection />
+                </TabsContent>
+              </Tabs>
             </div>
           </TabsContent>
 
@@ -230,7 +253,6 @@ export default function DashboardPage() {
           <TabsContent value="activities" className="m-0 flex-1 overflow-auto data-[state=inactive]:hidden">
             <ActivitiesTab />
           </TabsContent>
-
         </div>
       </Tabs>
     </div>
