@@ -1603,46 +1603,45 @@ function TreatmentDetailScreen({
 }) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   return (
-    <div style={{ paddingTop: 0, paddingBottom: 60, background: COLORS.white, minHeight: '100vh' }}>
+    <div style={{ paddingTop: 20, paddingBottom: 60 }}>
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} label="" onClose={() => setLightboxSrc(null)} />}
-      <div style={{ padding: '20px 20px 0' }}>
-        <BackButton onClick={onBack} />
-      </div>
-      {treatment.posterUrl && (
+      <BackButton onClick={onBack} />
+
+      <h1 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, marginTop: 24, marginBottom: 4 }}>
+        {treatment.name}
+      </h1>
+      {treatment.category && (
+        <p style={{ fontSize: 12, color: COLORS.accent, margin: '0 0 4px' }}>{treatment.category}</p>
+      )}
+      <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '0 0 20px' }}>
+        {getPrimaryPriceLabel(treatment)}
+      </p>
+
+      {treatment.posterUrl ? (
         <img
           src={treatment.posterUrl}
           alt="Poster"
           onClick={() => setLightboxSrc(treatment.posterUrl!)}
-          style={{ width: '100%', objectFit: 'cover', display: 'block', marginTop: 16, cursor: 'pointer' }}
+          style={{ width: '100%', objectFit: 'cover', display: 'block', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}
         />
-      )}
-      {treatment.beforeAfterUrl && (
+      ) : null}
+      {treatment.beforeAfterUrl ? (
         <img
           src={treatment.beforeAfterUrl}
           alt="Before / After"
           onClick={() => setLightboxSrc(treatment.beforeAfterUrl!)}
-          style={{ width: '100%', objectFit: 'cover', display: 'block', marginTop: treatment.posterUrl ? 2 : 16, cursor: 'pointer' }}
+          style={{ width: '100%', objectFit: 'cover', display: 'block', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}
         />
-      )}
+      ) : null}
       {!treatment.posterUrl && !treatment.beforeAfterUrl && (
-        <div style={{ height: 160, background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
-          <span style={{ fontSize: 12, color: COLORS.muted }}>No photos uploaded yet</span>
-        </div>
+        <p style={{ fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>No photos uploaded yet.</p>
       )}
-      <div style={{ padding: '24px 20px 0' }}>
-        <h2 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, margin: 0 }}>
-          {treatment.name}
-        </h2>
-        <p style={{ fontSize: 12, color: COLORS.accent, margin: '6px 0 0' }}>{treatment.category}</p>
-        <p style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, margin: '14px 0 0' }}>
-          {getPrimaryPriceLabel(treatment)}
+
+      {treatment.description && (
+        <p style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, marginTop: 16 }}>
+          {treatment.description}
         </p>
-        {treatment.description && (
-          <p style={{ fontSize: 14, color: COLORS.muted, margin: '14px 0 0', lineHeight: 1.65 }}>
-            {treatment.description}
-          </p>
-        )}
-      </div>
+      )}
     </div>
   )
 }
