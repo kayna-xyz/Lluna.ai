@@ -1591,8 +1591,64 @@ function HelpPopup({
   )
 }
 
+// Treatment Detail — full page with back button
+function TreatmentDetailScreen({
+  treatment,
+  onBack,
+  getPrimaryPriceLabel,
+}: {
+  treatment: ClinicMenuTreatment
+  onBack: () => void
+  getPrimaryPriceLabel: (t: ClinicMenuTreatment) => string
+}) {
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  return (
+    <div style={{ paddingTop: 0, paddingBottom: 60, background: COLORS.white, minHeight: '100vh' }}>
+      {lightboxSrc && <PhotoLightbox src={lightboxSrc} label="" onClose={() => setLightboxSrc(null)} />}
+      <div style={{ padding: '20px 20px 0' }}>
+        <BackButton onClick={onBack} />
+      </div>
+      {treatment.posterUrl && (
+        <img
+          src={treatment.posterUrl}
+          alt="Poster"
+          onClick={() => setLightboxSrc(treatment.posterUrl!)}
+          style={{ width: '100%', objectFit: 'cover', display: 'block', marginTop: 16, cursor: 'pointer' }}
+        />
+      )}
+      {treatment.beforeAfterUrl && (
+        <img
+          src={treatment.beforeAfterUrl}
+          alt="Before / After"
+          onClick={() => setLightboxSrc(treatment.beforeAfterUrl!)}
+          style={{ width: '100%', objectFit: 'cover', display: 'block', marginTop: treatment.posterUrl ? 2 : 16, cursor: 'pointer' }}
+        />
+      )}
+      {!treatment.posterUrl && !treatment.beforeAfterUrl && (
+        <div style={{ height: 160, background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
+          <span style={{ fontSize: 12, color: COLORS.muted }}>No photos uploaded yet</span>
+        </div>
+      )}
+      <div style={{ padding: '24px 20px 0' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, margin: 0 }}>
+          {treatment.name}
+        </h2>
+        <p style={{ fontSize: 12, color: COLORS.accent, margin: '6px 0 0' }}>{treatment.category}</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, margin: '14px 0 0' }}>
+          {getPrimaryPriceLabel(treatment)}
+        </p>
+        {treatment.description && (
+          <p style={{ fontSize: 14, color: COLORS.muted, margin: '14px 0 0', lineHeight: 1.65 }}>
+            {treatment.description}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Clinic Menu Screen with rolling activities and filters
-function ClinicMenuScreen({ 
+function ClinicMenuScreen({
   onClose,
   showHelpPopup,
   setShowHelpPopup,
@@ -1676,6 +1732,16 @@ function ClinicMenuScreen({
       .slice(0, 4)
   }, [clinicMenu?.treatments])
   
+  if (selectedTreatment) {
+    return (
+      <TreatmentDetailScreen
+        treatment={selectedTreatment}
+        onBack={() => setSelectedTreatment(null)}
+        getPrimaryPriceLabel={getPrimaryPriceLabel}
+      />
+    )
+  }
+
   return (
     <div style={{ paddingTop: 20, paddingBottom: 60 }}>
       {showHelpPopup && (
@@ -1684,51 +1750,6 @@ function ClinicMenuScreen({
           helpRequest={helpRequest}
           setHelpRequest={setHelpRequest}
         />
-      )}
-
-      {selectedTreatment && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.55)', zIndex: 2000,
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        }} onClick={() => setSelectedTreatment(null)}>
-          <div style={{
-            background: COLORS.white, borderRadius: '20px 20px 0 0',
-            width: '100%', maxWidth: 480, maxHeight: '85vh',
-            overflowY: 'auto', paddingBottom: 40,
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 0' }}>
-              <button onClick={() => setSelectedTreatment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                <X size={22} color={COLORS.muted} />
-              </button>
-            </div>
-            {selectedTreatment.posterUrl && (
-              <img src={selectedTreatment.posterUrl} alt="Poster" style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 240 }} />
-            )}
-            {selectedTreatment.beforeAfterUrl && (
-              <img src={selectedTreatment.beforeAfterUrl} alt="Before / After" style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 240, marginTop: selectedTreatment.posterUrl ? 2 : 0 }} />
-            )}
-            {!selectedTreatment.posterUrl && !selectedTreatment.beforeAfterUrl && (
-              <div style={{ height: 120, background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 12, color: COLORS.muted }}>No photos uploaded yet</span>
-              </div>
-            )}
-            <div style={{ padding: '20px 20px 0' }}>
-              <h2 style={{ fontSize: 18, fontWeight: 500, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, margin: 0 }}>
-                {selectedTreatment.name}
-              </h2>
-              <p style={{ fontSize: 12, color: COLORS.accent, margin: '4px 0 0' }}>{selectedTreatment.category}</p>
-              <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '10px 0 0' }}>
-                {getPrimaryPriceLabel(selectedTreatment)}
-              </p>
-              {selectedTreatment.description && (
-                <p style={{ fontSize: 13, color: COLORS.muted, margin: '10px 0 0', lineHeight: 1.6 }}>
-                  {selectedTreatment.description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
       )}
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -3790,6 +3811,7 @@ function ReportScreen({
   clinicSlug: string
 }) {
   const [consultantFinalPlan, setConsultantFinalPlan] = useState<ConsultantFinalPlanPayload | null>(null)
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ src: string; label: string } | null>(null)
 
   useEffect(() => {
     const sid = clientSessionId.trim()
@@ -3831,6 +3853,7 @@ function ReportScreen({
 
   return (
     <div style={{ paddingTop: 20, paddingBottom: 60, overflowY: 'auto' }}>
+      {lightboxPhoto && <PhotoLightbox src={lightboxPhoto.src} label={lightboxPhoto.label} onClose={() => setLightboxPhoto(null)} />}
       <ProcessingBar value={reportProgress} />
       <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 24, color: COLORS.text }}>
         Welcome to {displayClinicName}
@@ -4128,10 +4151,20 @@ function ReportScreen({
             {withPhotos.map(treatment => (
               <div key={treatment.id} style={{ marginBottom: 12, borderRadius: 12, overflow: 'hidden', border: `1px solid ${COLORS.border}` }}>
                 {treatment.posterUrl && (
-                  <img src={treatment.posterUrl} alt={treatment.name} style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220 }} />
+                  <img
+                    src={treatment.posterUrl}
+                    alt={treatment.name}
+                    onClick={() => setLightboxPhoto({ src: treatment.posterUrl!, label: treatment.name })}
+                    style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220, cursor: 'pointer' }}
+                  />
                 )}
                 {treatment.beforeAfterUrl && (
-                  <img src={treatment.beforeAfterUrl} alt={`${treatment.name} before/after`} style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220, marginTop: treatment.posterUrl ? 2 : 0 }} />
+                  <img
+                    src={treatment.beforeAfterUrl}
+                    alt={`${treatment.name} before/after`}
+                    onClick={() => setLightboxPhoto({ src: treatment.beforeAfterUrl!, label: `${treatment.name} — before/after` })}
+                    style={{ width: '100%', objectFit: 'cover', display: 'block', maxHeight: 220, marginTop: treatment.posterUrl ? 2 : 0, cursor: 'pointer' }}
+                  />
                 )}
                 <div style={{ padding: '8px 12px' }}>
                   <p style={{ fontSize: 11, fontWeight: 500, color: COLORS.text, margin: 0 }}>{treatment.name}</p>
