@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
-
+import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -286,13 +286,34 @@ export function ClinicMenuAdmin({
     }
 
     try {
-      const formData = new FormData()
-      formData.append("file", file, sanitizeUploadFilename(file.name))
-      if (clinicId) formData.append("clinicId", clinicId)
+      // Step 1: upload file to Supabase Storage menus bucket
+      const supabase = getBrowserSupabase()
+      if (!supabase) {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        toast.error("Supabase client not available")
+        return
+      }
+      const storagePath = `${clinicId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`
+      const { error: uploadError } = await supabase.storage
+        .from("menus")
+        .upload(storagePath, file, { upsert: true, contentType: file.type || undefined })
+      if (uploadError) {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        toast.error(`Upload failed: ${uploadError.message}`)
+        return
+      }
+      const { data: urlData } = supabase.storage.from("menus").getPublicUrl(storagePath)
+      const fileUrl = urlData.publicUrl
 
+      // Step 2: pass the public URL to the parse API
       const res = await clinicFetch("/api/menu/parse", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, clinicId }),
       })
       const rawText = await res.text()
       console.log("[menu/parse] status:", res.status, "body:", rawText)
