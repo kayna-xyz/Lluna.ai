@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Lumo - Consultant Dashboard',
+  title: 'Lluna AI — Consultant Dashboard',
   description: 'Medical aesthetics AI platform consultant dashboard',
   generator: 'v0.app',
   icons: {

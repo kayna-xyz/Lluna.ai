@@ -1952,17 +1952,15 @@ function ClinicMenuScreen({
           }}>
             MD TEAM
           </p>
-          <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {mdTeam.map((member) => (
               <div
                 key={member.id}
                 style={{
-                  minWidth: 160,
                   background: COLORS.bg,
                   borderRadius: 12,
                   padding: 14,
                   border: `1px solid ${COLORS.border}`,
-                  flexShrink: 0,
                 }}
               >
                 {member.photo_url ? (

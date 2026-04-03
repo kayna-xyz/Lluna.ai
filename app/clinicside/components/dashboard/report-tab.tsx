@@ -107,7 +107,7 @@ function parseLegacyBriefText(text: string) {
 }
 
 // Comprehensive mock client report data
-const mockClientReports: Record<string, { 
+const mockClientReports: Record<string, {
   // Basic Info
   age: number
   occupation: string
@@ -482,9 +482,6 @@ export function ClientReportPanel({
   const [alignedTherapies, setAlignedTherapies] = useState<Record<string, unknown>[]>([])
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({})
 
-  const clientReport = selectedClientReport ? mockClientReports[selectedClientReport.clientName] : null
-  const allowMockReport = false
-
   const realRd = (selectedClientReport?.reportData as Record<string, unknown> | undefined) ?? {}
   const realUi = asRec(realRd.userInput)
   const realRec = asRec(realRd.recommendation)
@@ -519,6 +516,7 @@ export function ClientReportPanel({
         },
       }
     : parseLegacyBriefText(consultantBriefText)
+
   const salesMethodologyRaw = asRec(realRec?.salesMethodology)
   const salesMethodology = Object.keys(salesMethodologyRaw).length
     ? {
@@ -554,478 +552,392 @@ export function ClientReportPanel({
   const isLocalText =
     realUi.isNYC === true ? "Local (NYC)" : realUi.isNYC === false ? "Non-local" : "—"
 
+  // Budget uplift calculation
+  const budgetNum = Number(realUi.budget) || 0
+  const finalPriceNum = Number(finalPrice) || 0
+  const uplift = finalPriceNum - budgetNum
+  const showUplift = budgetNum > 0 && finalPriceNum > 0 && uplift > 0
+
   return (
-    <div className="space-y-6">
-      {/* Client Report Panel — live Supabase report_data */}
+    <div className="space-y-4">
+      {/* Empty state */}
+      {!selectedClientReport && (
+        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+          Pick a client on Dashboard to open their questionnaire report. Switching tabs keeps the last report you viewed.
+        </div>
+      )}
+
       {selectedClientReport && (
-        <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-5 space-y-4">
+        <div className="space-y-4">
+          {/* Header strip */}
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-lg font-semibold">{selectedClientReport.clientName}</h3>
-              <p className="text-sm text-muted-foreground">
-                {emailText} · {phoneText}
-              </p>
+              <p className="text-sm text-muted-foreground">{emailText} · {phoneText}</p>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseClientReport}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">Budget (stated)</p>
-              <p className="font-medium">${Number(realUi.budget) || 0}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Actual (final plan)</p>
-              <p className="font-medium text-primary">
-                {finalPlan?.total_price != null
-                  ? `$${Number(finalPlan.total_price)}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
+          {/* ── Two-column grid ── */}
+          <div className="grid grid-cols-2 gap-5 items-start">
 
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Goals</h4>
-            <p className="text-sm">{String(realUi.goals || "—")}</p>
-          </div>
+            {/* ════ LEFT COLUMN ════ */}
+            <div className="space-y-5">
 
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Survey details</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Name</p>
-                <p className="font-medium">{String(realUi.name || selectedClientReport.clientName || "—")}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Age</p>
-                <p className="font-medium">{String(realUi.age || "—")}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Occupation</p>
-                <p className="font-medium">{String(realUi.occupation || "—")}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Customer status</p>
-                <p className="font-medium">
-                  {realUi.clinicHistory === "returning" ? "Returning" : realUi.clinicHistory === "new" ? "New" : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Experience</p>
-                <p className="font-medium">{experienceText}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Recovery preference</p>
-                <p className="font-medium">{recoveryText}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Location status</p>
-                <p className="font-medium">{isLocalText}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Referral contact</p>
-                <p className="font-medium">{String(realUi.referral || "—")}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Photo provided</p>
-                <p className="font-medium">{realUi.photoPresent ? "Yes" : hasRealUi ? "No" : "—"}</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Patient summary</h4>
-            <p className="text-sm whitespace-pre-wrap">{String(realRec?.summary || "—")}</p>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Consultant brief</h4>
-            <div className="space-y-3">
-              <div className="rounded-md border bg-background p-3">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Consumption capability</p>
-                  <Badge variant="secondary">{consultantBrief.consumptionCapability.score}/5 · {consultantBrief.consumptionCapability.tier}</Badge>
-                </div>
-                <div className="h-2 rounded bg-muted">
-                  <div className="h-2 rounded bg-primary" style={{ width: `${consultantBrief.consumptionCapability.score * 20}%` }} />
-                </div>
-                <p className="text-sm mt-2">{consultantBrief.consumptionCapability.reason}</p>
-              </div>
-              <div className="rounded-md border bg-background p-3">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Long-term possibility</p>
-                  <Badge variant="secondary">
-                    {consultantBrief.longTermPossibility.score}/5 · {consultantBrief.longTermPossibility.tier}
-                  </Badge>
-                </div>
-                <div className="h-2 rounded bg-muted">
-                  <div className="h-2 rounded bg-primary" style={{ width: `${consultantBrief.longTermPossibility.score * 20}%` }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">Client status: {consultantBrief.longTermPossibility.isReturning}</p>
-                <p className="text-sm mt-1">{consultantBrief.longTermPossibility.reason}</p>
-              </div>
-              <div className="rounded-md border bg-background p-3">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Referral ability</p>
-                  <Badge variant="secondary">{consultantBrief.referralAbility.score}/5 · {consultantBrief.referralAbility.tier}</Badge>
-                </div>
-                <div className="h-2 rounded bg-muted">
-                  <div className="h-2 rounded bg-primary" style={{ width: `${consultantBrief.referralAbility.score * 20}%` }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Local: {consultantBrief.referralAbility.isLocal}
-                </p>
-                <p className="text-sm mt-1">{consultantBrief.referralAbility.reason}</p>
-              </div>
-            </div>
-          </div>
-
-          {Array.isArray(realRec?.plans) && (
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                AI recommended therapies
-              </h4>
-              <div className="space-y-3">
-                {(realRec.plans as Record<string, unknown>[]).map((plan, idx) => {
-                  const key = String(plan.name || idx)
-                  const isExpanded = !!expandedPlans[key]
-                  const treatments = Array.isArray((plan as Record<string, unknown>).treatments)
-                    ? ((plan as Record<string, unknown>).treatments as Record<string, unknown>[])
-                    : []
-
-                  return (
-                    <div key={key} className="rounded-md border bg-background p-3 text-sm">
-                      <button
-                        type="button"
-                        className="w-full text-left"
-                        onClick={() =>
-                          setExpandedPlans((s) => ({
-                            ...s,
-                            [key]: !s[key],
-                          }))
-                        }
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">
-                            {String(plan.name || "Plan")} — {String(plan.tagline || "")}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {isExpanded ? "Hide details" : "Show details"}
-                          </p>
-                        </div>
-                        <p className="text-muted-foreground text-xs mt-1">
-                          Total ~ ${Number(plan.totalCost) || 0}
-                        </p>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="mt-3 border-t pt-3 space-y-3">
-                          <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
-                          <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
-                          {treatments.map((t, tIdx) => (
-                            <div key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`} className="rounded border p-2">
-                              <div className="flex items-center justify-between">
-                                <p className="font-medium">{treatmentLabelFromUnknown(t)}</p>
-                                <p className="text-xs">${Number(t.cost) || 0}</p>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {t.units ? `${t.units} units ` : ""}
-                                {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
-                                {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">{String(t.reason || "—")}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+              {/* Card 1: Patient Info */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Patient Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Budget summary row */}
+                  <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Budget (stated)</p>
+                      <p className="font-medium">{budgetNum > 0 ? `$${budgetNum}` : "—"}</p>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sales methodology</h4>
-            {salesMethodology ? (
-              <div className="space-y-2">
-                <div className="rounded-md border bg-background p-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Combo synergy</p>
-                  <p className="text-sm whitespace-pre-wrap">{salesMethodology.comboSynergy}</p>
-                </div>
-                <div className="rounded-md border bg-background p-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Treatment effectiveness</p>
-                  <p className="text-sm whitespace-pre-wrap">{salesMethodology.treatmentEffectiveness}</p>
-                </div>
-                <div className="rounded-md border bg-background p-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Campaign + referral discount</p>
-                  <p className="text-sm whitespace-pre-wrap">{salesMethodology.campaignAndReferral}</p>
-                </div>
-              </div>
-            ) : salesSentences.length > 0 ? (
-              <div className="space-y-2">
-                {salesSentences.map((row, idx) => (
-                  <div key={`${row.type}-${idx}`} className="rounded-md border bg-background p-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{row.type}</p>
-                    <p className="text-sm whitespace-pre-wrap">{row.text}</p>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Actual (final plan)</p>
+                      <p className="font-medium text-primary">
+                        {finalPlan?.total_price != null ? `$${Number(finalPlan.total_price)}` : "—"}
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No sales methodology generated yet.</p>
-            )}
-          </div>
 
-          <div className="border-t pt-4 space-y-2">
-            <h4 className="text-sm font-medium">Submit final plan</h4>
-            <textarea
-              className="w-full min-h-[80px] rounded-md border bg-background p-2 text-sm"
-              placeholder="Final plan notes for the file…"
-              value={finalText}
-              onChange={(e) => setFinalText(e.target.value)}
-            />
-            <div className="flex flex-wrap gap-2 items-center">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={aligning || !finalText.trim()}
-                onClick={async () => {
-                  setAligning(true)
-                  try {
-                    const res = await fetch("/api/align-final-plan", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ consultantText: finalText }),
-                    })
-                    const data = await res.json()
-                    if (res.ok && data.result) {
-                      setAlignedTherapies(data.result.therapies || [])
-                      setFinalPrice(String(data.result.total_price ?? ""))
-                    }
-                  } finally {
-                    setAligning(false)
-                  }
-                }}
-              >
-                {aligning ? "Aligning…" : "Align with menu (AI)"}
-              </Button>
-            </div>
-            {alignedTherapies.length > 0 && (
-              <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-                {alignedTherapies.map((t, i) => (
-                  <li key={i}>
-                    {(t.treatmentName as string) || (t.treatmentId as string)} ~ $
-                    {Number(t.linePrice) || 0}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="flex gap-2 items-center">
-              <Input
-                type="number"
-                placeholder="Total price"
-                value={finalPrice}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setFinalPrice(e.target.value)}
-                className="max-w-[160px]"
-              />
-              <Button
-                size="sm"
-                disabled={
-                  submitting ||
-                  !selectedClientReport.sessionId ||
-                  finalPrice.trim() === ""
-                }
-                onClick={async () => {
-                  if (!selectedClientReport.sessionId) return
-                  setSubmitting(true)
-                  try {
-                    const res = await clinicFetch("/api/final-solution", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        sessionId: selectedClientReport.sessionId,
-                        reportId: selectedClientReport.id,
-                        final_plan_text: finalText,
-                        total_price: Number(finalPrice),
-                        therapies: alignedTherapies,
-                      }),
-                    })
-                    if (res.ok) {
-                      setFinalText("")
-                      setFinalPrice("")
-                      setAlignedTherapies([])
-                      onRefreshClients?.()
-                    }
-                  } finally {
-                    setSubmitting(false)
-                  }
-                }}
-              >
-                {submitting ? "Saving…" : "Save"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                  {/* Goals */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Goals</p>
+                    <p className="text-sm">{String(realUi.goals || "—")}</p>
+                  </div>
 
-      {/* Client Report Panel — legacy mock */}
-      {selectedClientReport && allowMockReport && clientReport && !realUi && (
-        <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-5">
-          <div className="flex items-start justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-lg font-bold text-primary">
-                  {selectedClientReport.clientName.split(" ").map(n => n[0]).join("")}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">{selectedClientReport.clientName}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{clientReport.age} years old</span>
-                  <span>·</span>
-                  <span>{clientReport.occupation}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant={clientReport.isNewCustomer ? "outline" : "default"} className={!clientReport.isNewCustomer ? "bg-primary" : ""}>
-                {clientReport.isNewCustomer ? "New Customer" : `Visit #${clientReport.visitCount}`}
-              </Badge>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseClientReport}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-4 gap-4 mb-5 p-3 bg-background rounded-lg">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Location</p>
-                <p className="text-sm font-medium">{clientReport.location}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Member Since</p>
-                <p className="text-sm font-medium">{clientReport.memberSince}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Budget / Actual</p>
-                <p className="text-sm font-medium">
-                  ${clientReport.budgetAmount} / <span className="text-primary">${clientReport.actualSpend}</span>
-                  {clientReport.actualSpend > clientReport.budgetAmount && (
-                    <span className="text-success text-xs ml-1">
-                      +{((clientReport.actualSpend - clientReport.budgetAmount) / clientReport.budgetAmount * 100).toFixed(0)}%
-                    </span>
+                  {/* All available info fields */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Details</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      {([
+                        { label: "Name", value: String(realUi.name || selectedClientReport.clientName || "—") },
+                        { label: "Email", value: emailText },
+                        { label: "Phone", value: phoneText },
+                        { label: "Age", value: String(realUi.age || "—") },
+                        { label: "Occupation", value: String(realUi.occupation || "—") },
+                        {
+                          label: "Customer status",
+                          value:
+                            realUi.clinicHistory === "returning"
+                              ? "Returning"
+                              : realUi.clinicHistory === "new"
+                                ? "New"
+                                : "—",
+                        },
+                        { label: "Experience", value: experienceText },
+                        { label: "Recovery pref.", value: recoveryText },
+                        { label: "Location", value: isLocalText },
+                        { label: "Referral contact", value: String(realUi.referral || "—") },
+                        {
+                          label: "Photo provided",
+                          value: realUi.photoPresent ? "Yes" : hasRealUi ? "No" : "—",
+                        },
+                      ] as { label: string; value: string }[]).map(({ label, value }) => (
+                        <div key={label}>
+                          <p className="text-xs text-muted-foreground">{label}</p>
+                          <p className="font-medium">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI patient summary */}
+                  {realRec?.summary && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">AI Patient Summary</p>
+                      <p className="text-sm whitespace-pre-wrap">{String(realRec.summary)}</p>
+                    </div>
                   )}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Referrals Made</p>
-                <p className="text-sm font-medium">{clientReport.referralsMade} <span className="text-muted-foreground">(${clientReport.referralValue} value)</span></p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid gap-5 md:grid-cols-3">
-            {/* Column 1: Problems & Preferences */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
-                  <Heart className="h-3 w-3" />
-                  Face Problems
-                </h4>
-                <ul className="space-y-1">
-                  {clientReport.faceProblem.map((problem, i) => (
-                    <li key={i} className="text-sm flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      {problem}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Skin Type</h4>
-                <p className="text-sm">{clientReport.skinType}</p>
-              </div>
-              {clientReport.allergies.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Allergies</h4>
-                  <div className="flex gap-1 flex-wrap">
-                    {clientReport.allergies.map((allergy, i) => (
-                      <Badge key={i} variant="destructive" className="text-xs">{allergy}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Column 2: Therapy Preferences & Goals */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Therapy Preferences
-                </h4>
-                <ul className="space-y-1">
-                  {clientReport.therapyPreference.map((pref, i) => (
-                    <li key={i} className="text-sm flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
-                      {pref}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Goals</h4>
-                <ul className="space-y-1">
-                  {clientReport.goals.map((goal, i) => (
-                    <li key={i} className="text-sm">{goal}</li>
-                  ))}
-                </ul>
-              </div>
-              {clientReport.referredBy && (
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Referred By</h4>
-                  <p className="text-sm font-medium text-primary">{clientReport.referredBy}</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Column 3: Sales Talking Points */}
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-primary" />
-                Sales Talking Points
-              </h4>
-              <ul className="space-y-2">
-                {clientReport.salesTalkingPoints.map((point, i) => (
-                  <li key={i} className="text-sm flex items-start gap-2 p-2 rounded bg-background">
-                    <span className="text-xs font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5 shrink-0">{i + 1}</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+                </CardContent>
+              </Card>
 
-      {!selectedClientReport && (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-          Pick a client on Dashboard to open their questionnaire report. Switching tabs keeps the last report you viewed.
+              {/* Card 2: Sales Methodology */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sales Methodology</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {salesMethodology ? (
+                    <>
+                      <div className="rounded-md border bg-muted/30 p-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Combo synergy</p>
+                        <p className="text-sm whitespace-pre-wrap">{salesMethodology.comboSynergy}</p>
+                      </div>
+                      <div className="rounded-md border bg-muted/30 p-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Treatment effectiveness</p>
+                        <p className="text-sm whitespace-pre-wrap">{salesMethodology.treatmentEffectiveness}</p>
+                      </div>
+                      <div className="rounded-md border bg-muted/30 p-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Campaign + referral</p>
+                        <p className="text-sm whitespace-pre-wrap">{salesMethodology.campaignAndReferral}</p>
+                      </div>
+                    </>
+                  ) : salesSentences.length > 0 ? (
+                    <div className="space-y-2">
+                      {salesSentences.map((row, idx) => (
+                        <div key={`${row.type}-${idx}`} className="rounded-md border bg-muted/30 p-3">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{row.type}</p>
+                          <p className="text-sm whitespace-pre-wrap">{row.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No sales methodology generated yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ════ RIGHT COLUMN ════ */}
+            <div className="space-y-5">
+
+              {/* Card 3: Consultant Brief — 3 horizontal cards */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultant Brief</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-3">
+
+                    {/* Purchasing Power */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchasing Power</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{consultantBrief.consumptionCapability.score}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.consumptionCapability.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div
+                          className="h-1.5 rounded-full bg-primary transition-all"
+                          style={{ width: `${consultantBrief.consumptionCapability.score * 20}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
+                        {consultantBrief.consumptionCapability.reason}
+                      </p>
+                    </div>
+
+                    {/* Long-term Possibility */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Long-term Possibility</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{consultantBrief.longTermPossibility.score}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.longTermPossibility.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div
+                          className="h-1.5 rounded-full bg-primary transition-all"
+                          style={{ width: `${consultantBrief.longTermPossibility.score * 20}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Status: {consultantBrief.longTermPossibility.isReturning}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
+                        {consultantBrief.longTermPossibility.reason}
+                      </p>
+                    </div>
+
+                    {/* Referral Ability */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Referral Ability</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{consultantBrief.referralAbility.score}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.referralAbility.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div
+                          className="h-1.5 rounded-full bg-primary transition-all"
+                          style={{ width: `${consultantBrief.referralAbility.score * 20}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Local: {consultantBrief.referralAbility.isLocal}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
+                        {consultantBrief.referralAbility.reason}
+                      </p>
+                    </div>
+
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 4: Recommended Plans */}
+              {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommended Plans</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {(realRec.plans as Record<string, unknown>[]).map((plan, idx) => {
+                      const key = String(plan.name || idx)
+                      const isExpanded = !!expandedPlans[key]
+                      const treatments = Array.isArray((plan as Record<string, unknown>).treatments)
+                        ? ((plan as Record<string, unknown>).treatments as Record<string, unknown>[])
+                        : []
+                      return (
+                        <div key={key} className="rounded-md border bg-muted/20 p-3 text-sm">
+                          <button
+                            type="button"
+                            className="w-full text-left"
+                            onClick={() => setExpandedPlans((s) => ({ ...s, [key]: !s[key] }))}
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">
+                                {String(plan.name || "Plan")} — {String(plan.tagline || "")}
+                              </p>
+                              <p className="text-xs text-muted-foreground ml-2 shrink-0">
+                                {isExpanded ? "Hide details" : "Show details"}
+                              </p>
+                            </div>
+                            <p className="text-muted-foreground text-xs mt-1">
+                              Total ~ ${Number(plan.totalCost) || 0}
+                            </p>
+                          </button>
+                          {isExpanded && (
+                            <div className="mt-3 border-t pt-3 space-y-3">
+                              <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
+                              <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
+                              {treatments.map((t, tIdx) => (
+                                <div
+                                  key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
+                                  className="rounded border p-2"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-medium">{treatmentLabelFromUnknown(t)}</p>
+                                    <p className="text-xs">${Number(t.cost) || 0}</p>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {t.units ? `${t.units} units ` : ""}
+                                    {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
+                                    {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">{String(t.reason || "—")}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Card 5: Final Plan + Final Price */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final Plan</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <textarea
+                    className="w-full min-h-[80px] rounded-md border bg-background p-2 text-sm"
+                    placeholder="Final plan notes for the file…"
+                    value={finalText}
+                    onChange={(e) => setFinalText(e.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={aligning || !finalText.trim()}
+                      onClick={async () => {
+                        setAligning(true)
+                        try {
+                          const res = await fetch("/api/align-final-plan", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ consultantText: finalText }),
+                          })
+                          const data = await res.json()
+                          if (res.ok && data.result) {
+                            setAlignedTherapies(data.result.therapies || [])
+                            setFinalPrice(String(data.result.total_price ?? ""))
+                          }
+                        } finally {
+                          setAligning(false)
+                        }
+                      }}
+                    >
+                      {aligning ? "Aligning…" : "Align with menu (AI)"}
+                    </Button>
+                  </div>
+                  {alignedTherapies.length > 0 && (
+                    <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                      {alignedTherapies.map((t, i) => (
+                        <li key={i}>
+                          {(t.treatmentName as string) || (t.treatmentId as string)} ~ ${Number(t.linePrice) || 0}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      placeholder="Total price"
+                      value={finalPrice}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setFinalPrice(e.target.value)}
+                      className="max-w-[160px]"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={
+                        submitting ||
+                        !selectedClientReport.sessionId ||
+                        finalPrice.trim() === ""
+                      }
+                      onClick={async () => {
+                        if (!selectedClientReport.sessionId) return
+                        setSubmitting(true)
+                        try {
+                          const res = await clinicFetch("/api/final-solution", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              sessionId: selectedClientReport.sessionId,
+                              reportId: selectedClientReport.id,
+                              final_plan_text: finalText,
+                              total_price: Number(finalPrice),
+                              therapies: alignedTherapies,
+                            }),
+                          })
+                          if (res.ok) {
+                            setFinalText("")
+                            setFinalPrice("")
+                            setAlignedTherapies([])
+                            onRefreshClients?.()
+                          }
+                        } finally {
+                          setSubmitting(false)
+                        }
+                      }}
+                    >
+                      {submitting ? "Saving…" : "Save"}
+                    </Button>
+                  </div>
+
+                  {/* Budget uplift indicator */}
+                  {showUplift && (
+                    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                      <ArrowUpRight className="h-4 w-4 shrink-0" />
+                      <span>
+                        Budget uplift: <strong>+${uplift.toLocaleString()}</strong> above stated budget
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+            </div>
+          </div>
         </div>
       )}
     </div>
