@@ -71,22 +71,18 @@ export async function saveMenuToDatabase(
   }
   const supabase = getServiceSupabase()
   if (supabase) {
-    // Deactivate all existing rows for this clinic, then insert a new active row.
-    // This ensures exactly one active menu per clinic at all times.
-    const { error: deactivateErr } = await supabase
+    const now = new Date().toISOString()
+    // Upsert: UPDATE in place if clinic_id row exists, INSERT otherwise.
+    // clinic_menu_store has one row per clinic (clinic_id is the PK).
+    const { error } = await supabase
       .from('clinic_menu_store')
-      .update({ is_active: false })
-      .eq('clinic_id', clinicId)
-    if (deactivateErr) {
-      console.warn('[menu-store] Deactivate old menus failed:', deactivateErr.message)
-      return { ok: false, error: deactivateErr.message }
-    }
-    const { error: insertErr } = await supabase
-      .from('clinic_menu_store')
-      .insert({ clinic_id: clinicId, menu_json: menu, is_active: true })
-    if (!insertErr) return { ok: true }
-    console.warn('[menu-store] Insert new menu failed:', insertErr.message)
-    return { ok: false, error: insertErr.message }
+      .upsert(
+        { clinic_id: clinicId, menu_json: menu, is_active: true, updated_at: now },
+        { onConflict: 'clinic_id' },
+      )
+    if (!error) return { ok: true }
+    console.warn('[menu-store] Upsert failed:', error.message)
+    return { ok: false, error: error.message }
   }
   return writeMenuToLocalFile(menu)
 }
