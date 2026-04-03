@@ -26,9 +26,11 @@ function getAzureModel() {
     console.error('[AI] AZURE_OPENAI_ENDPOINT is not a valid URL:', endpoint)
   }
 
-  console.log(`[azure] endpoint=${endpoint} apiVersion=${apiVersion} deployment=${deployment}`)
+  const finalUrl = `https://${resourceName}.openai.azure.com/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`
+  console.log(`[azure] raw endpoint=${endpoint} resourceName=${resourceName} apiVersion=${apiVersion} deployment=${deployment}`)
+  console.log(`[azure] final request URL=${finalUrl}`)
 
-  const azure = createAzure({ resourceName, apiKey, apiVersion })
+  const azure = createAzure({ resourceName, apiKey, apiVersion, useDeploymentBasedUrls: true })
   return azure.chat(deployment)
 }
 
