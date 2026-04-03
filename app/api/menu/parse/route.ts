@@ -83,6 +83,17 @@ async function fetchRemoteFile(fileUrl: string): Promise<{ buf: Buffer; contentT
 }
 
 export async function POST(req: Request) {
+  try {
+    return await handlePOST(req)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : undefined
+    console.error('[menu/parse] UNHANDLED ERROR:', msg, stack)
+    return Response.json({ error: `Internal server error: ${msg}` }, { status: 500 })
+  }
+}
+
+async function handlePOST(req: Request) {
   const contentTypeHeader = req.headers.get('content-type') || ''
   const isMultipart = contentTypeHeader.includes('multipart/form-data')
 

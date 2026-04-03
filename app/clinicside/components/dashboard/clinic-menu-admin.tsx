@@ -294,7 +294,20 @@ export function ClinicMenuAdmin({
         method: "POST",
         body: formData,
       })
-      const data = await res.json()
+      const rawText = await res.text()
+      console.log("[menu/parse] status:", res.status, "body:", rawText)
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(rawText) as Record<string, unknown>
+      } catch {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        setImportTip(null)
+        setImportResultText(null)
+        toast.error(`Server error (${res.status}): ${rawText.slice(0, 200)}`)
+        return
+      }
       if (!res.ok) {
         stopProgressTimer()
         if (resultTimeoutRef.current) {
