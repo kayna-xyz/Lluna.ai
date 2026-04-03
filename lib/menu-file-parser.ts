@@ -1,5 +1,5 @@
 import type { ClinicMenu, ClinicMenuTreatment, PricingTable, PricingTableRow } from '@/lib/clinic-menu'
-import { parsePricingFromText, extractAllPrices, isStartingFromText } from '@/lib/menu-price-extractor'
+import { parsePricingFromText, extractAllPrices, groupPricingLines } from '@/lib/menu-price-extractor'
 
 export function slugId(name: string, i: number): string {
   const s = name
@@ -158,10 +158,9 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
  * Grounding rule: only fields explicitly present in the source text are populated.
  */
 export function parseMenuTextToDraft(text: string, clinicName = 'My Clinic'): ClinicMenu {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean)
+  const rawLines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  // Group pricing lines that appear on their own line under a treatment name.
+  const lines = groupPricingLines(rawLines)
 
   const treatments: ClinicMenuTreatment[] = []
 

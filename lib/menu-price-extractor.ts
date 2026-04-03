@@ -130,6 +130,94 @@ export function parsePricingFromText(text: string, treatmentName = ''): ParsedPr
   return { pricing_model: 'table', pricing_table: pricingTable }
 }
 
+/** True if a line contains at least one explicit dollar-price. */
+function lineHasPrices(line: string): boolean {
+  DOLLAR_RE.lastIndex = 0
+  return DOLLAR_RE.test(line)
+}
+
+/**
+ * True if a line should be treated as a PRICE CONTINUATION of the previous treatment.
+ * A line with pipe separators is a complete treatment record (pipe-delimited format)
+ * and must never be merged onto a preceding line.
+ */
+function isPriceContinuationLine(line: string): boolean {
+  if (line.includes('|')) return false  // full pipe-delimited record — standalone
+  return lineHasPrices(line)
+}
+
+/**
+ * Preprocess raw text lines before pipe/price parsing.
+ *
+ * Problem: menus often place the treatment name on one line and the prices
+ * on the next line(s):
+ *
+ *   "Toxin — Botox"
+ *   "$12/Unit   $500/50 Units   $850/100 Units"
+ *
+ * This function merges any price-only lines onto the preceding name line so
+ * the rest of the parser sees a single combined string per treatment.
+ *
+ * Rules:
+ *   - A line with NO "$" is stored as the current treatment candidate.
+ *   - Every immediately following line that DOES contain "$" is appended to it.
+ *   - Once a non-price line is encountered, the current candidate is flushed
+ *     and the new line becomes the next candidate.
+ *   - Lines that already have inline prices are emitted as-is (no change).
+ *
+ * Logs the original lines and merged result for every treatment where
+ * a merge actually occurred.
+ */
+export function groupPricingLines(lines: string[]): string[] {
+  const result: string[] = []
+  let pending: string | null = null
+  const pendingOriginals: string[] = []
+
+  const flush = () => {
+    if (pending !== null) {
+      result.push(pending)
+      pending = null
+      pendingOriginals.length = 0
+    }
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) continue
+
+    if (isPriceContinuationLine(line)) {
+      if (pending !== null) {
+        // This is a pricing continuation of the pending treatment name.
+        const before = pending
+        pending = `${pending} ${line}`
+        pendingOriginals.push(line)
+        console.log(
+          `[menu-group] merged price line onto "${before}"\n` +
+          `  original lines: ${JSON.stringify(pendingOriginals)}\n` +
+          `  merged text:    ${JSON.stringify(pending)}`,
+        )
+      } else {
+        // Price line with no preceding name — emit as-is.
+        result.push(line)
+      }
+    } else {
+      // Non-continuation line (no prices, or a full pipe-delimited record):
+      // flush whatever we were building, then start a new candidate or emit directly.
+      flush()
+      if (lineHasPrices(line)) {
+        // Pipe-delimited record with prices — emit directly, don't start a pending.
+        result.push(line)
+      } else {
+        pending = line
+        pendingOriginals.push(line)
+      }
+    }
+  }
+
+  flush()
+  return result
+}
+
 /**
  * Merge two PricingTables that share the same column headers.
  * Used when a treatment has multiple named rows in pipe-delimited format.
