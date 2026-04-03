@@ -33,7 +33,7 @@ async function writeMenuToLocalFile(menu: ClinicMenu): Promise<{ ok: true } | { 
   }
 }
 
-/** Resolved menu for API: DB first, then `.data/clinic-menu.json`, then code default. */
+/** Resolved menu for API: DB first (active row only), then `.data/clinic-menu.json`, then code default. */
 export async function resolveClinicMenu(clinicId: string): Promise<{
   menu: ClinicMenu
   source: 'database' | 'local_file' | 'default'
@@ -44,6 +44,7 @@ export async function resolveClinicMenu(clinicId: string): Promise<{
       .from('clinic_menu_store')
       .select('menu_json')
       .eq('clinic_id', clinicId)
+      .eq('is_active', true)
       .maybeSingle()
     if (!error && data?.menu_json && isValidMenu(data.menu_json)) {
       return { menu: data.menu_json as ClinicMenu, source: 'database' }
@@ -70,13 +71,22 @@ export async function saveMenuToDatabase(
   }
   const supabase = getServiceSupabase()
   if (supabase) {
-    const now = new Date().toISOString()
-    const { error } = await supabase.from('clinic_menu_store').upsert(
-      { clinic_id: clinicId, menu_json: menu, updated_at: now },
-      { onConflict: 'clinic_id' },
-    )
-    if (!error) return { ok: true }
-    console.warn('[menu-store] Supabase upsert failed, using local file:', error.message)
+    // Deactivate all existing rows for this clinic, then insert a new active row.
+    // This ensures exactly one active menu per clinic at all times.
+    const { error: deactivateErr } = await supabase
+      .from('clinic_menu_store')
+      .update({ is_active: false })
+      .eq('clinic_id', clinicId)
+    if (deactivateErr) {
+      console.warn('[menu-store] Deactivate old menus failed:', deactivateErr.message)
+      return { ok: false, error: deactivateErr.message }
+    }
+    const { error: insertErr } = await supabase
+      .from('clinic_menu_store')
+      .insert({ clinic_id: clinicId, menu_json: menu, is_active: true })
+    if (!insertErr) return { ok: true }
+    console.warn('[menu-store] Insert new menu failed:', insertErr.message)
+    return { ok: false, error: insertErr.message }
   }
   return writeMenuToLocalFile(menu)
 }

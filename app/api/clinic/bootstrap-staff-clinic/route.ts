@@ -128,6 +128,7 @@ export async function POST() {
     const { error: menuErr } = await svc.from('clinic_menu_store').insert({
       clinic_id: clinicId,
       menu_json: emptyMenu,
+      is_active: true,
       updated_at: now,
     })
     if (menuErr) {

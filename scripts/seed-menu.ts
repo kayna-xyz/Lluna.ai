@@ -57,15 +57,24 @@ async function main() {
     process.exit(1)
   }
 
-  const now = new Date().toISOString()
-  const { error } = await supabase.from('clinic_menu_store').upsert(
-    { clinic_id: clinic.id as string, menu_json: CLINIC_MENU, updated_at: now },
-    { onConflict: 'clinic_id' },
-  )
+  const { error: deactivateErr } = await supabase
+    .from('clinic_menu_store')
+    .update({ is_active: false })
+    .eq('clinic_id', clinic.id as string)
+
+  if (deactivateErr) {
+    console.error('clinic_menu_store deactivate 失败:', deactivateErr.message)
+    process.exit(1)
+  }
+
+  const { error } = await supabase.from('clinic_menu_store').insert({
+    clinic_id: clinic.id as string,
+    menu_json: CLINIC_MENU,
+    is_active: true,
+  })
 
   if (error) {
-    console.error('clinic_menu_store upsert 失败:', error.message)
-    console.error('请确认已执行 001、002、007 迁移且表结构含 clinic_id PK。')
+    console.error('clinic_menu_store insert 失败:', error.message)
     process.exit(1)
   }
 
