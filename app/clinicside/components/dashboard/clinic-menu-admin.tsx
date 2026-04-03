@@ -20,13 +20,18 @@ import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
+type PricingTableRow = { label: string; values: Record<string, number | null> }
+type PricingTable = { columns: string[]; rows: PricingTableRow[] }
+
 type MenuTreatment = {
   id: string
   name: string
   category: string
   description: string
   units: string
-  pricing: Record<string, unknown>
+  pricing?: Record<string, unknown>
+  pricing_model?: 'simple' | 'table'
+  pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
 }
@@ -135,8 +140,9 @@ export function ClinicMenuAdmin({
     return null
   }
 
-  const getTreatmentPriceText = (pricing: Record<string, unknown>): string | null => {
-    const n = findFirstFiniteNumber(pricing)
+  const getTreatmentPriceText = (t: MenuTreatment): string | null => {
+    if (t.pricing_model === 'table' || t.pricing_table) return null // table — shown in expanded view
+    const n = findFirstFiniteNumber(t.pricing ?? {})
     return n != null ? `$${Math.round(n)}` : null
   }
 
@@ -227,7 +233,7 @@ export function ClinicMenuAdmin({
       setEditingPriceFor(null)
       return
     }
-    const nextPricing: Record<string, unknown> = { ...t.pricing, single: rounded }
+    const nextPricing: Record<string, unknown> = { ...(t.pricing ?? {}), single: rounded }
     const next: FullMenu = {
       ...base,
       treatments: base.treatments.map((x) =>
@@ -631,7 +637,9 @@ export function ClinicMenuAdmin({
                       )}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {editingPriceFor === t.id ? (
+                      {t.pricing_model === 'table' || t.pricing_table ? (
+                        <span className="text-xs text-muted-foreground italic">Multiple options</span>
+                      ) : editingPriceFor === t.id ? (
                         <Input
                           className="h-7 w-[4.25rem] text-xs px-1.5 tabular-nums"
                           value={priceDraft}
@@ -649,7 +657,7 @@ export function ClinicMenuAdmin({
                       ) : (
                         <>
                           <span className="tabular-nums text-xs">
-                            {getTreatmentPriceText(t.pricing) ?? "—"}
+                            {getTreatmentPriceText(t) ?? "—"}
                           </span>
                           <button
                             type="button"
@@ -659,7 +667,7 @@ export function ClinicMenuAdmin({
                             onClick={(e) => {
                               e.stopPropagation()
                               setEditingPriceFor(t.id)
-                              const cur = findFirstFiniteNumber(t.pricing)
+                              const cur = findFirstFiniteNumber(t.pricing ?? {})
                               setPriceDraft(cur != null ? String(Math.round(cur)) : "")
                             }}
                           >
@@ -696,6 +704,37 @@ export function ClinicMenuAdmin({
                     className="mt-3 space-y-4 border-t border-border pt-3"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {(t.pricing_model === 'table' || t.pricing_table) && t.pricing_table && (
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                          Pricing table
+                        </p>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr>
+                                <th className="text-left py-1 px-2 text-muted-foreground font-medium border-b"></th>
+                                {t.pricing_table.columns.map((col) => (
+                                  <th key={col} className="text-right py-1 px-2 text-muted-foreground font-medium border-b whitespace-nowrap">{col}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {t.pricing_table.rows.map((row) => (
+                                <tr key={row.label} className="border-b border-border/40">
+                                  <td className="py-1 px-2 font-medium whitespace-nowrap">{row.label}</td>
+                                  {t.pricing_table!.columns.map((col) => (
+                                    <td key={col} className="py-1 px-2 text-right tabular-nums">
+                                      {row.values[col] != null ? `$${row.values[col]}` : '—'}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

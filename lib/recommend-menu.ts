@@ -1,12 +1,13 @@
 import type { ClinicMenu, ClinicMenuTreatment } from '@/lib/clinic-menu'
 
+
 export function menuToMaps(menu: ClinicMenu) {
   const menuById = new Map(menu.treatments.map((t) => [t.id, t]))
   const nameSet = new Set(menu.treatments.map((t) => t.name))
   return { menuById, nameSet }
 }
 
-/** Pull first numeric price from nested pricing object (menu JSON varies by clinic).
+/** Pull first numeric price from nested simple pricing object.
  *  Returns 0 when no price is present — never invents a default price. */
 export function firstNumericPrice(pricing: Record<string, unknown> | undefined): number {
   if (!pricing || typeof pricing !== 'object') return 0
@@ -18,6 +19,23 @@ export function firstNumericPrice(pricing: Record<string, unknown> | undefined):
     }
   }
   return 0
+}
+
+/** Returns the lowest explicitly-stored price for a treatment, regardless of pricing model.
+ *  For table items: minimum non-null value across all cells.
+ *  For simple items: delegates to firstNumericPrice.
+ *  Returns 0 when no price is present — never invents a value. */
+export function firstNumericPriceForTreatment(t: ClinicMenuTreatment): number {
+  if (t.pricing_model === 'table' && t.pricing_table) {
+    let min = Infinity
+    for (const row of t.pricing_table.rows) {
+      for (const v of Object.values(row.values)) {
+        if (v != null && v > 0 && v < min) min = v
+      }
+    }
+    return min === Infinity ? 0 : min
+  }
+  return firstNumericPrice(t.pricing as Record<string, unknown> | undefined)
 }
 
 export function treatmentFallbackRow(
@@ -34,7 +52,7 @@ export function treatmentFallbackRow(
   fillerType: string | null
   cost: number
 } {
-  const cost = firstNumericPrice(t.pricing as Record<string, unknown> | undefined)
+  const cost = firstNumericPriceForTreatment(t)
   // Do not invent dosage quantities — leave null when not in menu data.
   // The unit type tells us what the pricing unit is, but not how many are needed.
   const units: number | null = null

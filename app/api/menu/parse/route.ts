@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { parseMenuTextToDraft } from '@/lib/menu-file-parser'
+import { parseMenuTextToDraft, parseMenuJsonToDraft } from '@/lib/menu-file-parser'
 import { getMenuVisionAnthropicModel } from '@/lib/anthropic-model'
 import { extractTextFromPdf } from '@/lib/pdf-to-text'
 import { getServiceSupabase } from '@/lib/supabase/admin'
@@ -251,14 +251,43 @@ async function handlePOST(req: Request) {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary. STRICT GROUNDING RULES: Extract ONLY text explicitly visible in the image. Do NOT infer, guess, or add any information not present. If a field (category, price, or description) is not visible for an item, leave it blank — output the pipe delimiter but nothing after it. Do not normalize vague text into specific claims. Do not invent brand names, prices, or benefits.',
+        `You extract a clinic treatment menu from an uploaded image. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
+
+STRICT GROUNDING RULES:
+- Extract ONLY text explicitly visible in the image.
+- Do NOT infer, guess, or add anything not present in the source.
+- Do NOT flatten table-structured pricing into a single price.
+- Do NOT duplicate a treatment just to represent different row variants.
+- If a field is not visible, use "" (string fields) or omit (pricing fields).
+- If a table cell is missing or unreadable, use null for that cell value.
+
+Each object in the array must have:
+  "name": string — treatment name verbatim from image (required)
+  "category": string — verbatim from image, or "" if not shown
+  "description": string — verbatim from image, or "" if not shown
+  "pricing_model": "simple" | "table"
+
+For SIMPLE pricing (one price or one price per unit/syringe):
+  "pricing": { "single": number } or { "perUnit": number } or { "perSyringe": number }
+
+For TABLE pricing (treatment has multiple ROWS such as areas/zones AND multiple COLUMNS such as pricing tiers):
+  "pricing_table": {
+    "columns": ["Col A", "Col B", ...],
+    "rows": [
+      { "label": "Row label", "values": { "Col A": number_or_null, "Col B": number_or_null } }
+    ]
+  }
+
+Use pricing_model "table" when the menu shows a grid: rows = areas/zones/durations, columns = pricing tiers.
+Use pricing_model "simple" when a treatment has only one price point.
+Never invent column headers, row labels, or price values not visible in the image.`,
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Extract every menu item visible in this image. For each item output: Treatment Name | Category | $Price | Description. Copy the text verbatim from the image. If a field is not shown, leave it blank. Do not add anything that is not written in the image.',
+              text: 'Extract every treatment from this menu image. Preserve table structure exactly. Output only the JSON array.',
             },
             {
               type: 'image',
@@ -274,18 +303,40 @@ async function handlePOST(req: Request) {
 
   // Text path: used for PDFs after text extraction. No vision needed.
   // Deliberately avoids Output.object — Azure OpenAI API version 2024-07-18 does not
-  // support response_format:json_schema (requires 2024-08-01-preview or later).
-  // Plain text output works reliably across all API versions and is sufficient
-  // because parseMenuTextToDraft already handles pipe-delimited text.
+  // support response_format:json_schema. We request JSON as plain text and parse it ourselves.
   const extractMenuFromText = async (pdfText: string) => {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary. STRICT GROUNDING RULES: Extract ONLY text explicitly present in the source. Do NOT infer, guess, or add any information not present. If a field (category, price, or description) is not present for an item, leave it blank — output the pipe delimiter but nothing after it. Do not normalize vague text into specific claims. Do not invent brand names, prices, or benefits.',
+        `You extract a clinic treatment menu from raw text. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
+
+STRICT GROUNDING RULES:
+- Extract ONLY text explicitly present in the source.
+- Do NOT infer, guess, or add anything not present.
+- Do NOT flatten table-structured pricing into a single price.
+- Do NOT duplicate a treatment just to represent different row variants.
+- If a field is missing, use "" (string fields) or omit (pricing fields).
+- If a table cell value is missing, use null for that cell.
+
+Each object must have:
+  "name": string (required, verbatim from source)
+  "category": string (verbatim, or "")
+  "description": string (verbatim, or "")
+  "pricing_model": "simple" | "table"
+
+For SIMPLE pricing: "pricing": { "single": number } or { "perUnit": number } etc.
+For TABLE pricing (rows = areas/zones, columns = pricing tiers):
+  "pricing_table": {
+    "columns": ["Col A", "Col B"],
+    "rows": [{ "label": "Row label", "values": { "Col A": number_or_null, "Col B": number_or_null } }]
+  }
+
+Use "table" when the source shows a grid of prices across multiple rows and columns.
+Use "simple" when a treatment has a single price. Never invent values.`,
       messages: [
         {
           role: 'user',
-          content: `Extract every menu item from this text. Copy names, categories, prices, and descriptions verbatim from the source. If a field is missing for an item, leave it blank. Do not add anything not written in the source text.\n\n${pdfText}`,
+          content: `Extract every treatment from this menu text. Preserve table structure exactly when pricing is shown as a grid. Output only the JSON array.\n\n${pdfText}`,
         },
       ],
     })
@@ -326,7 +377,7 @@ async function handlePOST(req: Request) {
     return Response.json({
       text: extractedText,
       format: 'pdf',
-      draftMenu: parseMenuTextToDraft(extractedText),
+      draftMenu: parseMenuJsonToDraft(extractedText),
     })
   }
 
@@ -348,7 +399,7 @@ async function handlePOST(req: Request) {
     return Response.json({
       text: extractedText,
       format: 'image',
-      draftMenu: parseMenuTextToDraft(extractedText),
+      draftMenu: parseMenuJsonToDraft(extractedText),
     })
   }
 

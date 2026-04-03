@@ -1,10 +1,25 @@
+export type PricingTableRow = {
+  label: string
+  values: Record<string, number | null>
+}
+
+export type PricingTable = {
+  columns: string[]
+  rows: PricingTableRow[]
+}
+
 export type ClinicMenuTreatment = {
   id: string
   name: string
   category: string
   description: string
   units: 'session' | 'unit' | 'syringe'
-  pricing: Record<string, unknown>
+  // Simple pricing — present on legacy menus and new simple items
+  pricing?: Record<string, unknown>
+  // Explicit model tag. Absent on legacy menus = treat as 'simple'.
+  pricing_model?: 'simple' | 'table'
+  // Present when pricing_model === 'table'
+  pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
 }

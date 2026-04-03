@@ -12,13 +12,18 @@ import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } fr
 import { normalizeMdTeam } from "@/lib/clinic-public-page"
 import { Camera, Mic, Check, ChevronRight, ChevronLeft, Pencil, HelpCircle, X, ChevronDown, ChevronUp, Plus } from "lucide-react"
 
+type PricingTableRow = { label: string; values: Record<string, number | null> }
+type PricingTable = { columns: string[]; rows: PricingTableRow[] }
+
 type ClinicMenuTreatment = {
   id: string
   name: string
   category: string
   description: string
   units: 'session' | 'unit' | 'syringe'
-  pricing: Record<string, unknown>
+  pricing?: Record<string, unknown>
+  pricing_model?: 'simple' | 'table'
+  pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
 }
@@ -1613,9 +1618,36 @@ function TreatmentDetailScreen({
       {treatment.category && (
         <p style={{ fontSize: 12, color: COLORS.accent, margin: '0 0 4px' }}>{treatment.category}</p>
       )}
-      <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '0 0 20px' }}>
-        {getPrimaryPriceLabel(treatment)}
-      </p>
+      {treatment.pricing_model === 'table' && treatment.pricing_table ? (
+        <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12, minWidth: 320 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: `1px solid ${COLORS.border}`, color: COLORS.muted, fontWeight: 500 }}></th>
+                {treatment.pricing_table.columns.map((col) => (
+                  <th key={col} style={{ textAlign: 'right', padding: '6px 8px', borderBottom: `1px solid ${COLORS.border}`, color: COLORS.muted, fontWeight: 500, whiteSpace: 'nowrap' }}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {treatment.pricing_table.rows.map((row, ri) => (
+                <tr key={row.label} style={{ background: ri % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)' }}>
+                  <td style={{ padding: '7px 8px', fontWeight: 500, color: COLORS.text, whiteSpace: 'nowrap' }}>{row.label}</td>
+                  {treatment.pricing_table!.columns.map((col) => (
+                    <td key={col} style={{ textAlign: 'right', padding: '7px 8px', color: COLORS.text }}>
+                      {row.values[col] != null ? `$${row.values[col]}` : '—'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: '0 0 20px' }}>
+          {getPrimaryPriceLabel(treatment)}
+        </p>
+      )}
 
       {treatment.posterUrl ? (
         <img
@@ -1693,8 +1725,19 @@ function ClinicMenuScreen({
   // Keep the UI filter but fall back to a stable alphabetical sort when data is missing.
   const sortedTreatments = [...treatments].sort((a, b) => {
     if (treatmentFilter === 'price-low' || treatmentFilter === 'price-high') {
-      const aPrice = typeof (a.pricing as any)?.single === 'number' ? ((a.pricing as any).single as number) : 0
-      const bPrice = typeof (b.pricing as any)?.single === 'number' ? ((b.pricing as any).single as number) : 0
+      const lowestPrice = (t: ClinicMenuTreatment): number => {
+        if (t.pricing_model === 'table' && t.pricing_table) {
+          let min = Infinity
+          for (const row of t.pricing_table.rows)
+            for (const v of Object.values(row.values))
+              if (v != null && v > 0 && v < min) min = v
+          return min === Infinity ? 0 : min
+        }
+        return typeof (t.pricing as Record<string,unknown> | undefined)?.single === 'number'
+          ? (t.pricing as Record<string,unknown>).single as number : 0
+      }
+      const aPrice = lowestPrice(a)
+      const bPrice = lowestPrice(b)
       return treatmentFilter === 'price-low' ? aPrice - bPrice : bPrice - aPrice
     }
     return a.name.localeCompare(b.name)
@@ -1711,8 +1754,9 @@ function ClinicMenuScreen({
           return [name, category, description].some((s) => s.includes(treatmentSearchNormalized))
         })
 
-  const getPrimaryPriceLabel = (t: ClinicMenuTreatment) => {
-    const p: any = t.pricing
+  const getPrimaryPriceLabel = (t: ClinicMenuTreatment): string => {
+    if (t.pricing_model === 'table' || t.pricing_table) return 'Multiple options'
+    const p = t.pricing as Record<string, unknown> | undefined
     if (typeof p?.perUnit === 'number') return `$${p.perUnit}/unit`
     if (typeof p?.perSyringe === 'number') return `$${p.perSyringe}/syringe`
     if (typeof p?.single === 'number') return `$${p.single}/session`
