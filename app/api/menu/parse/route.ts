@@ -251,14 +251,14 @@ async function handlePOST(req: Request) {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary.',
+        'You extract a clinic menu from an uploaded document image. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary. STRICT GROUNDING RULES: Extract ONLY text explicitly visible in the image. Do NOT infer, guess, or add any information not present. If a field (category, price, or description) is not visible for an item, leave it blank — output the pipe delimiter but nothing after it. Do not normalize vague text into specific claims. Do not invent brand names, prices, or benefits.',
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Extract the entire menu. For each item output: Treatment Name | Category | $Price | Description. Use $ and numbers when you see prices.',
+              text: 'Extract every menu item visible in this image. For each item output: Treatment Name | Category | $Price | Description. Copy the text verbatim from the image. If a field is not shown, leave it blank. Do not add anything that is not written in the image.',
             },
             {
               type: 'image',
@@ -281,11 +281,11 @@ async function handlePOST(req: Request) {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
       system:
-        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item: Treatment Name | Category | $Price | Description. No JSON. No commentary. Each row on its own line.',
+        'You extract a clinic menu from raw text. Output ONLY pipe-delimited rows, one per menu item, one per line: Treatment Name | Category | $Price | Description. No JSON. No commentary. STRICT GROUNDING RULES: Extract ONLY text explicitly present in the source. Do NOT infer, guess, or add any information not present. If a field (category, price, or description) is not present for an item, leave it blank — output the pipe delimiter but nothing after it. Do not normalize vague text into specific claims. Do not invent brand names, prices, or benefits.',
       messages: [
         {
           role: 'user',
-          content: `Extract the menu from this text:\n\n${pdfText}`,
+          content: `Extract every menu item from this text. Copy names, categories, prices, and descriptions verbatim from the source. If a field is missing for an item, leave it blank. Do not add anything not written in the source text.\n\n${pdfText}`,
         },
       ],
     })

@@ -6,17 +6,18 @@ export function menuToMaps(menu: ClinicMenu) {
   return { menuById, nameSet }
 }
 
-/** Pull first numeric price from nested pricing object (menu JSON varies by clinic). */
+/** Pull first numeric price from nested pricing object (menu JSON varies by clinic).
+ *  Returns 0 when no price is present — never invents a default price. */
 export function firstNumericPrice(pricing: Record<string, unknown> | undefined): number {
-  if (!pricing || typeof pricing !== 'object') return 299
+  if (!pricing || typeof pricing !== 'object') return 0
   for (const v of Object.values(pricing)) {
     if (typeof v === 'number' && !Number.isNaN(v) && v > 0) return v
     if (v && typeof v === 'object') {
       const n = firstNumericPrice(v as Record<string, unknown>)
-      if (n > 0 && n !== 299) return n
+      if (n > 0) return n
     }
   }
-  return 299
+  return 0
 }
 
 export function treatmentFallbackRow(
@@ -34,17 +35,16 @@ export function treatmentFallbackRow(
   cost: number
 } {
   const cost = firstNumericPrice(t.pricing as Record<string, unknown> | undefined)
-  let units: number | null = null
-  let syringes: number | null = null
-  let sessions: number | null = null
-  if (t.units === 'unit') units = 60
-  else if (t.units === 'syringe') syringes = 1
-  else sessions = 1
+  // Do not invent dosage quantities — leave null when not in menu data.
+  // The unit type tells us what the pricing unit is, but not how many are needed.
+  const units: number | null = null
+  const syringes: number | null = null
+  const sessions: number | null = null
   return {
     treatmentId: t.id,
     treatmentName: t.name,
     role,
-    reason: `Selected from your clinic menu (${role}). Confirm details in person.`,
+    reason: `Listed in your clinic menu. Dosage and suitability to be confirmed in consultation.`,
     units,
     syringes,
     sessions,
@@ -89,6 +89,7 @@ function planFromTriple(
 
 /**
  * When AI fails, build three plans from the resolved clinic menu (no hardcoded treatment ids).
+ * Grounding: uses only names and prices from menu data. Does not invent clinical logic.
  */
 export function buildFallbackRecommendationFromMenu(
   menu: ClinicMenu,
@@ -114,8 +115,8 @@ export function buildFallbackRecommendationFromMenu(
 
   const g = input.goals || ''
   const fallbackSummary = g
-    ? `Based on what you shared about "${g.slice(0, 120)}${g.length > 120 ? '…' : ''}" and your around-$${input.budgetNum} budget, we sketched a conservative path: address your main concern first, add something that helps results last, then an optional glow step if you want.${input.experience === 'first' ? ' Since this may be your first visit, we are keeping the plan approachable.' : ''} Skip rushing multiple aggressive services the same week—your provider will tailor timing.`
-    : 'Your plan is ready. Ask your consultant to walk you through it.'
+    ? `Based on your goal ("${g.slice(0, 120)}${g.length > 120 ? '…' : ''}") and a budget around $${input.budgetNum}, these plans are drawn from the treatments in this clinic's menu. AI generation was unavailable — your consultant will review and personalise the selection in your session.`
+    : 'These plans are drawn from the treatments in this clinic\'s menu. Ask your consultant to walk you through them.'
 
   const essentialT = [treatments[0], treatments[1], treatments[2]] as [
     ClinicMenuTreatment,
@@ -148,28 +149,28 @@ export function buildFallbackRecommendationFromMenu(
     plans: [
       planFromTriple(
         'Essential',
-        'Direct fix + glow add-ons',
+        'Starting point from clinic menu',
         essentialT,
-        'Covers a common first path when AI generation fails—confirm in clinic.',
-        'Neurotoxin plus skin-quality support when appropriate.',
+        'Selected from the first available treatments in your clinic menu. Confirm suitability in consultation.',
+        'Your consultant will assess whether these treatments work well together for your specific goals.',
       ),
       planFromTriple(
         'Optimal',
-        'Balanced upgrade',
+        'Mid-range option from clinic menu',
         optimalT,
-        'Adds surface renewal on top of core injectable + booster logic.',
-        'Sequence and candidacy must be confirmed in person.',
+        'Selected from the mid-range treatments in your clinic menu. Confirm suitability in consultation.',
+        'Your consultant will assess whether these treatments work well together for your specific goals.',
       ),
       planFromTriple(
         'Premium',
-        'Higher-intensity option',
+        'Higher-investment option from clinic menu',
         premiumT,
-        'Shows a higher-investment anchor; validate medical fit in clinic.',
-        'Energy and injectable timing must follow your provider’s protocol.',
+        'Selected from the higher-priced treatments in your clinic menu. Confirm suitability in consultation.',
+        'Your consultant will assess whether these treatments work well together for your specific goals.',
       ),
     ],
-    skip: 'Defer aggressive stacking until reviewed in person.',
-    holdOffNote: 'Confirm order/timing with your provider.',
-    safetyNote: 'Educational only—not medical advice.',
+    skip: 'Confirm which treatments to defer with your consultant.',
+    holdOffNote: 'Timing and sequencing to be confirmed in person.',
+    safetyNote: 'Educational only — not medical advice.',
   }
 }
