@@ -141,7 +141,17 @@ export function ClinicMenuAdmin({
   }
 
   const getTreatmentPriceText = (t: MenuTreatment): string | null => {
-    if (t.pricing_model === 'table' || t.pricing_table) return null // table — shown in expanded view
+    if ((t.pricing_model === 'table' || t.pricing_table) && t.pricing_table) {
+      const nums: number[] = []
+      for (const row of t.pricing_table.rows)
+        for (const v of Object.values(row.values))
+          if (typeof v === 'number' && Number.isFinite(v) && v > 0) nums.push(v)
+      if (nums.length === 0) return null
+      const min = Math.min(...nums)
+      const max = Math.max(...nums)
+      const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
+      return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+    }
     const n = findFirstFiniteNumber(t.pricing ?? {})
     return n != null ? `$${Math.round(n)}` : null
   }
@@ -637,9 +647,7 @@ export function ClinicMenuAdmin({
                       )}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {t.pricing_model === 'table' || t.pricing_table ? (
-                        <span className="text-xs text-muted-foreground italic">Multiple options</span>
-                      ) : editingPriceFor === t.id ? (
+                      {editingPriceFor === t.id && t.pricing_model !== 'table' && !t.pricing_table ? (
                         <Input
                           className="h-7 w-[4.25rem] text-xs px-1.5 tabular-nums"
                           value={priceDraft}
@@ -659,20 +667,22 @@ export function ClinicMenuAdmin({
                           <span className="tabular-nums text-xs">
                             {getTreatmentPriceText(t) ?? "—"}
                           </span>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-opacity shrink-0"
-                            title="Edit price"
-                            aria-label="Edit price"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingPriceFor(t.id)
-                              const cur = findFirstFiniteNumber(t.pricing ?? {})
-                              setPriceDraft(cur != null ? String(Math.round(cur)) : "")
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
+                          {t.pricing_model !== 'table' && !t.pricing_table && (
+                            <button
+                              type="button"
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-opacity shrink-0"
+                              title="Edit price"
+                              aria-label="Edit price"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingPriceFor(t.id)
+                                const cur = findFirstFiniteNumber(t.pricing ?? {})
+                                setPriceDraft(cur != null ? String(Math.round(cur)) : "")
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

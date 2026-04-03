@@ -21,21 +21,49 @@ export function firstNumericPrice(pricing: Record<string, unknown> | undefined):
   return 0
 }
 
-/** Returns the lowest explicitly-stored price for a treatment, regardless of pricing model.
- *  For table items: minimum non-null value across all cells.
+/** Returns the lowest explicitly-stored price for a treatment — used by fallback cost calc.
+ *  For table items: minimum non-null cell value.
  *  For simple items: delegates to firstNumericPrice.
  *  Returns 0 when no price is present — never invents a value. */
 export function firstNumericPriceForTreatment(t: ClinicMenuTreatment): number {
   if (t.pricing_model === 'table' && t.pricing_table) {
     let min = Infinity
-    for (const row of t.pricing_table.rows) {
-      for (const v of Object.values(row.values)) {
+    for (const row of t.pricing_table.rows)
+      for (const v of Object.values(row.values))
         if (v != null && v > 0 && v < min) min = v
-      }
-    }
     return min === Infinity ? 0 : min
   }
   return firstNumericPrice(t.pricing as Record<string, unknown> | undefined)
+}
+
+/**
+ * Returns a display price string for any treatment:
+ * - simple / legacy: "$X/unit" style label from firstNumericPrice
+ * - table: "$MIN – $MAX" from all cells, or "$X" if min===max, or null if no data
+ *
+ * Returns null when no price data is present (caller should show "Pricing varies").
+ * Never invents or infers values.
+ */
+export function getPriceRangeForTreatment(t: ClinicMenuTreatment): string | null {
+  if (t.pricing_model === 'table' && t.pricing_table) {
+    const nums: number[] = []
+    for (const row of t.pricing_table.rows)
+      for (const v of Object.values(row.values))
+        if (typeof v === 'number' && Number.isFinite(v) && v > 0) nums.push(v)
+    if (nums.length === 0) return null
+    const min = Math.min(...nums)
+    const max = Math.max(...nums)
+    const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
+    return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+  }
+  // Simple / legacy
+  const p = t.pricing as Record<string, unknown> | undefined
+  if (!p) return null
+  if (typeof p.perUnit === 'number' && p.perUnit > 0) return `$${Math.round(p.perUnit as number)}/unit`
+  if (typeof p.perSyringe === 'number' && p.perSyringe > 0) return `$${Math.round(p.perSyringe as number)}/syringe`
+  if (typeof p.single === 'number' && p.single > 0) return `$${Math.round(p.single as number)}`
+  const first = firstNumericPrice(p)
+  return first > 0 ? `$${Math.round(first)}` : null
 }
 
 export function treatmentFallbackRow(

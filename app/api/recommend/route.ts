@@ -144,14 +144,19 @@ export async function POST(req: Request) {
       const base = `- id: ${t.id}\n  name: ${t.name}\n  category: ${t.category}\n  description: ${t.description}`
       if (t.pricing_model === 'table' && t.pricing_table) {
         const pt = t.pricing_table
+        const nums: number[] = []
         const tableLines = pt.rows.map((r) => {
           const vals = pt.columns.map((c) => {
             const v = r.values[c]
+            if (v != null) nums.push(v)
             return v != null ? `${c}: $${v}` : `${c}: n/a`
           }).join(', ')
           return `    ${r.label}: ${vals}`
         }).join('\n')
-        return `${base}\n  pricing_model: table\n  pricing_table:\n${tableLines}`
+        const rangeNote = nums.length > 0
+          ? ` (range $${Math.min(...nums)} – $${Math.max(...nums)})`
+          : ''
+        return `${base}\n  pricing_model: table${rangeNote}\n  pricing_table:\n${tableLines}`
       }
       return `${base}\n  pricing: ${JSON.stringify(t.pricing ?? {})}`
     })

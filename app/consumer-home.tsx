@@ -1755,11 +1755,21 @@ function ClinicMenuScreen({
         })
 
   const getPrimaryPriceLabel = (t: ClinicMenuTreatment): string => {
-    if (t.pricing_model === 'table' || t.pricing_table) return 'Multiple options'
+    if (t.pricing_model === 'table' && t.pricing_table) {
+      const nums: number[] = []
+      for (const row of t.pricing_table.rows)
+        for (const v of Object.values(row.values))
+          if (typeof v === 'number' && Number.isFinite(v) && v > 0) nums.push(v)
+      if (nums.length === 0) return 'Pricing varies'
+      const min = Math.min(...nums)
+      const max = Math.max(...nums)
+      const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
+      return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+    }
     const p = t.pricing as Record<string, unknown> | undefined
     if (typeof p?.perUnit === 'number') return `$${p.perUnit}/unit`
     if (typeof p?.perSyringe === 'number') return `$${p.perSyringe}/syringe`
-    if (typeof p?.single === 'number') return `$${p.single}/session`
+    if (typeof p?.single === 'number') return `$${Math.round(p.single as number)}`
     return 'See pricing'
   }
 
