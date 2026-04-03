@@ -1698,7 +1698,7 @@ function ClinicMenuScreen({
   setTreatmentFilter: (v: 'popular' | 'price-low' | 'price-high' | 'comprehensive') => void
   clinicMenu: ClinicMenu | null
 }) {
-  const { tagline, activities, testimonials, clinicPhone, clinicWorkTime, logoUrl, mdTeam } = useContext(ConsumerClinicUiContext)
+  const { clinicName, tagline, activities, testimonials, clinicPhone, clinicWorkTime, logoUrl, mdTeam } = useContext(ConsumerClinicUiContext)
   const [activityIndex, setActivityIndex] = useState(0)
   const [treatmentSearch, setTreatmentSearch] = useState("")
   const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
@@ -1810,7 +1810,7 @@ function ClinicMenuScreen({
           {logoUrl ? (
             <img
               src={logoUrl}
-              alt={clinicMenu?.clinicName || "Clinic"}
+              alt={clinicName || "Clinic"}
               style={{
                 width: 44,
                 height: 44,
@@ -1829,7 +1829,7 @@ function ClinicMenuScreen({
               color: COLORS.text,
               margin: 0,
             }}>
-              {clinicMenu?.clinicName || "Clinic"}
+              {clinicName || "Clinic"}
             </h1>
             {tagline ? (
               <p style={{ fontSize: 12, color: COLORS.success, margin: 0 }}>{tagline}</p>
@@ -4782,7 +4782,7 @@ export default function LlunaApp({
           <WelcomeScreen
             go={go}
             onPrivacyClick={() => setState(s => ({ ...s, showPrivacyPolicy: true }))}
-            clinicName={clinicMenu?.clinicName?.trim() || "Clinic"}
+            clinicName={consumerUiValue.clinicName}
           />
         )
       case 1:
@@ -4878,7 +4878,7 @@ export default function LlunaApp({
           <WelcomeScreen
             go={go}
             onPrivacyClick={() => setState(s => ({ ...s, showPrivacyPolicy: true }))}
-            clinicName={clinicMenu?.clinicName?.trim() || "Clinic"}
+            clinicName={consumerUiValue.clinicName}
           />
         )
     }

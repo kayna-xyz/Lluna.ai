@@ -47,7 +47,16 @@ export async function resolveClinicMenu(clinicId: string): Promise<{
       .eq('is_active', true)
       .maybeSingle()
     if (!error && data?.menu_json && isValidMenu(data.menu_json)) {
-      return { menu: data.menu_json as ClinicMenu, source: 'database' }
+      const menu = data.menu_json as ClinicMenu
+      // Overlay the user-editable clinic name from clinic_settings, if set
+      const { data: settings } = await supabase
+        .from('clinic_settings')
+        .select('info_clinic_name')
+        .eq('clinic_id', clinicId)
+        .maybeSingle()
+      const liveName = typeof settings?.info_clinic_name === 'string' ? settings.info_clinic_name.trim() : ''
+      if (liveName) menu.clinicName = liveName
+      return { menu, source: 'database' }
     }
   }
   const local = await readMenuFromLocalFile()
