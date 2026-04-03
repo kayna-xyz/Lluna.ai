@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
-import { upload } from "@vercel/blob/client"
+
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -286,16 +286,13 @@ export function ClinicMenuAdmin({
     }
 
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/menu/upload-token",
-      })
-      const fileUrl = blob.url
+      const formData = new FormData()
+      formData.append("file", file, sanitizeUploadFilename(file.name))
+      if (clinicId) formData.append("clinicId", clinicId)
 
       const res = await clinicFetch("/api/menu/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl, clinicId }),
+        body: formData,
       })
       const data = await res.json()
       if (!res.ok) {

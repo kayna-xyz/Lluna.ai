@@ -83,43 +83,67 @@ async function fetchRemoteFile(fileUrl: string): Promise<{ buf: Buffer; contentT
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => null)) as { fileUrl?: unknown; clinicId?: unknown; clinicSlug?: unknown } | null
-  const fileUrl = typeof body?.fileUrl === 'string' ? body.fileUrl.trim() : ''
-  if (!fileUrl) {
-    return Response.json({ error: 'fileUrl required' }, { status: 400 })
-  }
-  if (!isAllowedRemoteUrl(fileUrl)) {
-    return Response.json({ error: 'Invalid fileUrl' }, { status: 400 })
+  const contentTypeHeader = req.headers.get('content-type') || ''
+  const isMultipart = contentTypeHeader.includes('multipart/form-data')
+
+  let buf: Buffer
+  let contentType: string
+  let name: string
+  let bodyForTenant: Record<string, unknown> = {}
+
+  if (isMultipart) {
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch (e) {
+      return Response.json({ error: 'Failed to read upload' }, { status: 400 })
+    }
+    const fileField = formData.get('file')
+    if (!fileField || !(fileField instanceof File)) {
+      return Response.json({ error: 'file field required' }, { status: 400 })
+    }
+    if (fileField.size > MAX_FETCH_BYTES) {
+      return Response.json({ error: `File too large. Max upload size is ${Math.floor(MAX_FETCH_BYTES / (1024 * 1024))}MB.` }, { status: 413 })
+    }
+    buf = Buffer.from(await fileField.arrayBuffer())
+    contentType = fileField.type || ''
+    name = fileField.name || 'upload'
+    const clinicId = formData.get('clinicId')
+    const clinicSlug = formData.get('clinicSlug')
+    if (clinicId) bodyForTenant.clinicId = clinicId
+    if (clinicSlug) bodyForTenant.clinicSlug = clinicSlug
+  } else {
+    const body = (await req.json().catch(() => null)) as { fileUrl?: unknown; clinicId?: unknown; clinicSlug?: unknown } | null
+    const fileUrl = typeof body?.fileUrl === 'string' ? body.fileUrl.trim() : ''
+    if (!fileUrl) {
+      return Response.json({ error: 'fileUrl required' }, { status: 400 })
+    }
+    if (!isAllowedRemoteUrl(fileUrl)) {
+      return Response.json({ error: 'Invalid fileUrl' }, { status: 400 })
+    }
+    bodyForTenant = (body || {}) as Record<string, unknown>
+    let remoteFile
+    try {
+      remoteFile = await fetchRemoteFile(fileUrl)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      const status = msg.includes('File too large') ? 413 : 400
+      return Response.json({ error: msg }, { status })
+    }
+    buf = remoteFile.buf
+    contentType = remoteFile.contentType
+    name = getFileNameFromUrl(fileUrl)
   }
 
   const supabase = getServiceSupabase()
   if (supabase) {
-    const tenant = await resolveClinicForRequest(supabase, req, (body || {}) as Record<string, unknown>)
+    const tenant = await resolveClinicForRequest(supabase, req, bodyForTenant)
     if (!tenant.ok) {
       return Response.json({ error: tenant.error }, { status: tenant.status })
     }
-    const storagePath = parseMenusStoragePath(fileUrl)
-    if (!storagePath) {
-      return Response.json({ error: 'fileUrl must point to the public menus bucket' }, { status: 400 })
-    }
-    const storagePrefix = storagePath.split('/').filter(Boolean)[0] || ''
-    if (storagePrefix !== tenant.clinic.id) {
-      return Response.json({ error: 'fileUrl does not belong to this clinic' }, { status: 403 })
-    }
   }
 
-  let remoteFile
-  try {
-    remoteFile = await fetchRemoteFile(fileUrl)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    const status = msg.includes('File too large') ? 413 : 400
-    return Response.json({ error: msg }, { status })
-  }
-
-  const name = getFileNameFromUrl(fileUrl)
   const lower = name.toLowerCase()
-  const { buf, contentType } = remoteFile
 
   // CSV: treat as spreadsheet for more reliable parsing (Excel exports often include quotes/commas).
   if (lower.endsWith('.csv')) {
