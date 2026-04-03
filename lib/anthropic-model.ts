@@ -26,6 +26,8 @@ function getAzureModel() {
     console.error('[AI] AZURE_OPENAI_ENDPOINT is not a valid URL:', endpoint)
   }
 
+  console.log(`[azure] endpoint=${endpoint} apiVersion=${apiVersion} deployment=${deployment}`)
+
   const azure = createAzure({ resourceName, apiKey, apiVersion })
   return azure.chat(deployment)
 }
