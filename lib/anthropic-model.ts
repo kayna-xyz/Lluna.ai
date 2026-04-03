@@ -14,7 +14,7 @@ import { createAzure } from '@ai-sdk/azure'
 function getAzureModel() {
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT?.trim() || ''
   const apiKey = process.env.AZURE_OPENAI_API_KEY?.trim() || ''
-  const apiVersion = process.env.AZURE_OPENAI_API_VERSION?.trim() ?? '2025-04-01-preview'
+  const apiVersion = process.env.AZURE_OPENAI_API_VERSION?.trim() ?? '2024-07-18'
   const deployment = process.env.AZURE_OPENAI_DEPLOYMENT?.trim() || 'gpt-4o-mini'
 
   // Extract resource name from endpoint URL.
