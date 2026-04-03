@@ -1,4 +1,5 @@
 import type { ClinicMenu, ClinicMenuTreatment, PricingTable, PricingTableRow } from '@/lib/clinic-menu'
+import { parsePricingFromText, extractAllPrices, isStartingFromText } from '@/lib/menu-price-extractor'
 
 export function slugId(name: string, i: number): string {
   const s = name
@@ -11,6 +12,11 @@ export function slugId(name: string, i: number): string {
 /**
  * Primary parser — handles JSON output from the AI (both image and PDF/text prompts).
  * Falls back to parseMenuTextToDraft if the input is not valid JSON.
+ *
+ * Post-processing step:
+ *   After parsing each AI treatment, if pricing_model is "simple" but the
+ *   pricing.single field (or any other string field) actually contains multiple
+ *   inline prices, re-classify as table.
  *
  * Grounding rule: only fields explicitly present in the source are populated.
  * Missing fields are left empty/null rather than filled with defaults.
@@ -37,11 +43,11 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
     const name = typeof obj.name === 'string' ? obj.name.trim() : ''
     if (!name) continue
 
-    const pricingModel = obj.pricing_model === 'table' ? 'table' : 'simple'
-
+    const aiPricingModel = obj.pricing_model === 'table' ? 'table' : 'simple'
     let treatment: ClinicMenuTreatment
 
-    if (pricingModel === 'table' && obj.pricing_table && typeof obj.pricing_table === 'object') {
+    if (aiPricingModel === 'table' && obj.pricing_table && typeof obj.pricing_table === 'object') {
+      // AI correctly identified a table — parse the structured data
       const pt = obj.pricing_table as Record<string, unknown>
       const columns = Array.isArray(pt.columns)
         ? pt.columns.filter((c): c is string => typeof c === 'string')
@@ -68,7 +74,6 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
         }
       }
 
-      const pricingTable: PricingTable = { columns, rows }
       treatment = {
         id: slugId(name, i),
         name,
@@ -76,26 +81,67 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
         description: typeof obj.description === 'string' ? obj.description.trim() : '',
         units: 'session',
         pricing_model: 'table',
-        pricing_table: pricingTable,
+        pricing_table: { columns, rows },
       }
     } else {
-      // Simple pricing
-      let pricing: Record<string, unknown> = {}
+      // AI said "simple" — but check if the pricing data itself contains multiple prices
+      let rawPricing: Record<string, unknown> = {}
       if (obj.pricing && typeof obj.pricing === 'object' && !Array.isArray(obj.pricing)) {
-        pricing = obj.pricing as Record<string, unknown>
+        rawPricing = obj.pricing as Record<string, unknown>
       }
+
+      // Re-scan the pricing object's string values for inline multi-prices.
+      // This catches cases where the AI put "$1000/Vial $1680/2 vials" into pricing.single.
+      const pricingStringValues = Object.values(rawPricing)
+        .filter((v): v is string => typeof v === 'string')
+        .join(' ')
+      // Also scan the description in case prices leaked there.
+      const descStr = typeof obj.description === 'string' ? obj.description : ''
+      const scanTarget = [pricingStringValues, descStr].filter(Boolean).join(' ')
+      const allPricesInStrings = extractAllPrices(scanTarget)
+
+      // Check if rawPricing already has proper numeric values
+      const numericPricingValues = Object.values(rawPricing).filter(
+        (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0,
+      )
+
+      let finalPricing: { pricing_model: 'simple' | 'table'; pricing?: Record<string, unknown>; pricing_table?: PricingTable }
+
+      if (numericPricingValues.length >= 2) {
+        // AI already put multiple numeric values in the pricing object → keep as-is (simple with multiple keys)
+        // but re-classify as table using parsePricingFromText on a reconstructed string
+        const reconstructed = Object.entries(rawPricing)
+          .filter(([, v]) => typeof v === 'number')
+          .map(([k, v]) => `$${v}/${k}`)
+          .join(' ')
+        finalPricing = parsePricingFromText(reconstructed, name)
+      } else if (allPricesInStrings.length >= 2) {
+        // Embedded multi-price strings found — reclassify
+        finalPricing = parsePricingFromText(scanTarget, name)
+      } else if (numericPricingValues.length === 1) {
+        // Normal single-price simple
+        finalPricing = { pricing_model: 'simple', pricing: rawPricing }
+        console.log(`[menu-parse] "${name}" detected_prices=[$${numericPricingValues[0]}] pricing_model=simple`)
+      } else if (allPricesInStrings.length === 1) {
+        finalPricing = parsePricingFromText(scanTarget, name)
+      } else {
+        finalPricing = { pricing_model: 'simple', pricing: rawPricing }
+        console.log(`[menu-parse] "${name}" detected_prices=[] pricing_model=simple (no prices)`)
+      }
+
       treatment = {
         id: slugId(name, i),
         name,
         category: typeof obj.category === 'string' ? obj.category.trim() : '',
         description: typeof obj.description === 'string' ? obj.description.trim() : '',
         units: 'session',
-        pricing_model: 'simple',
-        pricing,
+        pricing_model: finalPricing.pricing_model,
+        pricing: finalPricing.pricing,
+        pricing_table: finalPricing.pricing_table,
       }
     }
 
-    console.log(`[menu-parse] "${name}" → pricing_model=${treatment.pricing_model}`)
+    console.log(`[menu-parse] "${name}" → final pricing_model=${treatment.pricing_model}`)
     treatments.push(treatment)
   }
 
@@ -103,7 +149,12 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
 }
 
 /**
- * Fallback pipe-delimited parser — used when AI returns non-JSON text.
+ * Fallback pipe-delimited parser — used when AI returns non-JSON text,
+ * or for spreadsheet formats (CSV, XLSX) which bypass AI entirely.
+ *
+ * Price extraction now uses the shared extractor so multi-price inline strings
+ * are correctly classified as table pricing rather than dropped.
+ *
  * Grounding rule: only fields explicitly present in the source text are populated.
  */
 export function parseMenuTextToDraft(text: string, clinicName = 'My Clinic'): ClinicMenu {
@@ -120,40 +171,69 @@ export function parseMenuTextToDraft(text: string, clinicName = 'My Clinic'): Cl
     let name = ''
     let category = ''
     let description = ''
-    const units: 'session' | 'unit' | 'syringe' = 'session'
-    let pricing: Record<string, unknown> = {}
 
     if (parts.length >= 2) {
       name = parts[0] || line
       category = parts[1] || ''
 
-      const priceCandidate = parts.length >= 3 ? parts[2] : ''
-      if (priceCandidate && /\d/.test(priceCandidate)) {
-        const priceMatch = priceCandidate.match(/\$?\s*(\d+(?:\.\d+)?)/)
-        if (priceMatch) pricing = { single: Number(priceMatch[1]) }
+      // Everything from part[2] onward may contain prices and/or description text.
+      // Scan the full remaining text so no price is dropped.
+      const remainingText = parts.slice(2).join(' ').trim()
+
+      // Separate price-bearing portion from description.
+      // Heuristic: if part[2] looks like a price token, use it as the price field;
+      // otherwise treat all remaining text as one blob for price extraction.
+      const priceCandidate = parts.length >= 3 ? parts[2] : remainingText
+      const descCandidate = parts.length >= 4 ? parts.slice(3).join(' ').trim() : ''
+
+      const scanText = priceCandidate || remainingText
+      const parsed = parsePricingFromText(scanText, name)
+
+      description = descCandidate || (parsed.pricing_model === 'simple' ? remainingText.replace(/\$[\d,./a-zA-Z\s]+/g, '').trim() : '')
+
+      const treatment: ClinicMenuTreatment = {
+        id: slugId(name, i),
+        name,
+        category,
+        description,
+        units: 'session',
+        pricing_model: parsed.pricing_model,
+        pricing: parsed.pricing,
+        pricing_table: parsed.pricing_table,
+      }
+      treatments.push(treatment)
+    } else {
+      // Single-part line — no pipe separators.
+      // The whole line is the name; run price extraction over it too.
+      name = line.slice(0, 120)
+
+      // Strip the name from consideration when scanning for prices
+      // to avoid treating numbers in the name as prices.
+      // Use extractAllPrices to find explicit $-amounts only.
+      const pricesInLine = extractAllPrices(line)
+      let parsed: ReturnType<typeof parsePricingFromText>
+
+      if (pricesInLine.length === 0) {
+        parsed = { pricing_model: 'simple', pricing: {} }
+        console.log(`[price-extractor] "${name}" detected_prices=[] pricing_model=simple (no prices)`)
+      } else {
+        parsed = parsePricingFromText(line, name)
+        // Trim price tokens from name if they slipped in
+        name = name.replace(/\$[\d,./a-zA-Z\s]+/g, '').trim() || line.slice(0, 60).trim()
       }
 
-      const hasStructuredPrice = parts.length >= 4 && priceCandidate && /\d/.test(priceCandidate)
-      description = hasStructuredPrice
-        ? parts.slice(3).join(' ').trim()
-        : parts.slice(2).join(' ').trim()
-    } else {
-      name = line.slice(0, 120)
-      description = ''
-      const m = line.match(/\$?\s*(\d+(?:\.\d+)?)/)
-      if (m) pricing = { single: Number(m[1]) }
+      if (!name) continue
+      treatments.push({
+        id: slugId(name, i),
+        name,
+        category,
+        description: '',
+        units: 'session',
+        pricing_model: parsed.pricing_model,
+        pricing: parsed.pricing,
+        pricing_table: parsed.pricing_table,
+      })
     }
-
-    if (!name) continue
-    treatments.push({
-      id: slugId(name, i),
-      name,
-      category,
-      description,
-      units,
-      pricing_model: 'simple',
-      pricing,
-    })
   }
 
   return { clinicName, treatments }
