@@ -1,18 +1,10 @@
 /**
- * Extracts text content from a PDF buffer using pdfjs-dist.
- *
- * Pure JS/WASM — no system binaries (no Ghostscript, no poppler).
- * Works on Vercel Node.js runtime without extra system dependencies.
- *
- * Limitation: only works for text-based PDFs (Word exports, InDesign, etc.).
- * Scanned / image-only PDFs will return near-empty text — callers should
- * check `isLikelyScanned` and handle accordingly.
+ * Extracts text content from a PDF buffer using unpdf (pdfjs-dist wrapper).
+ * Works in Node.js without worker thread issues.
  */
 
-import { createRequire } from 'module'
-
-const MAX_PAGES = 5
-const MIN_TEXT_CHARS = 80 // below this threshold → assume scanned/image-only
+const MAX_PAGES = 10
+const MIN_TEXT_CHARS = 80
 
 export interface PdfTextResult {
   text: string
@@ -22,46 +14,21 @@ export interface PdfTextResult {
 }
 
 export async function extractTextFromPdf(buf: Buffer): Promise<PdfTextResult> {
-  // Dynamic import keeps pdfjs-dist out of the client bundle and avoids
-  // Next.js bundler issues. pdfjs-dist is listed in serverExternalPackages.
-  const { getDocument, GlobalWorkerOptions } = await import(
-    'pdfjs-dist/legacy/build/pdf.mjs'
-  ) as typeof import('pdfjs-dist')
+  const { getDocumentProxy, extractText } = await import('unpdf')
 
-  // pdfjs-dist v5 requires an explicit workerSrc — empty string no longer works.
-  // Resolve the worker file path at runtime so it works in both local and Vercel environments.
-  const req = createRequire(import.meta.url)
-  GlobalWorkerOptions.workerSrc = req.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
-
-  const loadingTask = getDocument({
-    data: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
-    disableFontFace: true,
-    verbosity: 0,
-  })
-
-  const pdf = await loadingTask.promise
+  const pdf = await getDocumentProxy(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength))
   const pageCount = pdf.numPages
   const pagesProcessed = Math.min(pageCount, MAX_PAGES)
-  const textParts: string[] = []
 
-  for (let i = 1; i <= pagesProcessed; i++) {
-    const page = await pdf.getPage(i)
-    const content = await page.getTextContent()
-    const pageText = content.items
-      .filter((item): item is { str: string } => 'str' in item)
-      .map((item) => item.str)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-    if (pageText) textParts.push(pageText)
-  }
+  const { text } = await extractText(pdf, { mergePages: true })
 
-  const text = textParts.join('\n\n')
+  // extractText with mergePages returns a single string; truncate if huge
+  const trimmed = (text || '').trim()
 
   return {
-    text,
+    text: trimmed,
     pageCount,
     pagesProcessed,
-    isLikelyScanned: text.length < MIN_TEXT_CHARS,
+    isLikelyScanned: trimmed.length < MIN_TEXT_CHARS,
   }
 }
