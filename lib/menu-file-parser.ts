@@ -54,8 +54,11 @@ export function slugId(name: string, i: number): string {
 }
 
 /**
- * Parse the new flat AI output format: { treatments: [{ name, category, price, unit }] }
- * Maps each flat entry to a ClinicMenuTreatment with simple pricing.
+ * Parse the flat AI output format: { treatments: [{ name, category, price, unit, areas }] }
+ *
+ * - Simple treatment (price set, areas null/empty) → pricing_model: 'simple'
+ * - Body-area treatment (areas array present) → pricing_model: 'table' with one row per area
+ *   and a single "Price" column, then filterPackageColumns is applied as usual.
  */
 function parseFlatTreatmentItems(items: unknown[], clinicName: string): ClinicMenu {
   const treatments: ClinicMenuTreatment[] = []
@@ -68,14 +71,44 @@ function parseFlatTreatmentItems(items: unknown[], clinicName: string): ClinicMe
     const name = typeof obj.name === 'string' ? obj.name.trim() : ''
     if (!name) continue
 
+    const category = typeof obj.category === 'string' ? obj.category.trim() : ''
+    const unit = typeof obj.unit === 'string' ? obj.unit.toLowerCase().trim() : null
+
+    // --- Body-area variant treatment ---
+    const rawAreas = Array.isArray(obj.areas) ? obj.areas : null
+    if (rawAreas && rawAreas.length > 0) {
+      const rows: PricingTableRow[] = []
+      for (const area of rawAreas) {
+        if (!area || typeof area !== 'object') continue
+        const a = area as Record<string, unknown>
+        const aName = typeof a.name === 'string' ? a.name.trim() : ''
+        const aPrice = typeof a.price === 'number' && Number.isFinite(a.price) && a.price > 0 ? a.price : null
+        if (!aName || aPrice === null) continue
+        rows.push({ label: aName, values: { Price: aPrice } })
+      }
+      if (rows.length === 0) {
+        console.log(`[menu-parse] "${name}" skipped — areas present but no valid rows`)
+        continue
+      }
+      console.log(`[menu-parse] "${name}" areas=${rows.map((r) => r.label).join(', ')} → pricing_model=table`)
+      treatments.push({
+        id: slugId(name, i),
+        name,
+        category,
+        description: '',
+        units: 'session',
+        pricing_model: 'table',
+        pricing_table: { columns: ['Price'], rows },
+      })
+      continue
+    }
+
+    // --- Simple single-price treatment ---
     const price = typeof obj.price === 'number' && Number.isFinite(obj.price) && obj.price > 0 ? obj.price : null
     if (price === null) {
       console.log(`[menu-parse] "${name}" skipped — no valid price`)
       continue
     }
-
-    const unit = typeof obj.unit === 'string' ? obj.unit.toLowerCase().trim() : null
-    const category = typeof obj.category === 'string' ? obj.category.trim() : ''
 
     let pricing: Record<string, unknown>
     let units: string

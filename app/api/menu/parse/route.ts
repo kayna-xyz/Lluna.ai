@@ -251,36 +251,48 @@ GOAL
 Extract ALL individual treatments with their prices.
 
 RULES
-1. Each treatment MUST be a single item.
-   - One row / one line = one treatment, EXCEPT when the same base treatment is split by body part (e.g. "Morpheus8 Face" and "Morpheus8 Body" are two separate entries — keep them separate).
-   - NEVER group multiple treatments together.
-   - If a treatment appears for multiple body parts, output one entry per body part.
 
-2. Section headers are NOT treatments. Skip lines like "Injectables", "Laser Treatments", etc.
+1. One treatment name = one entry. NEVER split a single treatment into multiple entries.
 
-3. Extract only when BOTH a treatment name AND a price are present.
+2. Section headers are NOT treatments. Skip lines like "Injectables", "Laser Treatments", "Body Contouring", etc.
+
+3. BODY PARTS / ANATOMICAL AREAS → group as one treatment with "areas"
+   If multiple rows under a treatment header are body parts or anatomical areas, they are OPTIONS of ONE treatment — NOT separate treatments.
+   Body area examples: abdomen, flanks, arms, thighs, chin, neck, face, back, chest, legs, buttocks, inner thighs, love handles, banana roll, bra fat, etc.
+   In this case output ONE entry with "areas" listing each option and its price. Set "price": null.
+   Example input:
+     Coolsculpting Elite
+     Partial Abdomen  $2499
+     Full Abdomen     $3999
+     Flanks           $2999
+   Correct output:
+     { "name": "Coolsculpting Elite", "areas": [{"name":"Partial Abdomen","price":2499}, {"name":"Full Abdomen","price":3999}, {"name":"Flanks","price":2999}], "price": null }
+
+   Do NOT apply this rule to different product names (e.g. Botox vs Dysport are separate treatments).
+
+4. Extract only when BOTH a treatment name AND a price are present.
    - Price priority: first-timer price > non-member / individual price > member price.
-   - IGNORE any price that includes the words "package", "bundle", "series", or a session count (e.g. "3 sessions").
+   - IGNORE any price that contains the words "package", "bundle", "series", or a session count (e.g. "3 sessions", "package of 5").
 
-4. Ignore: descriptions, package deals, discounts (e.g. "save 15%"), paragraphs of text.
+5. Ignore: descriptions, package deals, discounts (e.g. "save 15%"), paragraphs of text.
 
-OUTPUT FORMAT — output ONLY this JSON, no markdown, no code fences, no commentary:
+OUTPUT FORMAT — output ONLY this JSON object, no markdown, no code fences, no commentary:
 {
   "treatments": [
     {
       "name": string,
       "category": string | null,
-      "price": number,
-      "unit": "unit" | "syringe" | "session" | null
+      "price": number | null,
+      "unit": "unit" | "syringe" | "session" | null,
+      "areas": [{ "name": string, "price": number }] | null
     }
   ]
 }
 
-"unit" values:
-  "unit"    — priced per unit (e.g. Botox $12/unit)
-  "syringe" — priced per syringe (e.g. filler $800/syringe)
-  "session" — priced per session / per treatment (default when not specified)
-  null      — use when unit type is genuinely unclear
+Field rules:
+  "price"  — the single price when there are no body-area variants; null when "areas" is used
+  "unit"   — "unit" (per unit, e.g. Botox), "syringe" (per syringe, e.g. filler), "session" (default), or null if unclear
+  "areas"  — list of body-part / area variants with individual prices; null when not applicable
 
 NO HALLUCINATION
 - Only extract text that is explicitly visible.
