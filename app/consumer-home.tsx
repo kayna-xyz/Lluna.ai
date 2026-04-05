@@ -3246,6 +3246,7 @@ function ProfileScreen({
   clinicSlug: string
 }) {
   const [reportLoading, setReportLoading] = useState(false)
+  const [consented, setConsented] = useState(false)
   const { referBonusUsd } = useContext(ConsumerClinicUiContext)
 
   const inputStyle: React.CSSProperties = {
@@ -3331,10 +3332,36 @@ function ProfileScreen({
           </p>
         </div>
       </div>
-      
+
+      {/* Consent checkbox */}
+      <label style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 12,
+        marginTop: 32,
+        cursor: 'pointer',
+      }}>
+        <input
+          type="checkbox"
+          checked={consented}
+          onChange={(e) => setConsented(e.target.checked)}
+          style={{
+            marginTop: 2,
+            width: 18,
+            height: 18,
+            flexShrink: 0,
+            accentColor: COLORS.accent,
+            cursor: 'pointer',
+          }}
+        />
+        <span style={{ fontSize: 13, color: COLORS.muted, lineHeight: 1.5 }}>
+          I consent to this clinic and its technology partners processing my information to generate treatment recommendations.
+        </span>
+      </label>
+
       <BottomCTA>
         <ContinueButton
-          disabled={reportLoading}
+          disabled={reportLoading || !consented}
           label={reportLoading ? 'Updating your plan…' : 'See my report'}
           onClick={async () => {
             if (reportLoading) return
@@ -3878,7 +3905,7 @@ function ReportScreen({
   return (
     <div style={{ paddingTop: 20, paddingBottom: 60, overflowY: 'auto' }}>
       {lightboxPhoto && <PhotoLightbox src={lightboxPhoto.src} label={lightboxPhoto.label} onClose={() => setLightboxPhoto(null)} />}
-      <ProcessingBar value={reportProgress} />
+      {reportProgress < 100 && <ProcessingBar value={reportProgress} />}
       <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 24, color: COLORS.text }}>
         Welcome to {displayClinicName}
         {state.name ? `, ${state.name}` : ''}
@@ -3932,11 +3959,6 @@ function ReportScreen({
           {aiRec?.skip && (
             <p style={{ fontSize: 12, color: COLORS.accent, margin: 0, marginTop: 12, fontStyle: 'italic' }}>
               {aiRec.skip}
-            </p>
-          )}
-          {aiRec?.safetyNote && (
-            <p style={{ fontSize: 12, color: COLORS.success, margin: 0, marginTop: 8 }}>
-              {aiRec.safetyNote}
             </p>
           )}
         </div>
@@ -4066,11 +4088,6 @@ function ReportScreen({
                 {/* Expanded details */}
                 {isExpanded && (
                   <div style={{ marginTop: 16, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
-                    {/* Why this plan */}
-                    <p style={{ fontSize: 13, lineHeight: 1.6, color: COLORS.text, margin: 0 }}>
-                      {plan.whyThisPlan}
-                    </p>
-                    
                     {/* Synergy note */}
                     <div style={{ 
                       background: 'rgba(107, 126, 107, 0.1)', 
@@ -4147,7 +4164,7 @@ function ReportScreen({
             margin: 0,
             marginBottom: 8
           }}>
-            HOLD OFF FOR NOW
+            SAFETY REMINDERS
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: COLORS.text, margin: 0, marginTop: 8 }}>
             {aiRec.holdOffNote}

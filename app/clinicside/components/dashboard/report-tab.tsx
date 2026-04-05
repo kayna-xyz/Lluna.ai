@@ -482,6 +482,15 @@ export function ClientReportPanel({
   const [alignedTherapies, setAlignedTherapies] = useState<Record<string, unknown>[]>([])
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({})
 
+  // Seed inputs from DB whenever the selected report changes (different client or fresh load)
+  useEffect(() => {
+    const rd = (selectedClientReport?.reportData as Record<string, unknown> | undefined) ?? {}
+    const fp = asRec(rd.consultantFinalPlan)
+    setFinalPrice(fp.total_price != null ? String(Number(fp.total_price)) : "")
+    setFinalText(String(fp.final_plan_text || ""))
+    setAlignedTherapies([])
+  }, [selectedClientReport?.id])
+
   const realRd = (selectedClientReport?.reportData as Record<string, unknown> | undefined) ?? {}
   const realUi = asRec(realRd.userInput)
   const realRec = asRec(realRd.recommendation)
@@ -910,9 +919,6 @@ export function ClientReportPanel({
                             }),
                           })
                           if (res.ok) {
-                            setFinalText("")
-                            setFinalPrice("")
-                            setAlignedTherapies([])
                             onRefreshClients?.()
                           }
                         } finally {
