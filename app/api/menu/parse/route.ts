@@ -244,27 +244,20 @@ async function handlePOST(req: Request) {
     }
   }
 
-  // Image path: send image bytes directly to gpt-4o-mini vision.
-  // Uses plain text output (not Output.object) — Azure API 2024-07-18 does not support
-  // response_format:json_schema. Plain pipe-delimited text is sufficient for parseMenuTextToDraft.
-  const extractMenuFromImage = async (mimeType: string) => {
-    const { text } = await generateText({
-      model: getMenuVisionAnthropicModel(),
-      system:
-        `You extract a clinic treatment menu from an uploaded image. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
+  const VISION_SYSTEM_PROMPT = `You extract a clinic treatment menu from an uploaded file. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
 
 STRICT GROUNDING RULES:
-- Extract ONLY text explicitly visible in the image.
-- Do NOT infer, guess, or add anything not present in the source.
+- Extract ONLY text explicitly visible in the source.
+- Do NOT infer, guess, or add anything not present.
 - Do NOT flatten table-structured pricing into a single price.
 - Do NOT duplicate a treatment just to represent different row variants.
 - If a field is not visible, use "" (string fields) or omit (pricing fields).
 - If a table cell is missing or unreadable, use null for that cell value.
 
 Each object in the array must have:
-  "name": string — treatment name verbatim from image (required)
-  "category": string — verbatim from image, or "" if not shown
-  "description": string — verbatim from image, or "" if not shown
+  "name": string — treatment name verbatim from source (required)
+  "category": string — verbatim from source, or "" if not shown
+  "description": string — verbatim from source, or "" if not shown
   "pricing_model": "simple" | "table"
 
 For SIMPLE pricing (one price or one price per unit/syringe):
@@ -280,7 +273,15 @@ For TABLE pricing (treatment has multiple ROWS such as areas/zones AND multiple 
 
 Use pricing_model "table" when the menu shows a grid: rows = areas/zones/durations, columns = pricing tiers.
 Use pricing_model "simple" when a treatment has only one price point.
-Never invent column headers, row labels, or price values not visible in the image.`,
+Never invent column headers, row labels, or price values not visible in the source.`
+
+  // Image path: send image bytes directly to vision model.
+  // Uses plain text output (not Output.object) — Azure API 2024-07-18 does not support
+  // response_format:json_schema. Plain pipe-delimited text is sufficient for parseMenuTextToDraft.
+  const extractMenuFromImage = async (mimeType: string) => {
+    const { text } = await generateText({
+      model: getMenuVisionAnthropicModel(),
+      system: VISION_SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
@@ -292,7 +293,7 @@ Never invent column headers, row labels, or price values not visible in the imag
             {
               type: 'image',
               image: buf,
-              mediaType: mimeType,
+              mediaType: mimeType as 'image/png' | 'image/jpeg' | 'image/webp',
             },
           ],
         },
@@ -301,38 +302,38 @@ Never invent column headers, row labels, or price values not visible in the imag
     return text.trim()
   }
 
-  // Text path: used for PDFs after text extraction. No vision needed.
-  // Deliberately avoids Output.object — Azure OpenAI API version 2024-07-18 does not
-  // support response_format:json_schema. We request JSON as plain text and parse it ourselves.
+  // Scanned PDF path: send the PDF bytes directly to the vision model as a file.
+  // Falls back to an error message if the model cannot process the document.
+  const extractMenuFromPdfVision = async () => {
+    const { text } = await generateText({
+      model: getMenuVisionAnthropicModel(),
+      system: VISION_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Extract every treatment from this menu PDF. Preserve table structure exactly. Output only the JSON array.',
+            },
+            {
+              // AI SDK v6: 'file' content type for non-image binary files (PDFs)
+              type: 'file' as const,
+              data: buf,
+              mediaType: 'application/pdf' as const,
+            },
+          ],
+        },
+      ],
+    })
+    return text.trim()
+  }
+
+  // Text path: used for text-based PDFs after text extraction.
   const extractMenuFromText = async (pdfText: string) => {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
-      system:
-        `You extract a clinic treatment menu from raw text. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
-
-STRICT GROUNDING RULES:
-- Extract ONLY text explicitly present in the source.
-- Do NOT infer, guess, or add anything not present.
-- Do NOT flatten table-structured pricing into a single price.
-- Do NOT duplicate a treatment just to represent different row variants.
-- If a field is missing, use "" (string fields) or omit (pricing fields).
-- If a table cell value is missing, use null for that cell.
-
-Each object must have:
-  "name": string (required, verbatim from source)
-  "category": string (verbatim, or "")
-  "description": string (verbatim, or "")
-  "pricing_model": "simple" | "table"
-
-For SIMPLE pricing: "pricing": { "single": number } or { "perUnit": number } etc.
-For TABLE pricing (rows = areas/zones, columns = pricing tiers):
-  "pricing_table": {
-    "columns": ["Col A", "Col B"],
-    "rows": [{ "label": "Row label", "values": { "Col A": number_or_null, "Col B": number_or_null } }]
-  }
-
-Use "table" when the source shows a grid of prices across multiple rows and columns.
-Use "simple" when a treatment has a single price. Never invent values.`,
+      system: VISION_SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
@@ -355,23 +356,31 @@ Use "simple" when a treatment has a single price. Never invent values.`,
       return Response.json({ error: 'Could not read the PDF. The file may be corrupted or password-protected.' }, { status: 400 })
     }
 
-    if (pdfResult.isLikelyScanned) {
-      return Response.json(
-        {
-          error:
-            'This PDF appears to be a scanned image and cannot be parsed as text. Please take a screenshot of the menu and upload it as a PNG or JPG instead.',
-        },
-        { status: 415 },
-      )
-    }
-
     let extractedText: string
-    try {
-      extractedText = await extractMenuFromText(pdfResult.text)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.error('[menu/parse] PDF AI extraction failed:', msg)
-      return Response.json({ error: `AI processing failed: ${msg}` }, { status: 500 })
+    if (pdfResult.isLikelyScanned) {
+      // Scanned/image-only PDF — try vision model directly on the PDF bytes
+      console.log('[menu/parse] scanned PDF detected, attempting vision model')
+      try {
+        extractedText = await extractMenuFromPdfVision()
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error('[menu/parse] PDF vision extraction failed:', msg)
+        return Response.json(
+          {
+            error:
+              'This PDF appears to be a scanned image. Vision processing failed — please take a screenshot of the menu and upload it as a PNG or JPG instead.',
+          },
+          { status: 415 },
+        )
+      }
+    } else {
+      try {
+        extractedText = await extractMenuFromText(pdfResult.text)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        console.error('[menu/parse] PDF AI extraction failed:', msg)
+        return Response.json({ error: `AI processing failed: ${msg}` }, { status: 500 })
+      }
     }
 
     return Response.json({

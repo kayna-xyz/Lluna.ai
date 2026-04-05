@@ -1,4 +1,5 @@
 import type { ClinicMenu, ClinicMenuTreatment, PricingTable } from '@/lib/clinic-menu'
+import { classifyPricingColumn } from '@/lib/menu-file-parser'
 
 
 export function menuToMaps(menu: ClinicMenu) {
@@ -92,14 +93,42 @@ export function firstNumericPriceForTreatment(t: ClinicMenuTreatment): number {
  */
 export function getPriceRangeForTreatment(t: ClinicMenuTreatment): string | null {
   if (t.pricing_model === 'table' && t.pricing_table) {
+    const table = t.pricing_table
+    const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
+
+    // Find entry and standard columns by tier
+    const entryCol = table.columns.find((c) => classifyPricingColumn(c) === 'entry')
+    const standardCol = table.columns.find((c) => classifyPricingColumn(c) === 'standard')
+
+    const firstValueForCol = (col: string): number | null => {
+      for (const row of table.rows) {
+        const v = row.values[col]
+        if (typeof v === 'number' && Number.isFinite(v) && v > 0) return v
+      }
+      return null
+    }
+
+    if (entryCol || standardCol) {
+      const entryPrice = entryCol ? firstValueForCol(entryCol) : null
+      const standardPrice = standardCol ? firstValueForCol(standardCol) : null
+      if (entryPrice && standardPrice) {
+        // Show entry (cheaper/first-timer) to standard (non-member)
+        const lo = Math.min(entryPrice, standardPrice)
+        const hi = Math.max(entryPrice, standardPrice)
+        return lo === hi ? fmt(lo) : `${fmt(lo)} – ${fmt(hi)}`
+      }
+      if (entryPrice) return fmt(entryPrice)
+      if (standardPrice) return fmt(standardPrice)
+    }
+
+    // Fallback: full range across all cells
     const nums: number[] = []
-    for (const row of t.pricing_table.rows)
+    for (const row of table.rows)
       for (const v of Object.values(row.values))
         if (typeof v === 'number' && Number.isFinite(v) && v > 0) nums.push(v)
     if (nums.length === 0) return null
     const min = Math.min(...nums)
     const max = Math.max(...nums)
-    const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
     return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
   }
   // Simple / legacy

@@ -1,6 +1,50 @@
 import type { ClinicMenu, ClinicMenuTreatment, PricingTable, PricingTableRow } from '@/lib/clinic-menu'
 import { parsePricingFromText, extractAllPrices, groupPricingLines } from '@/lib/menu-price-extractor'
 
+/**
+ * Classify a pricing column header into a tier:
+ *   entry    — first-timer / new-client / intro prices
+ *   standard — non-member / regular / walk-in prices
+ *   package  — package / bundle / series / multi-session prices
+ *   other    — anything that doesn't match the above
+ */
+export function classifyPricingColumn(col: string): 'entry' | 'standard' | 'package' | 'other' {
+  if (/first.?tim|new.?client|new.?patient|introduct|welcome\s+price|trial\s+price/i.test(col)) return 'entry'
+  if (/non.?member|non\s+member|regular|standard|walk.?in|retail\s+price|single\s+session/i.test(col)) return 'standard'
+  if (/package|bundle|series|\bpack\b|\d+\s*(session|treatment|visit|syringe|unit)/i.test(col)) return 'package'
+  return 'other'
+}
+
+/**
+ * Remove package columns from a pricing_table when at least one entry or standard
+ * column exists. Hard rule: entry/standard pricing always takes precedence.
+ * If no entry/standard column is found, the table is returned unchanged.
+ */
+function filterPackageColumns(table: PricingTable): PricingTable {
+  const classified = table.columns.map((c) => ({ col: c, tier: classifyPricingColumn(c) }))
+  const hasEntryOrStandard = classified.some((c) => c.tier === 'entry' || c.tier === 'standard')
+  if (!hasEntryOrStandard) return table
+
+  const keepCols = classified.filter((c) => c.tier !== 'package').map((c) => c.col)
+  if (keepCols.length === table.columns.length) return table // nothing to remove
+
+  console.log(
+    `[menu-parse] filtering package columns: removed [${classified
+      .filter((c) => c.tier === 'package')
+      .map((c) => c.col)
+      .join(', ')}], keeping [${keepCols.join(', ')}]`,
+  )
+
+  return {
+    columns: keepCols,
+    rows: table.rows.map((row) => {
+      const values: Record<string, number | null> = {}
+      for (const col of keepCols) values[col] = row.values[col] ?? null
+      return { label: row.label, values }
+    }),
+  }
+}
+
 export function slugId(name: string, i: number): string {
   const s = name
     .toLowerCase()
@@ -74,6 +118,8 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
         }
       }
 
+      const rawTable: PricingTable = { columns, rows }
+      const filteredTable = filterPackageColumns(rawTable)
       treatment = {
         id: slugId(name, i),
         name,
@@ -81,7 +127,7 @@ export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic')
         description: typeof obj.description === 'string' ? obj.description.trim() : '',
         units: 'session',
         pricing_model: 'table',
-        pricing_table: { columns, rows },
+        pricing_table: filteredTable,
       }
     } else {
       // AI said "simple" — but check if the pricing data itself contains multiple prices
