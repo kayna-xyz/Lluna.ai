@@ -49,11 +49,9 @@ const additionalRecsReasonSchema = z.object({
     .array(z.object({
       name: z.string(),
       price: z.number(),
-      reason: z.string().describe(
-        'Exactly 2 lines separated by \\n. ' +
-        'Line 1: one direct sentence — no filler, no "based on your goals". ' +
-        'Line 2: exactly "Duration: X | Downtime: X | Repeat: X".',
-      ),
+      description: z.string().describe('One direct sentence on clinical effect. No filler.'),
+      duration: z.string().describe('How long results last, e.g. "3–6 months". REQUIRED — never empty.'),
+      downtime: z.string().describe('Recovery time, e.g. "None", "1–2 days". REQUIRED — never empty.'),
     }))
     .min(1)
     .max(3),
@@ -147,7 +145,7 @@ export type EnrichmentFields = {
   salesMethodology?: unknown
   salesSentences?: unknown[]
   salesMethodologyNew?: unknown
-  additionalRecommendations?: Array<{ name: string; price: number; reason: string }>
+  additionalRecommendations?: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
   enriched_at?: string
 }
 
@@ -159,7 +157,7 @@ export async function generateFastEnrichment(
   excludedTreatmentIds: Set<string>,
 ): Promise<{
   patientSummaryStructured: z.infer<typeof briefSchema>['patientSummaryStructured'] | null
-  additionalRecommendations: Array<{ name: string; price: number; reason: string }>
+  additionalRecommendations: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
 }> {
   const briefPrompt = buildBriefPrompt(userInput)
 
@@ -181,7 +179,7 @@ export async function generateFastEnrichment(
 
   const additionalRecsPromise = menuPromise.then(({ menu }) => {
     const menuCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
-    if (!menuCtx) return [] as Array<{ name: string; price: number; reason: string }>
+    if (!menuCtx) return [] as Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
     const userPrompt = `Patient data:
 - Goals: ${String(userInput.goals || '—')}
 - Budget: ${String(userInput.budget ?? '—')}
@@ -197,9 +195,10 @@ Return 2-3 additional treatment recommendations from the list above that complem
       output: Output.object({ schema: additionalRecsOnlySchema }),
       system:
         'You are a medspa sales advisor. Return additionalRecommendations only. ' +
-        'Use exact treatment names and prices from the provided list. No markdown, no emojis.',
+        'Use exact treatment names and prices from the provided list. No markdown, no emojis. ' +
+        'Every item MUST include non-empty description, duration, and downtime fields.',
       messages: [{ role: 'user', content: userPrompt }],
-    }).then((r) => r.output.additionalRecommendations).catch(() => [] as Array<{ name: string; price: number; reason: string }>)
+    }).then((r) => r.output.additionalRecommendations).catch(() => [] as Array<{ name: string; price: number; description: string; duration: string; downtime: string }>)
   })
 
   const [patientSummaryStructured, additionalRecommendations] = await Promise.all([
@@ -331,7 +330,8 @@ Constraints:
       system:
         'You are a medspa CRM sales coach. Return salesMethodology, salesMethodologyNew, and additionalRecommendations. ' +
         'salesMethodologyNew must be sharp and patient-specific. ' +
-        'additionalRecommendations must use exact treatment names and prices from the provided menu.',
+        'additionalRecommendations must use exact treatment names and prices from the provided menu. ' +
+        'Every additionalRecommendations item MUST include non-empty description, duration, and downtime fields.',
       messages: [{ role: 'user', content: salesPrompt }],
     })
     enrichmentFields.salesMethodology = output.salesMethodology

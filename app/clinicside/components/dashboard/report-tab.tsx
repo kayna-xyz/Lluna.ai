@@ -49,13 +49,20 @@ const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
   t007: "Thermage FLX",
 }
 
-function parseReason(reason: unknown): { description: string; duration: string; downtime: string } {
-  const raw = String(reason || "").trim()
+/** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
+function getTreatmentTags(t: Record<string, unknown>): { description: string; duration: string; downtime: string } {
+  const description = String(t.description || "").trim()
+  const duration = String(t.duration || "").trim()
+  const downtime = String(t.downtime || "").trim()
+  if (duration && downtime) return { description, duration, downtime }
+  // Legacy fallback: parse from reason string
+  const raw = String(t.reason || "").trim()
   const [first = "", second = ""] = raw.split("\n")
-  const description = first.trim()
-  const duration = second.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || ""
-  const downtime = second.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
-  return { description, duration, downtime }
+  return {
+    description: description || first.trim(),
+    duration: duration || second.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || "",
+    downtime: downtime || second.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || "",
+  }
 }
 
 function treatmentLabelFromUnknown(t: Record<string, unknown>) {
@@ -567,6 +574,10 @@ export function ClientReportPanel({
         .map((r) => ({
           name: String(r.name || ""),
           price: Number(r.price) || 0,
+          description: String(r.description || ""),
+          duration: String(r.duration || ""),
+          downtime: String(r.downtime || ""),
+          // keep legacy reason for consumer-side backwards compat
           reason: String(r.reason || ""),
         }))
         .filter((r) => r.name)
@@ -898,7 +909,7 @@ export function ClientReportPanel({
                               <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
                               <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
                               {treatments.map((t, tIdx) => {
-                                const parsed = parseReason(t.reason)
+                                const parsed = getTreatmentTags(t)
                                 return (
                                   <div
                                     key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
@@ -944,7 +955,7 @@ export function ClientReportPanel({
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {additionalRecommendations.map((r, i) => {
-                      const parsedR = parseReason(r.reason)
+                      const parsedR = getTreatmentTags(r)
                       return (
                         <div key={i} className="rounded-md border bg-muted/20 p-3">
                           <p className="text-sm font-medium">{r.name}</p>

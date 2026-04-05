@@ -69,7 +69,7 @@ function normalizeRecommendation(rec: RecommendationOutput, menuById: Map<string
       treatments: plan.treatments.map((t) => {
         const menu = menuById.get(t.treatmentId)
         if (!menu) throw new Error(`Unknown treatmentId: ${t.treatmentId}`)
-        return { ...t, treatmentName: menu.name, description: menu.description || '' }
+        return { ...t, treatmentName: menu.name }
       }),
     })),
   }
@@ -80,6 +80,12 @@ function normalizeRecommendation(rec: RecommendationOutput, menuById: Map<string
     }
   }
   return normalized
+}
+
+function hasMissingTags(plans: RecommendationOutput['plans']): boolean {
+  return plans.some((plan) =>
+    plan.treatments.some((t) => !t.duration?.trim() || !t.downtime?.trim()),
+  )
 }
 
 export async function POST(req: Request) {
@@ -201,18 +207,15 @@ Rules:
 
   const patientSystem = `You are an aesthetic medicine advisor writing to the patient. You MUST only recommend treatments from the CLINIC MENU listed below. Use only the exact ids, names, and pricing from that menu — nothing else.
 
-TREATMENT REASON FORMAT — MANDATORY for every treatment:
-- reason field must be exactly 2 lines separated by \\n.
-- Line 1: one direct sentence explaining the clinical effect for THIS patient's specific goal. No filler ("based on your goals", "given that", "as a complement"). No reference to other treatments in the plan.
-- Line 2: exactly "Duration: X | Downtime: X | Repeat: X" with a concise real value per tag.
-- Do NOT duplicate sentences across treatments within the same plan.
-- Do NOT include companion-treatment or synergy notes in reason.
-
+TREATMENT FIELDS — MANDATORY for every treatment:
+- description: one direct sentence on the clinical effect for THIS patient's specific goal. No filler. No companion-treatment references. No duplicates across treatments in the same plan.
+- duration: how long results last. Concise, e.g. "3–6 months", "12 months", "Permanent". NEVER empty.
+- downtime: recovery time. Concise, e.g. "None", "1–2 days redness", "5–7 days peeling". NEVER empty.
 
 STRICT GROUNDING — MANDATORY:
 1) Only recommend treatments whose id and name appear verbatim in the MENU below. Never invent names, brand names, or treatments not in the menu.
 2) Use only the pricing values shown in the MENU. Do not invent prices.
-3) Do not mention any brand, product, or treatment name in any output field (reason, whyThisPlan, synergyNote, summary) that does not appear explicitly in the MENU.
+3) Do not mention any brand, product, or treatment name in any output field (description, whyThisPlan, synergyNote, summary) that does not appear explicitly in the MENU.
 4) If the menu does not contain a treatment that would be clinically ideal, pick the closest available option from the menu and note the limitation in whyThisPlan. Do not invent a substitute.
 5) If menu data for a treatment is sparse (missing description, price, or category), reflect that sparseness — do not fill in details. Prefer honest incompleteness over fabricated detail.
 6) If confidence is low, write "more information needed in consultation" — do not guess.
@@ -302,10 +305,16 @@ Return JSON only matching the schema: summary + 3 plans (Essential, Optimal, Pre
     console.log("=== END DEBUG ===")
     let normalized = normalizeRecommendation(output, menuById)
 
-    if (plansAreCollapsed(normalized.plans)) {
+    const needsRetry = plansAreCollapsed(normalized.plans) || hasMissingTags(normalized.plans)
+    if (needsRetry) {
+      const collapsed = plansAreCollapsed(normalized.plans)
+      const missingTags = hasMissingTags(normalized.plans)
       const retryUserMsg = `${patientUser}
 
-IMPORTANT: Your previous response had all 3 plans at similar price points. Essential MUST be ~$${Math.round(budgetNum * 1.5)}, Optimal MUST be ~$${Math.round(budgetNum * 2)}, Premium MUST be ~$${Math.round(budgetNum * 2.5)}. Please regenerate with correct price tiers.`
+IMPORTANT — fix before responding:
+${collapsed ? `- Plans have similar price points. Essential MUST be ~$${Math.round(budgetNum * 1.5)}, Optimal ~$${Math.round(budgetNum * 2)}, Premium ~$${Math.round(budgetNum * 2.5)}.` : ''}
+${missingTags ? '- Every treatment MUST have non-empty duration and downtime fields. Fill them with a concise real value.' : ''}
+Regenerate with all issues corrected.`
 
       try {
         const { output: retryOutput } = await generateText({
@@ -320,7 +329,6 @@ IMPORTANT: Your previous response had all 3 plans at similar price points. Essen
         }
         normalized = retryNormalized
       } catch {
-        // retry failed — keep original, append note
         normalized.summary += ' Note: limited menu options near your budget — consultant will adjust in session.'
       }
     }

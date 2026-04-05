@@ -4131,9 +4131,9 @@ function ReportScreen({
                               {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? 's' : ''} ${t.fillerType || ''}` : ''}
                               {t.sessions ? `${t.sessions} session${t.sessions > 1 ? 's' : ''}` : ''}
                             </p>
-                            {t.reason && (
+                            {(t.description || t.reason) && (
                               <p style={{ fontSize: 11, color: COLORS.text, margin: 0, marginTop: 4, lineHeight: 1.5 }}>
-                                {t.reason}
+                                {t.description || t.reason}
                               </p>
                             )}
                             {treatment?.description ? (
@@ -4183,7 +4183,7 @@ function ReportScreen({
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
-                  <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.reason}</p>
+                  <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description || rec.reason}</p>
                 </div>
                 <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
                   ${Number(rec.price).toLocaleString()}

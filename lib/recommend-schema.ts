@@ -18,11 +18,16 @@ export function buildRecommendationSchemas(menuById: Map<string, ClinicMenuTreat
     role: z.enum(['direct', 'synergy', 'revenue']).describe(
       "'direct' = main need, 'synergy' = extends first, 'revenue' = optional add-on.",
     ),
-    reason: z.string().describe(
-      'Exactly 2 lines separated by \\n. ' +
-      'Line 1: one direct sentence tied to this patient\'s goal — no filler, no "based on your goals", no companion-treatment references. ' +
-      'Line 2: exactly "Duration: X | Downtime: X | Repeat: X" — fill each X with a concise value (e.g. "3–6 months", "None", "Every 6 months"). ' +
-      'No other text. No duplicated sentences across treatments in the same plan.',
+    description: z.string().describe(
+      'One direct sentence explaining the clinical effect for THIS patient\'s specific goal. ' +
+      'No filler ("based on your goals", "given that"). No companion treatment references. ' +
+      'No duplicated sentences across treatments in the same plan.',
+    ),
+    duration: z.string().describe(
+      'How long results last. Concise value only, e.g. "3–6 months", "12 months", "Permanent". REQUIRED — never empty.',
+    ),
+    downtime: z.string().describe(
+      'Recovery time. Concise value only, e.g. "None", "1–2 days redness", "5–7 days peeling". REQUIRED — never empty.',
     ),
     units: z.number().nullable().describe('For neurotoxin'),
     syringes: z.number().nullable().describe('For fillers'),
@@ -35,7 +40,7 @@ export function buildRecommendationSchemas(menuById: Map<string, ClinicMenuTreat
     summary: z
       .string()
       .describe(
-        'Patient-facing overview only, ~70–80 words, warm second-person. Reference goals, budget, experience. Mention direct → synergy → optional logic briefly. No long safety lectures, no sun-exposure paragraphs, no repeated “space treatments”. End with one short actionable line (not a multi-sentence disclaimer). Never say "structured plans". Do NOT include internal CRM or lead-profile wording.',
+        'Patient-facing overview only, ~70–80 words, warm second-person. Reference goals, budget, experience. Mention direct → synergy → optional logic briefly. No long safety lectures, no sun-exposure paragraphs, no repeated "space treatments". End with one short actionable line (not a multi-sentence disclaimer). Never say "structured plans". Do NOT include internal CRM or lead-profile wording.',
       ),
     plans: z
       .array(
@@ -68,7 +73,9 @@ export type RecommendationOutput = {
       treatmentId: string
       treatmentName: string
       role: 'direct' | 'synergy' | 'revenue'
-      reason: string
+      description: string
+      duration: string
+      downtime: string
       units: number | null
       syringes: number | null
       sessions: number | null

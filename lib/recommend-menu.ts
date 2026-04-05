@@ -73,7 +73,9 @@ export function treatmentFallbackRow(
   treatmentId: string
   treatmentName: string
   role: 'direct' | 'synergy' | 'revenue'
-  reason: string
+  description: string
+  duration: string
+  downtime: string
   units: number | null
   syringes: number | null
   sessions: number | null
@@ -90,7 +92,9 @@ export function treatmentFallbackRow(
     treatmentId: t.id,
     treatmentName: t.name,
     role,
-    reason: `Listed in your clinic menu. Dosage and suitability to be confirmed in consultation.`,
+    description: `Listed in your clinic menu. Dosage and suitability to be confirmed in consultation.`,
+    duration: "",
+    downtime: "",
     units,
     syringes,
     sessions,
