@@ -24,6 +24,18 @@ const briefSchema = z.object({
       isLocal: z.enum(['yes', 'no', 'unknown']),
     }),
   }),
+  patientSummaryStructured: z.object({
+    spending_power: z.enum(['low', 'medium', 'high']),
+    is_local: z.boolean(),
+    is_returning: z.boolean(),
+    has_prior_treatments: z.boolean(),
+    summary: z
+      .string()
+      .describe(
+        'Max 50 words. Direct conclusions only. No "given your goal", no process explanation. ' +
+        'Style: "Moderate spending power. Returning local client. Likely open to bundled upgrades."',
+      ),
+  }),
 })
 
 function fallbackBrief(ui: Record<string, unknown>) {
@@ -98,24 +110,31 @@ User info:
 - Contact phone: ${String(ui.phone || '—')}`
 
   let consultantBrief: z.infer<typeof briefSchema>['consultantBrief']
+  let patientSummaryStructured: z.infer<typeof briefSchema>['patientSummaryStructured'] | null = null
   let consultantProfileSummary = ''
   try {
     const { output } = await generateText({
       model: getLlunaAnthropicModel(),
       output: Output.object({ schema: briefSchema }),
       system:
-        'You write consultant-facing CRM scoring notes.\n' +
-        'Return only consultantBrief object.\n' +
-        'Rules:\n' +
+        'You write consultant-facing CRM scoring notes and concise patient summaries.\n' +
+        'Return consultantBrief AND patientSummaryStructured.\n' +
+        'consultantBrief rules:\n' +
         '- consumptionCapability: score/tier/reason based on budget + occupation + treatment experience.\n' +
         '- longTermPossibility: score/tier/reason + isReturning based on new/returning status and repeat likelihood.\n' +
         '- referralAbility: score/tier/reason + isLocal based on local/NYC and referral signals.\n' +
-        '- score must be integer 1-5.\n' +
-        '- tier must be Premium, Mid, or Budget.\n' +
-        '- reason should be concise and practical.',
+        '- score must be integer 1-5. tier must be Premium, Mid, or Budget. reason concise and practical.\n' +
+        'patientSummaryStructured rules:\n' +
+        '- spending_power: low (<$500 budget), medium ($500-$1200), high (>$1200).\n' +
+        '- is_local: true if isNYC === true.\n' +
+        '- is_returning: true if clinicHistory === "returning".\n' +
+        '- has_prior_treatments: true if experience is "few" or "regular".\n' +
+        '- summary: max 50 words. Direct conclusions only. No "given your goal", no explanatory language.\n' +
+        '  Style: "Moderate spending power. Returning local client with prior treatments. Likely open to bundled upgrades."',
       messages: [{ role: 'user', content: prompt }],
     })
     consultantBrief = output.consultantBrief
+    patientSummaryStructured = output.patientSummaryStructured
     consultantProfileSummary = toSummaryText(consultantBrief)
   } catch (e) {
     console.error('consultant-brief generate error:', e)
@@ -162,6 +181,6 @@ User info:
     }
   }
 
-  return Response.json({ consultantProfileSummary, consultantBrief })
+  return Response.json({ consultantProfileSummary, consultantBrief, patientSummaryStructured })
 }
 

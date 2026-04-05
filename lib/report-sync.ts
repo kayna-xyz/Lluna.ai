@@ -3,11 +3,13 @@ import { buildNewReportBody, withClinicOnReportBody, type NewReportBodyExtras } 
 
 export type SyncReportSlice = Parameters<typeof buildNewReportBody>[1]
 
+export type AdditionalRec = { name: string; price: number; reason: string }
+
 export async function syncReportToBackend(
   sessionId: string,
   slice: SyncReportSlice,
   clinic?: NewReportBodyExtras,
-): Promise<{ ok: boolean; status?: number; error?: string }> {
+): Promise<{ ok: boolean; status?: number; error?: string; additionalRecommendations?: AdditionalRec[] }> {
   const sid = sessionId.trim()
   if (!sid) return { ok: false, error: 'missing session' }
   const base = buildNewReportBody(sid, slice)
@@ -24,12 +26,12 @@ export async function syncReportToBackend(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  let data: { error?: string } = {}
+  let data: { error?: string; additionalRecommendations?: AdditionalRec[] } = {}
   try {
-    data = (await res.json()) as { error?: string }
+    data = (await res.json()) as typeof data
   } catch {
     // ignore
   }
   if (!res.ok) return { ok: false, status: res.status, error: data.error || res.statusText }
-  return { ok: true }
+  return { ok: true, additionalRecommendations: data.additionalRecommendations }
 }

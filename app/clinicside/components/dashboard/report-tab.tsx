@@ -544,6 +544,33 @@ export function ClientReportPanel({
         .slice(0, 3)
     : []
 
+  const salesMethodologyNewRaw = asRec(realRec?.salesMethodologyNew)
+  const salesMethodologyNew =
+    Array.isArray(salesMethodologyNewRaw.patient_insight) && Array.isArray(salesMethodologyNewRaw.sales_angles)
+      ? {
+          patient_insight: (salesMethodologyNewRaw.patient_insight as unknown[]).map((x) => String(x)).filter(Boolean),
+          sales_angles: (salesMethodologyNewRaw.sales_angles as unknown[]).map((x) => String(x)).filter(Boolean),
+        }
+      : null
+
+  const additionalRecommendations = Array.isArray(realRec?.additionalRecommendations)
+    ? (realRec.additionalRecommendations as Record<string, unknown>[])
+        .map((r) => ({
+          name: String(r.name || ""),
+          price: Number(r.price) || 0,
+          reason: String(r.reason || ""),
+        }))
+        .filter((r) => r.name)
+    : []
+
+  const patientSummaryStructuredRaw = asRec(realRec?.patientSummaryStructured)
+  const patientSummary =
+    typeof patientSummaryStructuredRaw.summary === "string" && patientSummaryStructuredRaw.summary.trim()
+      ? patientSummaryStructuredRaw.summary.trim()
+      : typeof realRec?.summary === "string"
+        ? (realRec.summary as string)
+        : null
+
   const experienceText =
     realUi.experience === "first"
       ? "First-time"
@@ -658,10 +685,10 @@ export function ClientReportPanel({
                   </div>
 
                   {/* AI patient summary */}
-                  {realRec?.summary && (
+                  {patientSummary && (
                     <div className="border-t pt-3">
                       <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">AI Patient Summary</p>
-                      <p className="text-sm whitespace-pre-wrap">{String(realRec.summary)}</p>
+                      <p className="text-sm whitespace-pre-wrap">{patientSummary}</p>
                     </div>
                   )}
                 </CardContent>
@@ -672,8 +699,37 @@ export function ClientReportPanel({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sales Methodology</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {salesMethodology ? (
+                <CardContent className="space-y-3">
+                  {salesMethodologyNew ? (
+                    <>
+                      {salesMethodologyNew.patient_insight.length > 0 && (
+                        <div className="rounded-md border bg-muted/30 p-3">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Patient Insight</p>
+                          <ul className="space-y-1">
+                            {salesMethodologyNew.patient_insight.map((item, i) => (
+                              <li key={i} className="text-sm flex gap-2">
+                                <span className="text-muted-foreground shrink-0">·</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {salesMethodologyNew.sales_angles.length > 0 && (
+                        <div className="rounded-md border bg-primary/5 border-primary/20 p-3">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sales Angles</p>
+                          <ul className="space-y-1">
+                            {salesMethodologyNew.sales_angles.map((item, i) => (
+                              <li key={i} className="text-sm flex gap-2">
+                                <span className="text-primary shrink-0">→</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  ) : salesMethodology ? (
                     <>
                       <div className="rounded-md border bg-muted/30 p-3">
                         <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Combo synergy</p>
@@ -836,6 +892,26 @@ export function ClientReportPanel({
                         </div>
                       )
                     })}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Card 4b: Additional Recommendations */}
+              {additionalRecommendations.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {additionalRecommendations.map((r, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{r.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.reason}</p>
+                        </div>
+                        <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
               )}

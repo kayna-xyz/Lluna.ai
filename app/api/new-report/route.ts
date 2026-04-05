@@ -80,7 +80,11 @@ export async function POST(req: Request) {
     : []
 
   // Generate and persist consultant brief + sales methodology at report-receive time.
-  const briefResult = await callInternalPost<{ consultantProfileSummary?: unknown; consultantBrief?: unknown }>(
+  const briefResult = await callInternalPost<{
+    consultantProfileSummary?: unknown
+    consultantBrief?: unknown
+    patientSummaryStructured?: unknown
+  }>(
     generateConsultantBrief,
     {
       sessionId,
@@ -94,7 +98,17 @@ export async function POST(req: Request) {
   if (typeof briefResult?.consultantProfileSummary === 'string' && briefResult.consultantProfileSummary.trim()) {
     generatedBrief = briefResult.consultantProfileSummary.trim()
   }
-  const salesResult = await callInternalPost<{ salesSentences?: unknown; salesMethodology?: unknown }>(
+  const patientSummaryStructured =
+    briefResult?.patientSummaryStructured && typeof briefResult.patientSummaryStructured === 'object'
+      ? (briefResult.patientSummaryStructured as Record<string, unknown>)
+      : null
+
+  const salesResult = await callInternalPost<{
+    salesSentences?: unknown
+    salesMethodology?: unknown
+    salesMethodologyNew?: unknown
+    additionalRecommendations?: unknown
+  }>(
     generateSalesMethodology,
     {
       sessionId,
@@ -111,6 +125,13 @@ export async function POST(req: Request) {
       .filter((x) => x.type && x.text)
       .slice(0, 3)
   }
+  const salesMethodologyNew =
+    salesResult?.salesMethodologyNew && typeof salesResult.salesMethodologyNew === 'object'
+      ? (salesResult.salesMethodologyNew as Record<string, unknown>)
+      : null
+  const additionalRecommendations = Array.isArray(salesResult?.additionalRecommendations)
+    ? (salesResult.additionalRecommendations as Record<string, unknown>[])
+    : []
 
   const enrichedReportData: StoredReportData = {
     ...reportData,
@@ -120,6 +141,9 @@ export async function POST(req: Request) {
       consultantBrief: generatedBriefObj,
       salesMethodology: generatedMethod,
       salesSentences: generatedSales,
+      ...(patientSummaryStructured ? { patientSummaryStructured } : {}),
+      ...(salesMethodologyNew ? { salesMethodologyNew } : {}),
+      ...(additionalRecommendations.length ? { additionalRecommendations } : {}),
     },
   }
   const reportSummary = generatedBrief
@@ -212,5 +236,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return Response.json({ ok: true, sessionId, clinicId })
+  return Response.json({ ok: true, sessionId, clinicId, additionalRecommendations })
 }

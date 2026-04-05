@@ -1,6 +1,7 @@
 import { loadMenuFromDatabase, saveMenuToDatabase } from '@/lib/menu-store'
 import { getServiceSupabase } from '@/lib/supabase/admin'
 import { resolveClinicForRequest } from '@/lib/tenant'
+import { enrichMenuDescriptions } from '@/lib/menu-enrichment'
 
 export async function GET(req: Request) {
   const supabase = getServiceSupabase()
@@ -32,7 +33,8 @@ export async function POST(req: Request) {
   if (!resolved.ok) {
     return Response.json({ error: resolved.error }, { status: resolved.status })
   }
-  const res = await saveMenuToDatabase(menu as import('@/lib/clinic-menu').ClinicMenu, resolved.clinic.id)
+  const enriched = await enrichMenuDescriptions(menu as import('@/lib/clinic-menu').ClinicMenu)
+  const res = await saveMenuToDatabase(enriched, resolved.clinic.id)
   if (!res.ok) {
     return Response.json(
       { error: res.error },

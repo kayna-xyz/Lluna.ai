@@ -376,6 +376,7 @@ interface AIRecommendation {
   safetyNote: string
   /** Internal CRM-style note from /api/recommend; not shown on patient report UI by default */
   consultantProfileSummary?: string
+  additionalRecommendations?: Array<{ name: string; price: number; reason: string }>
 }
 
 function recentTreatmentsFromGoals(goals: string): string[] {
@@ -3430,6 +3431,13 @@ function ProfileScreen({
                 const result = await syncReportToBackend(sid, slice)
                 if (!result.ok) {
                   console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
+                } else if (result.additionalRecommendations?.length) {
+                  setState((s) => ({
+                    ...s,
+                    aiRecommendation: s.aiRecommendation
+                      ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
+                      : s.aiRecommendation,
+                  }))
                 }
                 setReportProgress(95)
               }
@@ -4148,7 +4156,47 @@ function ReportScreen({
         })()}
       </div>
 
-      
+      {/* Additional Recommendations */}
+      {aiRec?.additionalRecommendations && aiRec.additionalRecommendations.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.1em',
+            color: COLORS.muted,
+            margin: 0,
+            marginBottom: 12,
+          }}>
+            YOU MIGHT ALSO CONSIDER
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {aiRec.additionalRecommendations.map((rec, i) => (
+              <div
+                key={i}
+                style={{
+                  background: COLORS.bg,
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  border: `1px solid ${COLORS.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
+                  <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.reason}</p>
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
+                  ${Number(rec.price).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {aiRec?.holdOffNote && (
         <div style={{ 
           background: COLORS.bg, 
@@ -4383,6 +4431,13 @@ export default function LlunaApp({
       }).then((result) => {
         if (!result.ok) {
           console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
+        } else if (result.additionalRecommendations?.length) {
+          setState((s) => ({
+            ...s,
+            aiRecommendation: s.aiRecommendation
+              ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
+              : s.aiRecommendation,
+          }))
         }
       })
     }, 700)
