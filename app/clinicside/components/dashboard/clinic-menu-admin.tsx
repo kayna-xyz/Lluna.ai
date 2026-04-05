@@ -596,18 +596,29 @@ export function ClinicMenuAdmin({
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">Treatments</CardTitle>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!isDirty || saving}
-              onClick={() => void handleSave()}
-            >
-              {saving ? (
-                <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</>
-              ) : (
-                <><Save className="h-3.5 w-3.5 mr-1.5" />Save</>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAddingTreatment(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!isDirty || saving}
+                onClick={() => void handleSave()}
+              >
+                {saving ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</>
+                ) : (
+                  <><Save className="h-3.5 w-3.5 mr-1.5" />Save</>
+                )}
+              </Button>
+            </div>
           </div>
           {isDirty && (
             <p className="text-xs text-amber-600 mt-1">Unsaved changes</p>
@@ -850,8 +861,8 @@ export function ClinicMenuAdmin({
             )
           })}
 
-          {/* ── Add treatment ──────────────────────────────────────────── */}
-          {addingTreatment ? (
+          {/* ── Add treatment inline form ──────────────────────────────── */}
+          {addingTreatment && (
             <div className="rounded-md border border-dashed p-3 space-y-2">
               <Input
                 className="h-7 text-xs"
@@ -886,19 +897,9 @@ export function ClinicMenuAdmin({
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full border-dashed text-muted-foreground"
-              onClick={() => setAddingTreatment(true)}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add treatment
-            </Button>
           )}
         </CardContent>
+
       </Card>
 
       {/* ── Treatment image upload dialog ────────────────────────────────── */}
