@@ -39,24 +39,15 @@ function extractTableBasePrice(table: PricingTable): number {
 
 /**
  * Extract base price from a simple (non-table) pricing object.
+ * Strictly reads the numbers present — no invented defaults.
  *
- * If the pricing object contains a "first timer" or "non-member" key, those take
- * absolute priority (and ONLY those treatments get this rule — others are unaffected).
- *
- * Full order:
- *   firstTimer → nonMember → perUnit → perSyringe → perSession → single → nested single
- *   Package keys are always ignored at every level.
+ * Order: perUnit → perSyringe → perSession → single → nested single (non-package keys only).
+ * firstTimer / nonMember keys in flat objects are intentionally skipped here —
+ * those are promo prices, not the standard session price.
+ * (firstTimer/nonMember priority applies only to columnar pricing_table columns.)
  */
 export function firstNumericPrice(pricing: Record<string, unknown> | undefined): number {
   if (!pricing || typeof pricing !== 'object') return 0
-  // Tier-price priority: only applies when the keys actually exist
-  const firstTimerKey = Object.keys(pricing).find((k) => /first.?timer/i.test(k))
-  if (firstTimerKey && typeof pricing[firstTimerKey] === 'number' && (pricing[firstTimerKey] as number) > 0)
-    return pricing[firstTimerKey] as number
-  const nonMemberKey = Object.keys(pricing).find((k) => /non.?member/i.test(k))
-  if (nonMemberKey && typeof pricing[nonMemberKey] === 'number' && (pricing[nonMemberKey] as number) > 0)
-    return pricing[nonMemberKey] as number
-  // Standard unit pricing
   if (typeof pricing.perUnit === 'number' && pricing.perUnit > 0) return pricing.perUnit
   if (typeof pricing.perSyringe === 'number' && pricing.perSyringe > 0) return pricing.perSyringe
   if (typeof pricing.perSession === 'number' && pricing.perSession > 0) return pricing.perSession
