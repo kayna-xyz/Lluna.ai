@@ -3,7 +3,13 @@ import { firstNumericPriceForTreatment } from '@/lib/recommend-menu'
 
 /**
  * Deterministic price resolver. Reads structured menu pricing — never invents values.
- * Priority: per-unit × units → per-syringe × syringes → single session → table min.
+ *
+ * Simple pricing priority:
+ *   perUnit × units → perSyringe × syringes → perSession → single → nested single (no packages)
+ *
+ * Table pricing priority (via firstNumericPriceForTreatment):
+ *   firstTimer column → nonMember column → first non-package column
+ *
  * Returns null if no price can be determined.
  */
 export function resolveTreatmentCost(
@@ -13,18 +19,21 @@ export function resolveTreatmentCost(
   const menu = menuById.get(t.treatmentId)
   if (!menu) return null
 
+  // Table pricing: delegate entirely to firstNumericPriceForTreatment (which applies column priority)
+  if (menu.pricing_model === 'table' && menu.pricing_table) {
+    const base = firstNumericPriceForTreatment(menu)
+    return base > 0 ? base : null
+  }
+
+  // Simple pricing: apply quantity multipliers first, then base price
   const p = menu.pricing as Record<string, unknown> | undefined
-
-  if (p && typeof p.perUnit === 'number' && p.perUnit > 0 && t.units && t.units > 0) {
-    return p.perUnit * t.units
-  }
-  if (p && typeof p.perSyringe === 'number' && p.perSyringe > 0 && t.syringes && t.syringes > 0) {
-    return p.perSyringe * t.syringes
-  }
-  if (p && typeof p.single === 'number' && p.single > 0) {
-    return p.single
+  if (p) {
+    if (typeof p.perUnit === 'number' && p.perUnit > 0 && t.units && t.units > 0) return p.perUnit * t.units
+    if (typeof p.perSyringe === 'number' && p.perSyringe > 0 && t.syringes && t.syringes > 0) return p.perSyringe * t.syringes
+    if (typeof p.perSession === 'number' && p.perSession > 0 && t.sessions && t.sessions > 0) return p.perSession * t.sessions
   }
 
+  // Fall through to base price extraction (handles single + nested, skips packages)
   const base = firstNumericPriceForTreatment(menu)
   return base > 0 ? base : null
 }

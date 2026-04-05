@@ -1,4 +1,4 @@
-import type { ClinicMenu, ClinicMenuTreatment } from '@/lib/clinic-menu'
+import type { ClinicMenu, ClinicMenuTreatment, PricingTable } from '@/lib/clinic-menu'
 
 
 export function menuToMaps(menu: ClinicMenu) {
@@ -7,31 +7,66 @@ export function menuToMaps(menu: ClinicMenu) {
   return { menuById, nameSet }
 }
 
-/** Pull first numeric price from nested simple pricing object.
- *  Returns 0 when no price is present — never invents a default price. */
-export function firstNumericPrice(pricing: Record<string, unknown> | undefined): number {
-  if (!pricing || typeof pricing !== 'object') return 0
-  for (const v of Object.values(pricing)) {
-    if (typeof v === 'number' && !Number.isNaN(v) && v > 0) return v
-    if (v && typeof v === 'object') {
-      const n = firstNumericPrice(v as Record<string, unknown>)
-      if (n > 0) return n
-    }
+/** Returns true if a pricing key represents a package/bundle tier (should be ignored for base price). */
+function isPackageKey(key: string): boolean {
+  return /pack|bundle|\bx\s*of\b|\d\s*pack|\d\s*session/i.test(key)
+}
+
+/**
+ * Extract base price from a pricing_table.
+ * Priority: "first timer" column → "non-member" column → first non-package column.
+ * Package/bundle columns are ignored.
+ */
+function extractTableBasePrice(table: PricingTable): number {
+  const cols = table.columns
+  const firstTimerCol = cols.find((c) => /first.?timer/i.test(c))
+  const nonMemberCol = cols.find((c) => /non.?member/i.test(c))
+  const baseCol =
+    firstTimerCol ??
+    nonMemberCol ??
+    cols.find((c) => !isPackageKey(c))
+  if (!baseCol) return 0
+  for (const row of table.rows) {
+    const v = row.values[baseCol]
+    if (v != null && v > 0) return v
   }
   return 0
 }
 
-/** Returns the lowest explicitly-stored price for a treatment — used by fallback cost calc.
- *  For table items: minimum non-null cell value.
- *  For simple items: delegates to firstNumericPrice.
- *  Returns 0 when no price is present — never invents a value. */
+/**
+ * Extract base price from a simple (non-table) pricing object.
+ * Order: perUnit → perSyringe → perSession → single → nested single (skip package keys).
+ * Returns 0 when no price is present — never invents a value.
+ */
+export function firstNumericPrice(pricing: Record<string, unknown> | undefined): number {
+  if (!pricing || typeof pricing !== 'object') return 0
+  if (typeof pricing.perUnit === 'number' && pricing.perUnit > 0) return pricing.perUnit
+  if (typeof pricing.perSyringe === 'number' && pricing.perSyringe > 0) return pricing.perSyringe
+  if (typeof pricing.perSession === 'number' && pricing.perSession > 0) return pricing.perSession
+  if (typeof pricing.single === 'number' && pricing.single > 0) return pricing.single
+  // Nested pricing objects (e.g. Morpheus8 face/eye/body areas) — pick minimum single, skip packages
+  let min = Infinity
+  for (const [key, val] of Object.entries(pricing)) {
+    if (isPackageKey(key)) continue
+    if (val && typeof val === 'object') {
+      const nested = val as Record<string, unknown>
+      const s = typeof nested.single === 'number' && nested.single > 0 ? nested.single : 0
+      if (s > 0 && s < min) min = s
+    }
+  }
+  return min === Infinity ? 0 : min
+}
+
+/**
+ * Returns the base price for a treatment used in cost calculations.
+ * For table pricing: firstTimer → nonMember → first non-package column.
+ * For simple pricing: perUnit → perSyringe → perSession → single → nested single.
+ * Package/bundle tiers are always ignored.
+ * Returns 0 when no price is present — never invents a value.
+ */
 export function firstNumericPriceForTreatment(t: ClinicMenuTreatment): number {
   if (t.pricing_model === 'table' && t.pricing_table) {
-    let min = Infinity
-    for (const row of t.pricing_table.rows)
-      for (const v of Object.values(row.values))
-        if (v != null && v > 0 && v < min) min = v
-    return min === Infinity ? 0 : min
+    return extractTableBasePrice(t.pricing_table)
   }
   return firstNumericPrice(t.pricing as Record<string, unknown> | undefined)
 }
