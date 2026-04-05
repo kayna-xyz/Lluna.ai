@@ -426,6 +426,7 @@ interface AppState {
   treatmentFilter: 'popular' | 'price-low' | 'price-high' | 'comprehensive'
   helpRequest: string
   aiRecommendation: AIRecommendation | null
+  reportTreatmentDetail: ClinicMenuTreatment | null
 }
 
 // Nav Pill Component
@@ -3908,7 +3909,51 @@ function ReportScreen({
       FALLBACK_REPORT_MENU.treatments.find((x) => x.id === id)
     return t as ClinicMenuTreatment | undefined
   }
-  
+
+  const findTreatmentByNameOrId = (name: string, id?: string): ClinicMenuTreatment | null => {
+    const all = [...(clinicMenu?.treatments ?? []), ...FALLBACK_REPORT_MENU.treatments]
+    if (id) {
+      const byId = all.find((t) => t.id === id)
+      if (byId) return byId as ClinicMenuTreatment
+    }
+    const nameLower = name.toLowerCase()
+    return (all.find((t) => t.name.toLowerCase() === nameLower) ?? null) as ClinicMenuTreatment | null
+  }
+
+  const getPrimaryPriceLabel = (t: ClinicMenuTreatment): string => {
+    if (t.pricing_model === 'table' && t.pricing_table) {
+      const nums: number[] = []
+      for (const row of t.pricing_table.rows)
+        for (const v of Object.values(row.values))
+          if (typeof v === 'number' && Number.isFinite(v) && v > 0) nums.push(v)
+      if (nums.length === 0) return 'Pricing varies'
+      const min = Math.min(...nums)
+      const max = Math.max(...nums)
+      const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`
+      return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+    }
+    const p = t.pricing as Record<string, unknown> | undefined
+    if (typeof p?.perUnit === 'number') return `$${p.perUnit}/unit`
+    if (typeof p?.perSyringe === 'number') return `$${p.perSyringe}/syringe`
+    if (typeof p?.single === 'number') return `$${Math.round(p.single as number)}`
+    return 'See pricing'
+  }
+
+  const openTreatmentDetail = (name: string, id?: string) => {
+    const t = findTreatmentByNameOrId(name, id)
+    if (t) setState((s) => ({ ...s, reportTreatmentDetail: t }))
+  }
+
+  if (state.reportTreatmentDetail) {
+    return (
+      <TreatmentDetailScreen
+        treatment={state.reportTreatmentDetail}
+        onBack={() => setState((s) => ({ ...s, reportTreatmentDetail: null }))}
+        getPrimaryPriceLabel={getPrimaryPriceLabel}
+      />
+    )
+  }
+
   const aiRec = state.aiRecommendation
   const summary = aiRec?.summary || 'Your plan is ready. Ask your consultant to walk you through it.'
 
@@ -4074,12 +4119,14 @@ function ReportScreen({
                     return (
                       <span
                         key={i}
+                        onClick={() => openTreatmentDetail(t.treatmentName || '', t.treatmentId)}
                         style={{
                           fontSize: 11,
                           background: COLORS.navBg,
                           padding: '4px 10px',
                           borderRadius: 999,
-                          color: COLORS.text
+                          color: COLORS.text,
+                          cursor: 'pointer',
                         }}
                       >
                         {label}
@@ -4122,7 +4169,7 @@ function ReportScreen({
                         const treatment = getTreatment(t.treatmentId)
                         const name = t.treatmentName || treatment?.name || t.treatmentId
                         return (
-                          <div key={i} style={{ marginBottom: 12 }}>
+                          <div key={i} onClick={() => openTreatmentDetail(t.treatmentName || '', t.treatmentId)} style={{ marginBottom: 12, cursor: 'pointer' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ fontSize: 14, fontWeight: 500, color: COLORS.text }}>
                                 {name}
@@ -4175,6 +4222,7 @@ function ReportScreen({
             {aiRec.additionalRecommendations.map((rec, i) => (
               <div
                 key={i}
+                onClick={() => openTreatmentDetail(rec.name)}
                 style={{
                   background: COLORS.bg,
                   borderRadius: 10,
@@ -4184,6 +4232,7 @@ function ReportScreen({
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   gap: 12,
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -4216,6 +4265,7 @@ function ReportScreen({
             {aiRec.beforeYouStepOut.map((rec, i) => (
               <div
                 key={i}
+                onClick={() => openTreatmentDetail(rec.name)}
                 style={{
                   background: COLORS.bg,
                   borderRadius: 10,
@@ -4225,6 +4275,7 @@ function ReportScreen({
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   gap: 12,
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -4350,7 +4401,8 @@ export default function LlunaApp({
     showHelpPopup: false,
     treatmentFilter: 'popular',
     helpRequest: '',
-    aiRecommendation: null
+    aiRecommendation: null,
+    reportTreatmentDetail: null,
   })
 
   const [clinicMenu, setClinicMenu] = useState<ClinicMenu | null>(null)
