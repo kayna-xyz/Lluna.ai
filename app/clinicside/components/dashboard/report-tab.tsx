@@ -20,6 +20,8 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
+import { RECOVERY_RULES } from "../../../../lib/treatment-price-resolver"
+import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
 
 interface ClientReportPanelProps {
   selectedClientReport?: ClientNotification | null
@@ -29,6 +31,30 @@ interface ClientReportPanelProps {
 
 function asRec(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" ? (v as Record<string, unknown>) : {}
+}
+
+/**
+ * Resolve display cost from menu data. Uses the same deterministic rules as the server.
+ * Falls back to stored cost if no menu entry found (e.g. custom clinic menu).
+ * Returns null only if both menu and stored cost are absent.
+ */
+function resolveDisplayCost(t: Record<string, unknown>): number | null {
+  const treatmentId = String(t.treatmentId || "")
+  const storedCost = Number(t.cost) || null
+  const menuEntry = MENU_BY_ID.get(treatmentId)
+  if (!menuEntry) return storedCost
+
+  const p = menuEntry.pricing as Record<string, unknown> | undefined
+  const units = Number(t.units) || 0
+  const syringes = Number(t.syringes) || 0
+
+  if (p && typeof p.perUnit === "number" && p.perUnit > 0 && units > 0) return p.perUnit * units
+  if (p && typeof p.perSyringe === "number" && p.perSyringe > 0 && syringes > 0) return p.perSyringe * syringes
+  if (p && typeof p.single === "number" && p.single > 0) return p.single
+
+  const base = firstNumericPriceForTreatment(menuEntry)
+  if (base > 0) return base
+  return storedCost
 }
 
 function formatCurrency(amount: number) {
@@ -49,22 +75,40 @@ const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
   t007: "Thermage FLX",
 }
 
-/** Normalize a duration/downtime tag to a clean numeric range or known keyword. Returns "" if unparseable. */
+/** Normalize a duration tag to a clean numeric range. Returns "" if unparseable. */
 function normalizeDurationTag(raw: string): string {
   const s = raw.trim()
   if (!s) return ""
-  const lower = s.toLowerCase()
-  // Known non-numeric keywords — keep as-is (capitalized)
-  if (/^none$/i.test(s)) return "None"
   if (/^permanent$/i.test(s)) return "Permanent"
-  if (/^(minimal|minimal downtime|no downtime)$/i.test(s)) return "Minimal"
-  // Normalize separators: "3 to 6 months" or "3 - 6 months" → "3–6 months"
   const normalized = s
     .replace(/\s+to\s+/gi, "–")
     .replace(/\s*[-—]\s*/g, "–")
-  // Require at least one digit — reject pure text values like "Long-lasting"
-  if (!/\d/.test(normalized) && !/^(none|permanent|minimal)/i.test(lower)) return ""
+  if (!/\d/.test(normalized)) return ""
   return normalized
+}
+
+/**
+ * Normalize recovery (downtime) with 3-tier fallback:
+ * 1. Deterministic rule by treatment name
+ * 2. Stored numeric-range value from AI (if valid)
+ * 3. Default "3–7 days"
+ * Never allows "None", "Minimal", or free text.
+ */
+function normalizeRecoveryTag(downtime: string, treatmentName: string): string {
+  // Tier 1: deterministic rules
+  for (const [pattern, value] of RECOVERY_RULES) {
+    if (pattern.test(treatmentName)) return value
+  }
+  // Tier 2: accept stored value only if it's a valid numeric range
+  const s = downtime.trim()
+  if (s) {
+    const normalized = s.replace(/\s+to\s+/gi, "–").replace(/\s*[-—]\s*/g, "–")
+    if (/\d/.test(normalized) && !/^(none|minimal|permanent|no downtime)/i.test(normalized)) {
+      return normalized
+    }
+  }
+  // Tier 3: default
+  return "3–7 days"
 }
 
 /** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
@@ -80,10 +124,11 @@ function getTreatmentTags(t: Record<string, unknown>): { description: string; du
     if (!duration) duration = line2.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || ""
     if (!downtime) downtime = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
   }
+  const treatmentName = String(t.treatmentName || t.name || "")
   return {
     description,
     duration: normalizeDurationTag(duration),
-    downtime: normalizeDurationTag(downtime),
+    downtime: normalizeRecoveryTag(downtime, treatmentName),
   }
 }
 
@@ -946,6 +991,7 @@ export function ClientReportPanel({
                                   cost: rawT.cost,
                                 }
                                 const parsed = getTreatmentTags(t)
+                                const displayCost = resolveDisplayCost(t)
                                 return (
                                   <div
                                     key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
@@ -960,7 +1006,7 @@ export function ClientReportPanel({
                                         {parsed.downtime && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsed.downtime}</span>
                                         )}
-                                        <p className="text-xs font-medium ml-1">${Number(t.cost) || 0}</p>
+                                        <p className="text-xs font-medium ml-1">{displayCost != null ? `$${displayCost.toLocaleString()}` : "—"}</p>
                                       </div>
                                     </div>
                                     {parsed.description && (

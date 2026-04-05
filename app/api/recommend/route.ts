@@ -7,6 +7,7 @@ import { resolveClinicMenu } from '@/lib/menu-store'
 import { buildFallbackRecommendationFromMenu, menuToMaps } from '@/lib/recommend-menu'
 import type { ClinicMenuTreatment } from '@/lib/clinic-menu'
 import { buildRecommendationSchemas, type RecommendationOutput } from '@/lib/recommend-schema'
+import { resolveTreatmentCost } from '@/lib/treatment-price-resolver'
 
 const CONSULTANT_LEAD_PROFILE_DIRECTIVE =
   'Lead profile must be score-based: consumption capability, referral capability (with local context), and return probability.'
@@ -64,14 +65,17 @@ function buildSurveyContext(input: {
 function normalizeRecommendation(rec: RecommendationOutput, menuById: Map<string, ClinicMenuTreatment>) {
   const normalized = {
     ...rec,
-    plans: rec.plans.map((plan) => ({
-      ...plan,
-      treatments: plan.treatments.map((t) => {
+    plans: rec.plans.map((plan) => {
+      const treatments = plan.treatments.map((t) => {
         const menu = menuById.get(t.treatmentId)
         if (!menu) throw new Error(`Unknown treatmentId: ${t.treatmentId}`)
-        return { ...t, treatmentName: menu.name }
-      }),
-    })),
+        // Override AI-generated cost with deterministic menu price; fall back to AI value only if menu has no price
+        const resolvedCost = resolveTreatmentCost(t, menuById)
+        return { ...t, treatmentName: menu.name, cost: resolvedCost ?? t.cost }
+      })
+      const totalCost = treatments.reduce((sum, t) => sum + t.cost, 0)
+      return { ...plan, treatments, totalCost }
+    }),
   }
   for (const plan of normalized.plans) {
     const roles = plan.treatments.map((t) => t.role)
