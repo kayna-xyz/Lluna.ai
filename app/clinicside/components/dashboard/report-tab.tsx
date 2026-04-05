@@ -49,6 +49,15 @@ const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
   t007: "Thermage FLX",
 }
 
+function parseReason(reason: unknown): { description: string; duration: string; downtime: string } {
+  const raw = String(reason || "").trim()
+  const [first = "", second = ""] = raw.split("\n")
+  const description = first.trim()
+  const duration = second.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || ""
+  const downtime = second.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
+  return { description, duration, downtime }
+}
+
 function treatmentLabelFromUnknown(t: Record<string, unknown>) {
   const rawName = String(t.treatmentName || "").trim()
   if (rawName) return rawName
@@ -573,6 +582,11 @@ export function ClientReportPanel({
 
   const isEnriched = typeof realRec?.enriched_at === "string" && !!realRec.enriched_at
 
+  const budgetLabel = (() => {
+    const b = Number(realUi.budget ?? realUi.budgetNum ?? 0)
+    return b > 0 ? `$${b.toLocaleString()} budget` : ""
+  })()
+
   // Recompute long-term possibility score from deterministic formula
   const ltpIsLocal = consultantBrief.referralAbility.isLocal === "yes"
   const ltpTier = consultantBrief.consumptionCapability.tier
@@ -635,8 +649,8 @@ export function ClientReportPanel({
             <div className="space-y-5">
 
               {/* Card 0: Consultant Brief — top-left */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="gap-2">
+                <CardHeader className="pb-0">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultant Brief</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -653,6 +667,9 @@ export function ClientReportPanel({
                       <div className="h-1.5 w-full rounded-full bg-muted">
                         <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${consultantBrief.consumptionCapability.score * 20}%` }} />
                       </div>
+                      {budgetLabel && (
+                        <p className="text-[10px] text-muted-foreground">{budgetLabel}</p>
+                      )}
                     </div>
 
                     {/* Long-term Possibility */}
@@ -688,11 +705,24 @@ export function ClientReportPanel({
               </Card>
 
               {/* Card 1: Patient Info */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="gap-2">
+                <CardHeader className="pb-0">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Patient Info</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Uplift notification */}
+                  {showUplift && (
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950/40">
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        +${uplift.toLocaleString()} above stated budget
+                      </p>
+                      <span className="ml-auto text-[10px] text-emerald-600/70 dark:text-emerald-500 shrink-0">
+                        {Math.round((uplift / budgetNum) * 100)}% lift
+                      </span>
+                    </div>
+                  )}
+
                   {/* Budget summary row */}
                   <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3 text-sm">
                     <div>
@@ -766,8 +796,8 @@ export function ClientReportPanel({
               </Card>
 
               {/* Card 2: Sales Methodology */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="gap-2">
+                <CardHeader className="pb-0">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sales Methodology</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -833,8 +863,8 @@ export function ClientReportPanel({
 
               {/* Card 4: Recommended Plans */}
               {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
+                <Card className="gap-2">
+                  <CardHeader className="pb-0">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommended Plans</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -868,21 +898,32 @@ export function ClientReportPanel({
                               <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
                               <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
                               {treatments.map((t, tIdx) => {
+                                const parsed = parseReason(t.reason)
                                 return (
                                   <div
                                     key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
                                     className="rounded border p-2"
                                   >
-                                    <div className="flex items-center justify-between">
-                                      <p className="font-medium">{treatmentLabelFromUnknown(t)}</p>
-                                      <p className="text-xs">${Number(t.cost) || 0}</p>
+                                    <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
+                                    <div className="flex items-center justify-between mt-1">
+                                      <div className="flex gap-1 flex-wrap">
+                                        {parsed.duration && (
+                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.duration}</span>
+                                        )}
+                                        {parsed.downtime && (
+                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.downtime}</span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs font-medium ml-2 shrink-0">${Number(t.cost) || 0}</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    {parsed.description && (
+                                      <p className="text-xs text-muted-foreground mt-1">{parsed.description}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground mt-0.5">
                                       {t.units ? `${t.units} units ` : ""}
                                       {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
                                       {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
                                     </p>
-                                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{String(t.reason || "—")}</p>
                                   </div>
                                 )
                               })}
@@ -897,25 +938,38 @@ export function ClientReportPanel({
 
               {/* Card 4b: Additional Recommendations */}
               {additionalRecommendations.length > 0 ? (
-                <Card>
-                  <CardHeader className="pb-3">
+                <Card className="gap-2">
+                  <CardHeader className="pb-0">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {additionalRecommendations.map((r, i) => (
-                      <div key={i} className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3">
-                        <div className="flex-1 min-w-0">
+                    {additionalRecommendations.map((r, i) => {
+                      const parsedR = parseReason(r.reason)
+                      return (
+                        <div key={i} className="rounded-md border bg-muted/20 p-3">
                           <p className="text-sm font-medium">{r.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{r.reason}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex gap-1 flex-wrap">
+                              {parsedR.duration && (
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.duration}</span>
+                              )}
+                              {parsedR.downtime && (
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.downtime}</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
+                          </div>
+                          {parsedR.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{parsedR.description}</p>
+                          )}
                         </div>
-                        <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </CardContent>
                 </Card>
               ) : !isEnriched ? (
-                <Card>
-                  <CardHeader className="pb-3">
+                <Card className="gap-2">
+                  <CardHeader className="pb-0">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 animate-pulse">
@@ -933,8 +987,8 @@ export function ClientReportPanel({
               ) : null}
 
               {/* Card 5: Final Plan + Final Price */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="gap-2">
+                <CardHeader className="pb-0">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final Plan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
