@@ -54,26 +54,95 @@ export function slugId(name: string, i: number): string {
 }
 
 /**
+ * Parse the new flat AI output format: { treatments: [{ name, category, price, unit }] }
+ * Maps each flat entry to a ClinicMenuTreatment with simple pricing.
+ */
+function parseFlatTreatmentItems(items: unknown[], clinicName: string): ClinicMenu {
+  const treatments: ClinicMenuTreatment[] = []
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (!item || typeof item !== 'object') continue
+    const obj = item as Record<string, unknown>
+
+    const name = typeof obj.name === 'string' ? obj.name.trim() : ''
+    if (!name) continue
+
+    const price = typeof obj.price === 'number' && Number.isFinite(obj.price) && obj.price > 0 ? obj.price : null
+    if (price === null) {
+      console.log(`[menu-parse] "${name}" skipped — no valid price`)
+      continue
+    }
+
+    const unit = typeof obj.unit === 'string' ? obj.unit.toLowerCase().trim() : null
+    const category = typeof obj.category === 'string' ? obj.category.trim() : ''
+
+    let pricing: Record<string, unknown>
+    let units: string
+
+    if (unit === 'unit' || unit === 'units') {
+      pricing = { perUnit: price }
+      units = 'unit'
+    } else if (unit === 'syringe' || unit === 'syringes') {
+      pricing = { perSyringe: price }
+      units = 'syringe'
+    } else {
+      pricing = { single: price }
+      units = 'session'
+    }
+
+    console.log(`[menu-parse] "${name}" price=$${price} unit=${unit ?? 'session'} → pricing_model=simple`)
+    treatments.push({
+      id: slugId(name, i),
+      name,
+      category,
+      description: '',
+      units,
+      pricing_model: 'simple',
+      pricing,
+    })
+  }
+
+  return { clinicName, treatments }
+}
+
+/**
  * Primary parser — handles JSON output from the AI (both image and PDF/text prompts).
+ * Supports two AI output shapes:
+ *   1. New flat format:  { treatments: [{ name, category, price, unit }] }
+ *   2. Legacy array:     [{ name, pricing_model, pricing | pricing_table, ... }]
  * Falls back to parseMenuTextToDraft if the input is not valid JSON.
- *
- * Post-processing step:
- *   After parsing each AI treatment, if pricing_model is "simple" but the
- *   pricing.single field (or any other string field) actually contains multiple
- *   inline prices, re-classify as table.
  *
  * Grounding rule: only fields explicitly present in the source are populated.
  * Missing fields are left empty/null rather than filled with defaults.
  */
 export function parseMenuJsonToDraft(jsonText: string, clinicName = 'My Clinic'): ClinicMenu {
-  let items: unknown[]
+  let parsed: unknown
   try {
-    const raw = jsonText.trim()
-    const parsed = JSON.parse(raw)
-    items = Array.isArray(parsed) ? parsed : []
+    parsed = JSON.parse(jsonText.trim())
   } catch {
     // Not valid JSON — fall back to pipe-delimited parser
     console.log('[menu-parse] AI output is not JSON, falling back to pipe-delimited parser')
+    return parseMenuTextToDraft(jsonText, clinicName)
+  }
+
+  // New flat format: { treatments: [...] }
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    !Array.isArray(parsed) &&
+    Array.isArray((parsed as Record<string, unknown>).treatments)
+  ) {
+    console.log('[menu-parse] detected flat { treatments: [...] } format')
+    return parseFlatTreatmentItems((parsed as Record<string, unknown>).treatments as unknown[], clinicName)
+  }
+
+  // Legacy array format: [{ name, pricing_model, ... }]
+  let items: unknown[]
+  if (Array.isArray(parsed)) {
+    items = parsed
+  } else {
+    console.log('[menu-parse] unexpected JSON shape, falling back to pipe-delimited parser')
     return parseMenuTextToDraft(jsonText, clinicName)
   }
 

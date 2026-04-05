@@ -244,40 +244,50 @@ async function handlePOST(req: Request) {
     }
   }
 
-  const VISION_SYSTEM_PROMPT = `You extract a clinic treatment menu from an uploaded file. Output a JSON array of treatment objects only. No markdown, no code fences, no commentary — raw JSON array only.
+  const VISION_SYSTEM_PROMPT = `You are extracting treatments and prices from a medical spa menu.
+The input can be a PDF, image, or plain text. You must handle ALL formats.
 
-STRICT GROUNDING RULES:
-- Extract ONLY text explicitly visible in the source.
-- Do NOT infer, guess, or add anything not present.
-- Do NOT flatten table-structured pricing into a single price.
-- Do NOT duplicate a treatment just to represent different row variants.
-- If a field is not visible, use "" (string fields) or omit (pricing fields).
-- If a table cell is missing or unreadable, use null for that cell value.
+GOAL
+Extract ALL individual treatments with their prices.
 
-Each object in the array must have:
-  "name": string — treatment name verbatim from source (required)
-  "category": string — verbatim from source, or "" if not shown
-  "description": string — verbatim from source, or "" if not shown
-  "pricing_model": "simple" | "table"
+RULES
+1. Each treatment MUST be a single item.
+   - One row / one line = one treatment, EXCEPT when the same base treatment is split by body part (e.g. "Morpheus8 Face" and "Morpheus8 Body" are two separate entries — keep them separate).
+   - NEVER group multiple treatments together.
+   - If a treatment appears for multiple body parts, output one entry per body part.
 
-For SIMPLE pricing (one price or one price per unit/syringe):
-  "pricing": { "single": number } or { "perUnit": number } or { "perSyringe": number }
+2. Section headers are NOT treatments. Skip lines like "Injectables", "Laser Treatments", etc.
 
-For TABLE pricing (treatment has multiple ROWS such as areas/zones AND multiple COLUMNS such as pricing tiers):
-  "pricing_table": {
-    "columns": ["Col A", "Col B", ...],
-    "rows": [
-      { "label": "Row label", "values": { "Col A": number_or_null, "Col B": number_or_null } }
-    ]
-  }
+3. Extract only when BOTH a treatment name AND a price are present.
+   - Price priority: first-timer price > non-member / individual price > member price.
+   - IGNORE any price that includes the words "package", "bundle", "series", or a session count (e.g. "3 sessions").
 
-Use pricing_model "table" when the menu shows a grid: rows = areas/zones/durations, columns = pricing tiers.
-Use pricing_model "simple" when a treatment has only one price point.
-Never invent column headers, row labels, or price values not visible in the source.`
+4. Ignore: descriptions, package deals, discounts (e.g. "save 15%"), paragraphs of text.
+
+OUTPUT FORMAT — output ONLY this JSON, no markdown, no code fences, no commentary:
+{
+  "treatments": [
+    {
+      "name": string,
+      "category": string | null,
+      "price": number,
+      "unit": "unit" | "syringe" | "session" | null
+    }
+  ]
+}
+
+"unit" values:
+  "unit"    — priced per unit (e.g. Botox $12/unit)
+  "syringe" — priced per syringe (e.g. filler $800/syringe)
+  "session" — priced per session / per treatment (default when not specified)
+  null      — use when unit type is genuinely unclear
+
+NO HALLUCINATION
+- Only extract text that is explicitly visible.
+- Do NOT guess or infer prices.
+- If a price is unclear or missing, skip that treatment entirely.`
 
   // Image path: send image bytes directly to vision model.
-  // Uses plain text output (not Output.object) — Azure API 2024-07-18 does not support
-  // response_format:json_schema. Plain pipe-delimited text is sufficient for parseMenuTextToDraft.
   const extractMenuFromImage = async (mimeType: string) => {
     const { text } = await generateText({
       model: getMenuVisionAnthropicModel(),
@@ -288,7 +298,7 @@ Never invent column headers, row labels, or price values not visible in the sour
           content: [
             {
               type: 'text',
-              text: 'Extract every treatment from this menu image. Preserve table structure exactly. Output only the JSON array.',
+              text: 'Extract every treatment from this menu image. Output only the JSON object.',
             },
             {
               type: 'image',
@@ -314,7 +324,7 @@ Never invent column headers, row labels, or price values not visible in the sour
           content: [
             {
               type: 'text',
-              text: 'Extract every treatment from this menu PDF. Preserve table structure exactly. Output only the JSON array.',
+              text: 'Extract every treatment from this menu PDF. Output only the JSON object.',
             },
             {
               // AI SDK v6: 'file' content type for non-image binary files (PDFs)
@@ -337,7 +347,7 @@ Never invent column headers, row labels, or price values not visible in the sour
       messages: [
         {
           role: 'user',
-          content: `Extract every treatment from this menu text. Preserve table structure exactly when pricing is shown as a grid. Output only the JSON array.\n\n${pdfText}`,
+          content: `Extract every treatment from this menu text. Output only the JSON object.\n\n${pdfText}`,
         },
       ],
     })
