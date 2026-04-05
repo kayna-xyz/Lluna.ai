@@ -63,3 +63,29 @@ export async function GET(req: Request) {
 
   return Response.json({ items, configured: true })
 }
+
+export async function PATCH(req: Request) {
+  const supabase = getServiceSupabase()
+  if (!supabase) return Response.json({ error: 'Not configured' }, { status: 503 })
+
+  const tenant = await resolveClinicForRequest(supabase, req)
+  if (!tenant.ok) return Response.json({ error: tenant.error }, { status: tenant.status })
+
+  let id: string
+  try {
+    const body = await req.json()
+    id = typeof body.id === 'string' ? body.id.trim() : ''
+  } catch {
+    return Response.json({ error: 'Invalid body' }, { status: 400 })
+  }
+  if (!id) return Response.json({ error: 'id required' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('pending_reports')
+    .update({ status: 'read', updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('clinic_id', tenant.clinic.id)
+
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  return Response.json({ ok: true })
+}

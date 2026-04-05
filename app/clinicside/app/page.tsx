@@ -126,6 +126,17 @@ export default function DashboardPage() {
   const handleNotificationClick = (notification: ClientNotification) => {
     setSelectedClientReport(notification)
     setActiveTab("report")
+    // Mark as read — optimistic update + persist
+    if (notification.isNew) {
+      setNotifications((prev) =>
+        prev.map((n) => n.id === notification.id ? { ...n, isNew: false } : n),
+      )
+      void clinicFetch('/api/pending-reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: notification.id }),
+      }).catch(() => {})
+    }
   }
 
   const openClientReport = useCallback((client: Client) => {

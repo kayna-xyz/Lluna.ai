@@ -61,6 +61,16 @@ const additionalRecsOnlySchema = z.object({
   additionalRecommendations: additionalRecsReasonSchema.shape.additionalRecommendations,
 })
 
+const beforeYouStepOutItemSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  description: z.string().describe('One sentence on benefit. No filler.'),
+})
+
+const beforeYouStepOutSchema = z.object({
+  beforeYouStepOut: z.array(beforeYouStepOutItemSchema).min(1).max(2),
+})
+
 const salesSchema = z.object({
   salesMethodology: z.object({
     comboSynergy: z.string(),
@@ -146,6 +156,7 @@ export type EnrichmentFields = {
   salesSentences?: unknown[]
   salesMethodologyNew?: unknown
   additionalRecommendations?: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
+  beforeYouStepOut?: Array<{ name: string; price: number; description: string }>
   enriched_at?: string
 }
 
@@ -158,6 +169,7 @@ export async function generateFastEnrichment(
 ): Promise<{
   patientSummaryStructured: z.infer<typeof briefSchema>['patientSummaryStructured'] | null
   additionalRecommendations: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
+  beforeYouStepOut: Array<{ name: string; price: number; description: string }>
 }> {
   const briefPrompt = buildBriefPrompt(userInput)
 
@@ -201,14 +213,33 @@ Return 2-3 additional treatment recommendations from the list above that complem
     }).then((r) => r.output.additionalRecommendations).catch(() => [] as Array<{ name: string; price: number; description: string; duration: string; downtime: string }>)
   })
 
-  const [patientSummaryStructured, additionalRecommendations] = await Promise.all([
+  const beforeYouStepOutPromise = menuPromise.then(({ menu }) => {
+    const skincareCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
+    if (!skincareCtx) return [] as Array<{ name: string; price: number; description: string }>
+    const userPrompt = `Available clinic treatments:\n${skincareCtx}\n\nPatient goals: ${String(userInput.goals || '—')}`
+    return generateText({
+      model: getLlunaAnthropicModel(),
+      output: Output.object({ schema: beforeYouStepOutSchema }),
+      system:
+        'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare or cleansing add-ons from the menu above. ' +
+        'RULES: Only pick items related to skincare, cleansing, facials, peels, or skin boosters. ' +
+        'Price MUST be between $30 and $200 per session. ' +
+        'Use exact names and prices from the provided list. No markdown, no emojis. ' +
+        'If fewer than 2 suitable items exist in the menu, return what is available (minimum 1).',
+      messages: [{ role: 'user', content: userPrompt }],
+    }).then((r) => r.output.beforeYouStepOut).catch(() => [] as Array<{ name: string; price: number; description: string }>)
+  })
+
+  const [patientSummaryStructured, additionalRecommendations, beforeYouStepOut] = await Promise.all([
     patientSummaryPromise,
     additionalRecsPromise,
+    beforeYouStepOutPromise,
   ])
 
   return {
     patientSummaryStructured: patientSummaryStructured ?? null,
     additionalRecommendations: additionalRecommendations ?? [],
+    beforeYouStepOut: beforeYouStepOut ?? [],
   }
 }
 
@@ -347,7 +378,29 @@ Constraints:
     // Continue — still write whatever brief data we got
   }
 
-  // ── 4. Write enrichment to DB ──────────────────────────────────────────────
+  // ── 4. Before You Step Out ────────────────────────────────────────────────
+  try {
+    const { menu } = await resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
+    const skincareCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
+    if (skincareCtx) {
+      const { output } = await generateText({
+        model: getLlunaAnthropicModel(),
+        output: Output.object({ schema: beforeYouStepOutSchema }),
+        system:
+          'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare or cleansing add-ons from the menu above. ' +
+          'RULES: Only pick items related to skincare, cleansing, facials, peels, or skin boosters. ' +
+          'Price MUST be between $30 and $200 per session. ' +
+          'Use exact names and prices from the provided list. No markdown, no emojis. ' +
+          'If fewer than 2 suitable items exist in the menu, return what is available (minimum 1).',
+        messages: [{ role: 'user', content: `Available clinic treatments:\n${skincareCtx}` }],
+      })
+      enrichmentFields.beforeYouStepOut = output.beforeYouStepOut
+    }
+  } catch (e) {
+    console.error('[enrichment] before-you-step-out failed:', e instanceof Error ? e.message : e)
+  }
+
+  // ── 5. Write enrichment to DB ──────────────────────────────────────────────
   // Nothing generated at all — no point writing
   if (!enrichmentFields.consultantBrief && !enrichmentFields.salesMethodology) {
     console.warn('[enrichment] both AI calls failed for report', pendingReportId)
@@ -387,6 +440,7 @@ Constraints:
     ...(enrichmentFields.additionalRecommendations?.length &&
         !(Array.isArray(rec.additionalRecommendations) && (rec.additionalRecommendations as unknown[]).length > 0)
       ? { additionalRecommendations: enrichmentFields.additionalRecommendations } : {}),
+    ...(enrichmentFields.beforeYouStepOut?.length ? { beforeYouStepOut: enrichmentFields.beforeYouStepOut } : {}),
     enriched_at: enrichmentFields.enriched_at,
   }
 

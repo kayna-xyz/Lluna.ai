@@ -50,6 +50,7 @@ export async function GET(req: Request) {
     additionalRecommendations: Array.isArray(rec.additionalRecommendations)
       ? rec.additionalRecommendations
       : [],
+    beforeYouStepOut: Array.isArray(rec.beforeYouStepOut) ? rec.beforeYouStepOut : [],
     salesMethodologyNew: rec.salesMethodologyNew ?? null,
     patientSummaryStructured: rec.patientSummaryStructured ?? null,
   })

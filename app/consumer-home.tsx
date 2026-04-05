@@ -377,6 +377,7 @@ interface AIRecommendation {
   /** Internal CRM-style note from /api/recommend; not shown on patient report UI by default */
   consultantProfileSummary?: string
   additionalRecommendations?: Array<{ name: string; price: number; reason: string }>
+  beforeYouStepOut?: Array<{ name: string; price: number; description: string }>
 }
 
 function recentTreatmentsFromGoals(goals: string): string[] {
@@ -3428,12 +3429,16 @@ function ProfileScreen({
                 const result = await syncReportToBackend(sid, slice)
                 if (!result.ok) {
                   console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
-                } else if (result.additionalRecommendations?.length) {
+                } else if (result.additionalRecommendations?.length || result.beforeYouStepOut?.length) {
                   setState((s) => ({
                     ...s,
                     aiRecommendation: s.aiRecommendation
-                      ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
-                      : ({ additionalRecommendations: result.additionalRecommendations } as AIRecommendation),
+                      ? {
+                          ...s.aiRecommendation,
+                          ...(result.additionalRecommendations?.length ? { additionalRecommendations: result.additionalRecommendations } : {}),
+                          ...(result.beforeYouStepOut?.length ? { beforeYouStepOut: result.beforeYouStepOut } : {}),
+                        }
+                      : ({ additionalRecommendations: result.additionalRecommendations, beforeYouStepOut: result.beforeYouStepOut } as AIRecommendation),
                   }))
                 }
                 setReportProgress(95)
@@ -4194,10 +4199,53 @@ function ReportScreen({
         </div>
       )}
 
+      {/* Before You Step Out */}
+      {aiRec?.beforeYouStepOut && aiRec.beforeYouStepOut.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.1em',
+            color: COLORS.muted,
+            margin: 0,
+            marginBottom: 12,
+          }}>
+            BEFORE YOU STEP OUT
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {aiRec.beforeYouStepOut.map((rec, i) => (
+              <div
+                key={i}
+                style={{
+                  background: COLORS.bg,
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  border: `1px solid ${COLORS.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
+                  {rec.description && (
+                    <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description}</p>
+                  )}
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
+                  ${Number(rec.price).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {aiRec?.holdOffNote && (
-        <div style={{ 
-          background: COLORS.bg, 
-          borderRadius: 12, 
+        <div style={{
+          background: COLORS.bg,
+          borderRadius: 12,
           padding: 16,
           marginBottom: 24
         }}>
@@ -4437,12 +4485,16 @@ export default function LlunaApp({
       }).then((result) => {
         if (!result.ok) {
           console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
-        } else if (result.additionalRecommendations?.length) {
+        } else if (result.additionalRecommendations?.length || result.beforeYouStepOut?.length) {
           setState((s) => ({
             ...s,
             aiRecommendation: s.aiRecommendation
-              ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
-              : ({ additionalRecommendations: result.additionalRecommendations } as AIRecommendation),
+              ? {
+                  ...s.aiRecommendation,
+                  ...(result.additionalRecommendations?.length ? { additionalRecommendations: result.additionalRecommendations } : {}),
+                  ...(result.beforeYouStepOut?.length ? { beforeYouStepOut: result.beforeYouStepOut } : {}),
+                }
+              : ({ additionalRecommendations: result.additionalRecommendations, beforeYouStepOut: result.beforeYouStepOut } as AIRecommendation),
           }))
         }
       })
@@ -4482,16 +4534,21 @@ export default function LlunaApp({
         .then((r) => r.json() as Promise<{
           enriched: boolean
           additionalRecommendations?: Array<{ name: string; price: number; reason: string }>
+          beforeYouStepOut?: Array<{ name: string; price: number; description: string }>
           salesMethodologyNew?: unknown
           patientSummaryStructured?: unknown
         }>)
         .then((data) => {
           if (data.enriched) {
-            if (data.additionalRecommendations?.length) {
+            if (data.additionalRecommendations?.length || data.beforeYouStepOut?.length) {
               setState((s) => ({
                 ...s,
                 aiRecommendation: s.aiRecommendation
-                  ? { ...s.aiRecommendation, additionalRecommendations: data.additionalRecommendations }
+                  ? {
+                      ...s.aiRecommendation,
+                      ...(data.additionalRecommendations?.length ? { additionalRecommendations: data.additionalRecommendations } : {}),
+                      ...(data.beforeYouStepOut?.length ? { beforeYouStepOut: data.beforeYouStepOut } : {}),
+                    }
                   : s.aiRecommendation,
               }))
             }

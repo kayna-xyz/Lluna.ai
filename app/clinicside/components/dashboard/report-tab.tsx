@@ -650,6 +650,16 @@ export function ClientReportPanel({
         .filter((r) => r.name)
     : []
 
+  const beforeYouStepOut = Array.isArray(realRec?.beforeYouStepOut)
+    ? (realRec.beforeYouStepOut as Record<string, unknown>[])
+        .map((r) => ({
+          name: String(r.name || ""),
+          price: Number(r.price) || 0,
+          description: String(r.description || ""),
+        }))
+        .filter((r) => r.name)
+    : []
+
   const patientSummaryStructuredRaw = asRec(realRec?.patientSummaryStructured)
   const patientSummary =
     typeof patientSummaryStructuredRaw.summary === "string" && patientSummaryStructuredRaw.summary.trim()
@@ -1078,6 +1088,28 @@ export function ClientReportPanel({
                   </CardContent>
                 </Card>
               ) : null}
+
+              {/* Card 4c: Before You Step Out */}
+              {beforeYouStepOut.length > 0 && (
+                <Card className="gap-2">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Before You Step Out</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {beforeYouStepOut.map((r, i) => (
+                      <div key={i} className="rounded-md border bg-muted/20 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium">{r.name}</p>
+                          <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
+                        </div>
+                        {r.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{r.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Card 5: Final Plan + Final Price */}
               <Card className="gap-2">

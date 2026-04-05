@@ -150,7 +150,7 @@ export async function POST(req: Request) {
   // ── 3. Fast enrichment: patientSummaryStructured + additionalRecommendations ──
   // Hard 9s timeout so a slow AI call never causes a Vercel function timeout.
   const FAST_TIMEOUT_MS = 6000
-  const fastFallback = { patientSummaryStructured: null, additionalRecommendations: [] as Array<{ name: string; price: number; reason: string }> }
+  const fastFallback = { patientSummaryStructured: null, additionalRecommendations: [] as Array<{ name: string; price: number; reason: string }>, beforeYouStepOut: [] as Array<{ name: string; price: number; description: string }> }
   const fast = await Promise.race([
     generateFastEnrichment(clinicId, userInput, planTreatmentIds),
     new Promise<typeof fastFallback>((resolve) => setTimeout(() => resolve(fastFallback), FAST_TIMEOUT_MS)),
@@ -160,13 +160,14 @@ export async function POST(req: Request) {
   })
 
   // Write fast results to DB so consultant sees them immediately
-  if (pendingReportId && (fast.patientSummaryStructured || fast.additionalRecommendations.length)) {
+  if (pendingReportId && (fast.patientSummaryStructured || fast.additionalRecommendations.length || fast.beforeYouStepOut.length)) {
     const rd = asRec(reportData)
     const rec = asRec(rd.recommendation)
     const fastRec: Record<string, unknown> = {
       ...rec,
       ...(fast.patientSummaryStructured ? { patientSummaryStructured: fast.patientSummaryStructured } : {}),
       ...(fast.additionalRecommendations.length ? { additionalRecommendations: fast.additionalRecommendations } : {}),
+      ...(fast.beforeYouStepOut.length ? { beforeYouStepOut: fast.beforeYouStepOut } : {}),
     }
     const fastRd = { ...rd, recommendation: fastRec }
     void supabase.from('pending_reports').update({ report_data: fastRd }).eq('id', pendingReportId)
@@ -184,6 +185,7 @@ export async function POST(req: Request) {
     sessionId,
     clinicId,
     additionalRecommendations: fast.additionalRecommendations,
+    beforeYouStepOut: fast.beforeYouStepOut,
     patientSummaryStructured: fast.patientSummaryStructured,
   })
 }
