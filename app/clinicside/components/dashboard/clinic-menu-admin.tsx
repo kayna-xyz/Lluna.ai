@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil } from "lucide-react"
+import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +46,11 @@ function sanitizeUploadFilename(name: string): string {
   return trimmed.replace(/[^a-zA-Z0-9._-]+/g, "-")
 }
 
+function makeId(name: string): string {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40)
+  return (slug || "treatment") + "_" + Date.now()
+}
+
 export function ClinicMenuAdmin({
   onAppendPricingHistory,
 }: {
@@ -53,6 +58,7 @@ export function ClinicMenuAdmin({
 } = {}) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
   const [menuJson, setMenuJson] = useState("")
   const [working, setWorking] = useState<FullMenu | null>(null)
   const [clinicId, setClinicId] = useState<string | null>(null)
@@ -62,9 +68,19 @@ export function ClinicMenuAdmin({
   const [uploadKind, setUploadKind] = useState<"poster" | "beforeAfter">("poster")
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadSubmitting, setUploadSubmitting] = useState(false)
+
+  // Inline name editing
+  const [editingNameFor, setEditingNameFor] = useState<string | null>(null)
+  const [nameDraft, setNameDraft] = useState("")
+
+  // Inline price editing
   const [editingPriceFor, setEditingPriceFor] = useState<string | null>(null)
   const [priceDraft, setPriceDraft] = useState("")
-  const priceAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Add treatment inline form
+  const [addingTreatment, setAddingTreatment] = useState(false)
+  const [newTreatmentName, setNewTreatmentName] = useState("")
+  const [newTreatmentPrice, setNewTreatmentPrice] = useState("")
 
   const [importProgress, setImportProgress] = useState(0)
   const [importProcessing, setImportProcessing] = useState(false)
@@ -84,9 +100,6 @@ export function ClinicMenuAdmin({
 
   const startProgressTimer = () => {
     stopProgressTimer()
-    // While the server is extracting/parsing the file (AI can be slow),
-    // we still want the bar to keep moving so it doesn't look "stuck".
-    // We'll cap it below completion, then snap to 100 when all steps finish.
     progressCapRef.current = 97
     progressTimerRef.current = setInterval(() => {
       setImportProgress((p) => Math.min(progressCapRef.current, p + 2))
@@ -95,19 +108,9 @@ export function ClinicMenuAdmin({
 
   useEffect(() => {
     return () => {
-      if (priceAutoSaveTimerRef.current) {
-        clearTimeout(priceAutoSaveTimerRef.current)
-        priceAutoSaveTimerRef.current = null
-      }
       stopProgressTimer()
-      if (tipTimeoutRef.current) {
-        clearTimeout(tipTimeoutRef.current)
-        tipTimeoutRef.current = null
-      }
-      if (resultTimeoutRef.current) {
-        clearTimeout(resultTimeoutRef.current)
-        resultTimeoutRef.current = null
-      }
+      if (tipTimeoutRef.current) clearTimeout(tipTimeoutRef.current)
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
     }
   }, [])
 
@@ -165,6 +168,7 @@ export function ClinicMenuAdmin({
       setClinicId(typeof data.clinicId === "string" ? data.clinicId : null)
       setWorking(m)
       setMenuJson(JSON.stringify(m, null, 2))
+      setIsDirty(false)
     } catch {
       toast.error("Failed to load menu")
     } finally {
@@ -176,19 +180,7 @@ export function ClinicMenuAdmin({
     load()
   }, [load])
 
-  useEffect(() => {
-    if (!editingPriceFor) return
-    const raw = priceDraft.trim().replace(/^\$/, "")
-    const n = Number(raw)
-    if (!raw || !Number.isFinite(n) || n < 0) return
-    if (priceAutoSaveTimerRef.current) clearTimeout(priceAutoSaveTimerRef.current)
-    priceAutoSaveTimerRef.current = setTimeout(() => {
-      void commitTreatmentPrice(editingPriceFor)
-    }, 700)
-    return () => {
-      if (priceAutoSaveTimerRef.current) clearTimeout(priceAutoSaveTimerRef.current)
-    }
-  }, [editingPriceFor, priceDraft])
+  // ── Persist to DB ────────────────────────────────────────────────────────────
 
   const persistMenu = async (menu: FullMenu): Promise<boolean> => {
     if (!menu?.clinicName || !Array.isArray(menu.treatments)) {
@@ -205,6 +197,7 @@ export function ClinicMenuAdmin({
       if (res.ok) {
         setWorking(menu)
         setMenuJson(JSON.stringify(menu, null, 2))
+        setIsDirty(false)
         return true
       }
       const e = (await res.json().catch(() => ({}))) as { error?: string }
@@ -215,227 +208,97 @@ export function ClinicMenuAdmin({
     }
   }
 
-  const commitTreatmentPrice = async (treatmentId: string) => {
-    if (editingPriceFor !== treatmentId) return
-    let base: FullMenu
-    try {
-      base = working || (JSON.parse(menuJson) as FullMenu)
-    } catch {
-      setEditingPriceFor(null)
-      return
-    }
-    const t = base.treatments.find((x) => x.id === treatmentId)
-    if (!t) {
-      setEditingPriceFor(null)
-      return
-    }
+  const handleSave = async () => {
+    if (!working) return
+    const saved = await persistMenu(working)
+    if (saved) toast.success("Menu saved")
+  }
+
+  // ── In-memory treatment edits ─────────────────────────────────────────────
+
+  const commitTreatmentName = (treatmentId: string) => {
+    const name = nameDraft.trim()
+    setEditingNameFor(null)
+    if (!name || !working) return
+    setWorking((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        treatments: prev.treatments.map((t) =>
+          t.id === treatmentId ? { ...t, name } : t,
+        ),
+      }
+    })
+    setIsDirty(true)
+  }
+
+  const commitTreatmentPrice = (treatmentId: string) => {
+    setEditingPriceFor(null)
+    if (!working) return
     const raw = priceDraft.trim().replace(/^\$/, "")
     const n = Number(raw)
-    if (!Number.isFinite(n) || n < 0) {
-      toast.error("Enter a valid price")
-      setEditingPriceFor(null)
-      return
-    }
+    if (!raw || !Number.isFinite(n) || n < 0) return
     const rounded = Math.round(n)
+    const t = working.treatments.find((x) => x.id === treatmentId)
+    if (!t) return
     const oldN = findFirstFiniteNumber(t.pricing)
     const oldRounded = oldN != null ? Math.round(oldN) : null
-    if (oldRounded != null && oldRounded === rounded) {
-      setEditingPriceFor(null)
-      return
-    }
+    if (oldRounded === rounded) return
     const nextPricing: Record<string, unknown> = { ...(t.pricing ?? {}), single: rounded }
-    const next: FullMenu = {
-      ...base,
-      treatments: base.treatments.map((x) =>
-        x.id === treatmentId ? { ...x, pricing: nextPricing } : x,
-      ),
-    }
-    setWorking(next)
-    setMenuJson(JSON.stringify(next, null, 2))
-    const saved = await persistMenu(next)
-    setEditingPriceFor(null)
-    if (saved) {
-      const historyLine =
-        oldRounded != null
-          ? `By menu — ${t.name} = $${oldRounded} + new $${rounded}`
-          : `By menu — ${t.name} = new $${rounded}`
-      onAppendPricingHistory?.(historyLine)
-      toast.success("Price saved")
+    setWorking((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        treatments: prev.treatments.map((x) =>
+          x.id === treatmentId ? { ...x, pricing: nextPricing, pricing_model: 'simple' } : x,
+        ),
+      }
+    })
+    setIsDirty(true)
+    if (oldRounded != null) {
+      onAppendPricingHistory?.(`By menu — ${t.name} = $${oldRounded} → $${rounded}`)
     }
   }
 
-  const importFile = async (file: File) => {
-    const lowerName = (file.name || "").toLowerCase()
-    const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf"
-
-    if (isPdf && file.size > MAX_MENU_PDF_BYTES) {
-      toast.error("PDF too large. Maximum upload size is 10MB.")
-      return
-    }
-
-    if (file.size > MAX_MENU_IMPORT_BYTES) {
-      toast.error("File too large. Maximum upload size is 50MB.")
-      return
-    }
-
-    if (!clinicId) {
-      toast.error("Missing clinic context")
-      return
-    }
-
-    const likelyClaudeExtraction =
-      lowerName.endsWith(".pdf") || /\.(png|jpe?g|webp)$/.test(lowerName)
-
-    setImportProcessing(true)
-    setImportProgress(0)
-    setImportTip(null)
-    setImportResultText(null)
-    startProgressTimer()
-
-    if (likelyClaudeExtraction) {
-      // If Claude extraction is slow, remind user automatically.
-      tipTimeoutRef.current = setTimeout(() => {
-        setImportTip(
-          "Claude is extracting your menu—this can take a little while. Results will appear here shortly.",
-        )
-      }, 6000)
-    }
-
-    try {
-      // Step 1: upload file to Supabase Storage menus bucket
-      const supabase = getBrowserSupabase()
-      if (!supabase) {
-        stopProgressTimer()
-        setImportProcessing(false)
-        setImportProgress(0)
-        toast.error("Supabase client not available")
-        return
-      }
-      const storagePath = `${clinicId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`
-      const { error: uploadError } = await supabase.storage
-        .from("menus")
-        .upload(storagePath, file, { upsert: true, contentType: file.type || undefined })
-      if (uploadError) {
-        stopProgressTimer()
-        setImportProcessing(false)
-        setImportProgress(0)
-        toast.error(`Upload failed: ${uploadError.message}`)
-        return
-      }
-      const { data: urlData } = supabase.storage.from("menus").getPublicUrl(storagePath)
-      const fileUrl = urlData.publicUrl
-
-      // Step 2: pass the public URL to the parse API
-      const res = await clinicFetch("/api/menu/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl, clinicId }),
-      })
-      const rawText = await res.text()
-      console.log("[menu/parse] status:", res.status, "body:", rawText)
-      let data: Record<string, unknown>
-      try {
-        data = JSON.parse(rawText) as Record<string, unknown>
-      } catch {
-        stopProgressTimer()
-        setImportProcessing(false)
-        setImportProgress(0)
-        setImportTip(null)
-        setImportResultText(null)
-        toast.error(`Server error (${res.status}): ${rawText.slice(0, 200)}`)
-        return
-      }
-      if (!res.ok) {
-        stopProgressTimer()
-        if (resultTimeoutRef.current) {
-          clearTimeout(resultTimeoutRef.current)
-          resultTimeoutRef.current = null
-        }
-        if (tipTimeoutRef.current) {
-          clearTimeout(tipTimeoutRef.current)
-          tipTimeoutRef.current = null
-        }
-        setImportProcessing(false)
-        setImportProgress(0)
-        setImportTip(null)
-        setImportResultText(null)
-        toast.error(data.error || "Parse failed")
-        return
-      }
-
-      // AI extraction stage finished
-      if (tipTimeoutRef.current) {
-        clearTimeout(tipTimeoutRef.current)
-        tipTimeoutRef.current = null
-      }
-      setImportTip(null)
-      // Don't "jump" progress; just allow the timer to continue up to the next cap.
-      progressCapRef.current = 99
-
-      if (data.draftMenu) {
-        const next = data.draftMenu as FullMenu
-        setMenuJson(JSON.stringify(next, null, 2))
-        setWorking(next)
-        const saved = await persistMenu(next)
-        if (!saved) {
-          stopProgressTimer()
-          setImportProcessing(false)
-          setImportTip(null)
-          setImportResultText(null)
-          setImportProgress(0)
-          return
-        }
-        setImportProgress(100)
-        stopProgressTimer()
-        setImportProcessing(false)
-        setImportResultText("Uploaded successfully")
-        toast.success("Menu processed & saved")
-
-        // Hide the bar shortly after finishing.
-        if (resultTimeoutRef.current) {
-          clearTimeout(resultTimeoutRef.current)
-          resultTimeoutRef.current = null
-        }
-        resultTimeoutRef.current = setTimeout(() => {
-          setImportProgress(0)
-          setImportResultText(null)
-        }, 1200)
-      } else if (data.text) {
-        setMenuJson(data.text)
-        // This path is manual text extraction; treat as complete.
-        setImportProgress(100)
-        stopProgressTimer()
-        setImportProcessing(false)
-        setImportTip(null)
-        setImportResultText("Uploaded successfully")
-        toast.message("Extracted text — use a valid menu JSON or re-import as .xlsx/.csv")
-
-        if (resultTimeoutRef.current) {
-          clearTimeout(resultTimeoutRef.current)
-          resultTimeoutRef.current = null
-        }
-        resultTimeoutRef.current = setTimeout(() => {
-          setImportProgress(0)
-          setImportResultText(null)
-        }, 1200)
-      }
-    } catch (e) {
-      stopProgressTimer()
-      if (tipTimeoutRef.current) {
-        clearTimeout(tipTimeoutRef.current)
-        tipTimeoutRef.current = null
-      }
-      if (resultTimeoutRef.current) {
-        clearTimeout(resultTimeoutRef.current)
-        resultTimeoutRef.current = null
-      }
-      setImportProcessing(false)
-      setImportProgress(0)
-      setImportTip(null)
-      setImportResultText(null)
-      toast.error(e instanceof Error ? e.message : "Upload failed")
-    }
+  const deleteTreatment = (treatmentId: string) => {
+    setWorking((prev) => {
+      if (!prev) return prev
+      return { ...prev, treatments: prev.treatments.filter((t) => t.id !== treatmentId) }
+    })
+    setIsDirty(true)
   }
+
+  const commitAddTreatment = () => {
+    const name = newTreatmentName.trim()
+    if (!name) {
+      toast.error("Treatment name is required")
+      return
+    }
+    const priceRaw = newTreatmentPrice.trim().replace(/^\$/, "")
+    const priceNum = priceRaw ? Number(priceRaw) : NaN
+    const pricing: Record<string, unknown> = Number.isFinite(priceNum) && priceNum >= 0
+      ? { single: Math.round(priceNum) }
+      : {}
+    const newTreatment: MenuTreatment = {
+      id: makeId(name),
+      name,
+      category: "",
+      description: "",
+      units: "session",
+      pricing_model: "simple",
+      pricing,
+    }
+    setWorking((prev) => {
+      if (!prev) return prev
+      return { ...prev, treatments: [...prev.treatments, newTreatment] }
+    })
+    setIsDirty(true)
+    setAddingTreatment(false)
+    setNewTreatmentName("")
+    setNewTreatmentPrice("")
+  }
+
+  // ── Treatment image uploads ───────────────────────────────────────────────
 
   const uploadAsset = async (
     treatmentId: string,
@@ -465,8 +328,6 @@ export function ClinicMenuAdmin({
           t.id === treatmentId ? { ...t, [field]: data.publicUrl as string } : t,
         ),
       }
-      setWorking(next)
-      setMenuJson(JSON.stringify(next, null, 2))
       const saved = await persistMenu(next)
       if (saved) {
         toast.success("Upload successful!")
@@ -504,11 +365,146 @@ export function ClinicMenuAdmin({
         t.id === treatmentId ? { ...t, [field]: undefined } : t,
       ),
     }
-    setWorking(next)
-    setMenuJson(JSON.stringify(next, null, 2))
     const saved = await persistMenu(next)
     if (saved) toast.success("Image removed")
     else toast.error("Could not update menu")
+  }
+
+  // ── File import ──────────────────────────────────────────────────────────
+
+  const importFile = async (file: File) => {
+    const lowerName = (file.name || "").toLowerCase()
+    const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf"
+
+    if (isPdf && file.size > MAX_MENU_PDF_BYTES) {
+      toast.error("PDF too large. Maximum upload size is 10MB.")
+      return
+    }
+    if (file.size > MAX_MENU_IMPORT_BYTES) {
+      toast.error("File too large. Maximum upload size is 50MB.")
+      return
+    }
+    if (!clinicId) {
+      toast.error("Missing clinic context")
+      return
+    }
+
+    const likelyClaudeExtraction =
+      lowerName.endsWith(".pdf") || /\.(png|jpe?g|webp)$/.test(lowerName)
+
+    setImportProcessing(true)
+    setImportProgress(0)
+    setImportTip(null)
+    setImportResultText(null)
+    startProgressTimer()
+
+    if (likelyClaudeExtraction) {
+      tipTimeoutRef.current = setTimeout(() => {
+        setImportTip("AI is extracting your menu — this can take a little while.")
+      }, 6000)
+    }
+
+    try {
+      const supabase = getBrowserSupabase()
+      if (!supabase) {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        toast.error("Supabase client not available")
+        return
+      }
+      const storagePath = `${clinicId}/${Date.now()}-${sanitizeUploadFilename(file.name)}`
+      const { error: uploadError } = await supabase.storage
+        .from("menus")
+        .upload(storagePath, file, { upsert: true, contentType: file.type || undefined })
+      if (uploadError) {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        toast.error(`Upload failed: ${uploadError.message}`)
+        return
+      }
+      const { data: urlData } = supabase.storage.from("menus").getPublicUrl(storagePath)
+      const fileUrl = urlData.publicUrl
+
+      const res = await clinicFetch("/api/menu/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, clinicId }),
+      })
+      const rawText = await res.text()
+      console.log("[menu/parse] status:", res.status, "body:", rawText)
+      let data: Record<string, unknown>
+      try {
+        data = JSON.parse(rawText) as Record<string, unknown>
+      } catch {
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportProgress(0)
+        setImportTip(null)
+        setImportResultText(null)
+        toast.error(`Server error (${res.status}): ${rawText.slice(0, 200)}`)
+        return
+      }
+      if (!res.ok) {
+        stopProgressTimer()
+        if (tipTimeoutRef.current) clearTimeout(tipTimeoutRef.current)
+        if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
+        setImportProcessing(false)
+        setImportProgress(0)
+        setImportTip(null)
+        setImportResultText(null)
+        toast.error(data.error || "Parse failed")
+        return
+      }
+
+      if (tipTimeoutRef.current) clearTimeout(tipTimeoutRef.current)
+      setImportTip(null)
+      progressCapRef.current = 99
+
+      if (data.draftMenu) {
+        const next = data.draftMenu as FullMenu
+        const saved = await persistMenu(next)
+        if (!saved) {
+          stopProgressTimer()
+          setImportProcessing(false)
+          setImportTip(null)
+          setImportResultText(null)
+          setImportProgress(0)
+          return
+        }
+        setImportProgress(100)
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportResultText("Imported successfully")
+        toast.success("Menu imported & saved")
+        resultTimeoutRef.current = setTimeout(() => {
+          setImportProgress(0)
+          setImportResultText(null)
+        }, 1200)
+      } else if (data.text) {
+        setMenuJson(data.text)
+        setImportProgress(100)
+        stopProgressTimer()
+        setImportProcessing(false)
+        setImportTip(null)
+        setImportResultText("Imported successfully")
+        toast.message("Extracted text — re-import as .xlsx/.csv for full parsing")
+        resultTimeoutRef.current = setTimeout(() => {
+          setImportProgress(0)
+          setImportResultText(null)
+        }, 1200)
+      }
+    } catch (e) {
+      stopProgressTimer()
+      if (tipTimeoutRef.current) clearTimeout(tipTimeoutRef.current)
+      if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
+      setImportProcessing(false)
+      setImportProgress(0)
+      setImportTip(null)
+      setImportResultText(null)
+      toast.error(e instanceof Error ? e.message : "Upload failed")
+    }
   }
 
   const uploadTargetName =
@@ -544,31 +540,32 @@ export function ClinicMenuAdmin({
 
   return (
     <div className="space-y-4">
+      {/* ── Import file ─────────────────────────────────────────────────── */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Import file</CardTitle>
           <p className="text-xs text-muted-foreground">
-            .xlsx / .xls / .csv / .txt / .json / .pdf / .png / .jpg / .jpeg / .webp — server returns draftMenu and saves it.
+            .xlsx / .xls / .csv / .txt / .json / .pdf / .png / .jpg / .jpeg / .webp
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="relative" asChild>
-            <label>
-              <Upload className="h-3.5 w-3.5 mr-1 inline" />
-              Import file
-              <input
-                type="file"
-                className="absolute inset-0 opacity-0 cursor-pointer"
+            <Button variant="outline" size="sm" className="relative" asChild>
+              <label>
+                <Upload className="h-3.5 w-3.5 mr-1 inline" />
+                Import file
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
                   accept=".csv,.txt,.xlsx,.xls,.json,.pdf,.png,.jpg,.jpeg,.webp"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) importFile(f)
-                  e.target.value = ""
-                }}
-              />
-            </label>
-          </Button>
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) importFile(f)
+                    e.target.value = ""
+                  }}
+                />
+              </label>
+            </Button>
           </div>
 
           {(importProcessing || (importProgress > 0 && importProgress < 100)) && (
@@ -584,80 +581,104 @@ export function ClinicMenuAdmin({
                 />
               </div>
               {importTip && (
-                <p className="mt-2 text-xs text-muted-foreground leading-snug">
-                  {importTip}
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground leading-snug">{importTip}</p>
               )}
             </div>
           )}
           {importResultText && (
-            <p className="text-xs font-semibold text-muted-foreground mt-2">
-              {importResultText}
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground mt-2">{importResultText}</p>
           )}
         </CardContent>
       </Card>
 
+      {/* ── Treatment list ───────────────────────────────────────────────── */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Treatment images</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Tap a row to preview photos. Use + to add a poster or before/after image.
-          </p>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">Treatments</CardTitle>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!isDirty || saving}
+              onClick={() => void handleSave()}
+            >
+              {saving ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</>
+              ) : (
+                <><Save className="h-3.5 w-3.5 mr-1.5" />Save</>
+              )}
+            </Button>
+          </div>
+          {isDirty && (
+            <p className="text-xs text-amber-600 mt-1">Unsaved changes</p>
+          )}
         </CardHeader>
-        <CardContent className="space-y-2 max-h-[520px] overflow-auto">
+        <CardContent className="space-y-2 max-h-[600px] overflow-auto">
           {(working?.treatments ?? []).map((t) => {
             const expanded = expandedTreatmentId === t.id
             const hasPoster = Boolean(t.posterUrl)
             const hasBa = Boolean(t.beforeAfterUrl)
+            const isTable = t.pricing_model === 'table' || Boolean(t.pricing_table)
             return (
               <div
                 key={t.id}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    setExpandedTreatmentId((id) => (id === t.id ? null : t.id))
-                  }
-                }}
                 className={cn(
-                  "rounded-md border p-2 text-xs transition-colors outline-none",
-                  "hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring",
+                  "rounded-md border p-2 text-xs transition-colors",
                   expanded && "border-primary/40 bg-muted/20",
                 )}
-                onClick={() =>
-                  setExpandedTreatmentId((id) => (id === t.id ? null : t.id))
-                }
               >
                 <div className="flex items-center gap-2 min-h-9">
-                  <span className="text-muted-foreground shrink-0" aria-hidden>
-                    {expanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </span>
+                  {/* Expand toggle */}
+                  <button
+                    type="button"
+                    className="text-muted-foreground shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                    onClick={() => setExpandedTreatmentId((id) => (id === t.id ? null : t.id))}
+                    aria-label={expanded ? "Collapse" : "Expand"}
+                  >
+                    {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+
+                  {/* Name — inline edit */}
                   <div className="flex flex-1 items-center gap-2 min-w-0">
-                    <div className="font-medium truncate">{t.name}</div>
+                    {editingNameFor === t.id ? (
+                      <Input
+                        className="h-7 flex-1 text-xs px-1.5"
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        onBlur={() => commitTreatmentName(t.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); commitTreatmentName(t.id) }
+                          if (e.key === "Escape") setEditingNameFor(null)
+                        }}
+                        autoFocus
+                      />
+                    ) : (
+                      <div
+                        className="group inline-flex items-center gap-1 min-w-0 cursor-pointer"
+                        onClick={() => {
+                          setEditingNameFor(t.id)
+                          setNameDraft(t.name)
+                        }}
+                        title="Click to edit name"
+                      >
+                        <span className="font-medium truncate">{t.name}</span>
+                        <Pencil className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {/* Price — inline edit (simple pricing only) */}
                     <div
-                      className={cn(
-                        "group inline-flex items-center gap-1 shrink-0",
-                        "text-muted-foreground",
-                      )}
+                      className="group inline-flex items-center gap-1 shrink-0 text-muted-foreground"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {editingPriceFor === t.id && t.pricing_model !== 'table' && !t.pricing_table ? (
+                      {editingPriceFor === t.id && !isTable ? (
                         <Input
                           className="h-7 w-[4.25rem] text-xs px-1.5 tabular-nums"
                           value={priceDraft}
                           onChange={(e) => setPriceDraft(e.target.value)}
-                          onBlur={() => void commitTreatmentPrice(t.id)}
+                          onBlur={() => commitTreatmentPrice(t.id)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault()
-                              void commitTreatmentPrice(t.id)
-                            }
+                            if (e.key === "Enter") { e.preventDefault(); commitTreatmentPrice(t.id) }
                             if (e.key === "Escape") setEditingPriceFor(null)
                           }}
                           autoFocus
@@ -667,14 +688,12 @@ export function ClinicMenuAdmin({
                           <span className="tabular-nums text-xs">
                             {getTreatmentPriceText(t) ?? "—"}
                           </span>
-                          {t.pricing_model !== 'table' && !t.pricing_table && (
+                          {!isTable && (
                             <button
                               type="button"
                               className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-opacity shrink-0"
                               title="Edit price"
-                              aria-label="Edit price"
-                              onClick={(e) => {
-                                e.stopPropagation()
+                              onClick={() => {
                                 setEditingPriceFor(t.id)
                                 const cur = findFirstFiniteNumber(t.pricing ?? {})
                                 setPriceDraft(cur != null ? String(Math.round(cur)) : "")
@@ -686,38 +705,49 @@ export function ClinicMenuAdmin({
                         </>
                       )}
                     </div>
+
                     {(hasPoster || hasBa) && (
                       <span className="hidden sm:inline-flex shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         {[hasPoster && "Poster", hasBa && "B/A"].filter(Boolean).join(" · ")}
                       </span>
                     )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="shrink-0"
-                    title="Add image"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setUploadKind("poster")
-                      setUploadFile(null)
-                      setUploadTargetId(t.id)
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      title="Add image"
+                      onClick={() => {
+                        setUploadKind("poster")
+                        setUploadFile(null)
+                        setUploadTargetId(t.id)
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete treatment"
+                      onClick={() => deleteTreatment(t.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
 
+                {/* Expanded detail */}
                 {expanded && (
-                  <div
-                    className="mt-3 space-y-4 border-t border-border pt-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="mt-3 space-y-4 border-t border-border pt-3">
                     {t.description?.trim() && (
                       <p className="text-xs text-muted-foreground leading-relaxed">{t.description}</p>
                     )}
-                    {(t.pricing_model === 'table' || t.pricing_table) && t.pricing_table && (
+                    {isTable && t.pricing_table && (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                           Pricing table
@@ -798,9 +828,7 @@ export function ClinicMenuAdmin({
                             </Button>
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-[11px]">
-                            No before/after photo yet.
-                          </p>
+                          <p className="text-muted-foreground text-[11px]">No before/after photo yet.</p>
                         )}
                       </div>
                     </div>
@@ -811,7 +839,6 @@ export function ClinicMenuAdmin({
                         size="icon-sm"
                         className="text-muted-foreground hover:text-foreground"
                         title="Collapse"
-                        aria-label="Collapse treatment card"
                         onClick={() => setExpandedTreatmentId(null)}
                       >
                         <ChevronUp className="h-4 w-4" />
@@ -822,9 +849,59 @@ export function ClinicMenuAdmin({
               </div>
             )
           })}
+
+          {/* ── Add treatment ──────────────────────────────────────────── */}
+          {addingTreatment ? (
+            <div className="rounded-md border border-dashed p-3 space-y-2">
+              <Input
+                className="h-7 text-xs"
+                placeholder="Treatment name"
+                value={newTreatmentName}
+                onChange={(e) => setNewTreatmentName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitAddTreatment() }
+                  if (e.key === "Escape") { setAddingTreatment(false); setNewTreatmentName(""); setNewTreatmentPrice("") }
+                }}
+                autoFocus
+              />
+              <Input
+                className="h-7 text-xs"
+                placeholder="Price (optional, e.g. 299)"
+                value={newTreatmentPrice}
+                onChange={(e) => setNewTreatmentPrice(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitAddTreatment() }
+                  if (e.key === "Escape") { setAddingTreatment(false); setNewTreatmentName(""); setNewTreatmentPrice("") }
+                }}
+              />
+              <div className="flex gap-2">
+                <Button type="button" size="sm" onClick={commitAddTreatment}>Add</Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setAddingTreatment(false); setNewTreatmentName(""); setNewTreatmentPrice("") }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full border-dashed text-muted-foreground"
+              onClick={() => setAddingTreatment(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Add treatment
+            </Button>
+          )}
         </CardContent>
       </Card>
 
+      {/* ── Treatment image upload dialog ────────────────────────────────── */}
       <Dialog
         open={uploadTargetId !== null}
         onOpenChange={(open) => {
@@ -866,9 +943,7 @@ export function ClinicMenuAdmin({
               </RadioGroup>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="treatment-image-file" className="text-xs">
-                File
-              </Label>
+              <Label htmlFor="treatment-image-file" className="text-xs">File</Label>
               <InputLikeFile
                 id="treatment-image-file"
                 file={uploadFile}
@@ -880,10 +955,7 @@ export function ClinicMenuAdmin({
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setUploadTargetId(null)
-                setUploadFile(null)
-              }}
+              onClick={() => { setUploadTargetId(null); setUploadFile(null) }}
             >
               Cancel
             </Button>
