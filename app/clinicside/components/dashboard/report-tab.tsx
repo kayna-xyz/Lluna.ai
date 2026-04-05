@@ -49,19 +49,41 @@ const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
   t007: "Thermage FLX",
 }
 
+/** Normalize a duration/downtime tag to a clean numeric range or known keyword. Returns "" if unparseable. */
+function normalizeDurationTag(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ""
+  const lower = s.toLowerCase()
+  // Known non-numeric keywords — keep as-is (capitalized)
+  if (/^none$/i.test(s)) return "None"
+  if (/^permanent$/i.test(s)) return "Permanent"
+  if (/^(minimal|minimal downtime|no downtime)$/i.test(s)) return "Minimal"
+  // Normalize separators: "3 to 6 months" or "3 - 6 months" → "3–6 months"
+  const normalized = s
+    .replace(/\s+to\s+/gi, "–")
+    .replace(/\s*[-—]\s*/g, "–")
+  // Require at least one digit — reject pure text values like "Long-lasting"
+  if (!/\d/.test(normalized) && !/^(none|permanent|minimal)/i.test(lower)) return ""
+  return normalized
+}
+
 /** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
 function getTreatmentTags(t: Record<string, unknown>): { description: string; duration: string; downtime: string } {
-  const description = String(t.description || "").trim()
-  const duration = String(t.duration || "").trim()
-  const downtime = String(t.downtime || "").trim()
-  if (duration && downtime) return { description, duration, downtime }
-  // Legacy fallback: parse from reason string
-  const raw = String(t.reason || "").trim()
-  const [first = "", second = ""] = raw.split("\n")
+  let description = String(t.description || "").trim()
+  let duration = String(t.duration || "").trim()
+  let downtime = String(t.downtime || "").trim()
+  if (!duration || !downtime) {
+    // Legacy fallback: parse from reason string
+    const raw = String(t.reason || "").trim()
+    const [line1 = "", line2 = ""] = raw.split("\n")
+    if (!description) description = line1.trim()
+    if (!duration) duration = line2.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || ""
+    if (!downtime) downtime = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
+  }
   return {
-    description: description || first.trim(),
-    duration: duration || second.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || "",
-    downtime: downtime || second.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || "",
+    description,
+    duration: normalizeDurationTag(duration),
+    downtime: normalizeDurationTag(downtime),
   }
 }
 
@@ -908,7 +930,21 @@ export function ClientReportPanel({
                             <div className="mt-3 border-t pt-3 space-y-3">
                               <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
                               <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
-                              {treatments.map((t, tIdx) => {
+                              {treatments.map((rawT, tIdx) => {
+                                const t: Record<string, unknown> = {
+                                  treatmentId: String(rawT.treatmentId || ""),
+                                  treatmentName: String(rawT.treatmentName || ""),
+                                  role: rawT.role,
+                                  description: String(rawT.description || ""),
+                                  duration: String(rawT.duration || ""),
+                                  downtime: String(rawT.downtime || ""),
+                                  reason: String(rawT.reason || ""),
+                                  units: rawT.units ?? null,
+                                  syringes: rawT.syringes ?? null,
+                                  sessions: rawT.sessions ?? null,
+                                  fillerType: rawT.fillerType ?? null,
+                                  cost: rawT.cost,
+                                }
                                 const parsed = getTreatmentTags(t)
                                 return (
                                   <div
