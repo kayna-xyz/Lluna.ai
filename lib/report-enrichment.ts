@@ -58,6 +58,16 @@ const salesSchema = z.object({
     .max(3),
 })
 
+// ─── Minimal fast-path schemas ─────────────────────────────────────────────────
+
+const patientSummaryOnlySchema = z.object({
+  patientSummaryStructured: briefSchema.shape.patientSummaryStructured,
+})
+
+const additionalRecsOnlySchema = z.object({
+  additionalRecommendations: salesSchema.shape.additionalRecommendations,
+})
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function asRec(v: unknown): Record<string, unknown> {
@@ -91,6 +101,35 @@ function priceSummary(t: ClinicMenuTreatment): string {
   return ''
 }
 
+function buildBriefPrompt(userInput: Record<string, unknown>): string {
+  return `Generate the consultant brief using only provided data.
+User info:
+- Name: ${String(userInput.name || '—')}
+- Age: ${String(userInput.age || '—')}
+- Occupation: ${String(userInput.occupation || '—')}
+- Goals: ${String(userInput.goals || '—')}
+- Budget: ${String(userInput.budget ?? '—')}
+- Experience: ${String(userInput.experience || '—')}
+- Recovery preference: ${String(userInput.recovery || '—')}
+- Customer status: ${String(userInput.clinicHistory || '—')}
+- Local/NYC: ${String(userInput.isNYC ?? '—')}
+- Referral: ${String(userInput.referral || '—')}`
+}
+
+function buildMenuContext(
+  treatments: ClinicMenuTreatment[],
+  excludedIds: Set<string>,
+): string {
+  return treatments
+    .slice(0, 30)
+    .filter((t) => !excludedIds.has(t.id))
+    .map((t) => {
+      const price = priceSummary(t)
+      return `- ${t.name} (id:${t.id})${price ? `: ${price}` : ''}${t.description ? ` (${t.description})` : ''}`
+    })
+    .join('\n')
+}
+
 // ─── Exported types for frontend polling ──────────────────────────────────────
 
 export type EnrichmentFields = {
@@ -104,12 +143,75 @@ export type EnrichmentFields = {
   enriched_at?: string
 }
 
-// ─── Main worker ───────────────────────────────────────────────────────────────
+// ─── Fast enrichment (runs synchronously in /api/new-report) ──────────────────
+
+export async function generateFastEnrichment(
+  clinicId: string,
+  userInput: Record<string, unknown>,
+  excludedTreatmentIds: Set<string>,
+): Promise<{
+  patientSummaryStructured: z.infer<typeof briefSchema>['patientSummaryStructured'] | null
+  additionalRecommendations: Array<{ name: string; price: number; reason: string }>
+}> {
+  const briefPrompt = buildBriefPrompt(userInput)
+
+  // Fetch menu in parallel with patient summary generation
+  const menuPromise = resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
+
+  const patientSummaryPromise = generateText({
+    model: getLlunaAnthropicModel(),
+    output: Output.object({ schema: patientSummaryOnlySchema }),
+    system:
+      'Return patientSummaryStructured only.\n' +
+      '- spending_power: low (<$500 budget), medium ($500-$1200), high (>$1200).\n' +
+      '- is_local: true if isNYC === true.\n' +
+      '- is_returning: true if clinicHistory === "returning".\n' +
+      '- has_prior_treatments: true if experience is "few" or "regular".\n' +
+      '- summary: max 50 words. Direct conclusions only. No "given your goal", no explanatory language.',
+    messages: [{ role: 'user', content: briefPrompt }],
+  }).then((r) => r.output.patientSummaryStructured).catch(() => null)
+
+  const additionalRecsPromise = menuPromise.then(({ menu }) => {
+    const menuCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
+    if (!menuCtx) return [] as Array<{ name: string; price: number; reason: string }>
+    const userPrompt = `Patient data:
+- Goals: ${String(userInput.goals || '—')}
+- Budget: ${String(userInput.budget ?? '—')}
+- Experience: ${String(userInput.experience || '—')}
+- Recovery preference: ${String(userInput.recovery || '—')}
+
+Available treatments (pick only from this list — do NOT recommend treatments already in their Essential/Optimal/Premium plans):
+${menuCtx}
+
+Return 2-3 additional treatment recommendations from the list above that complement their goals and budget. Pick items not already in their core plan.`
+    return generateText({
+      model: getLlunaAnthropicModel(),
+      output: Output.object({ schema: additionalRecsOnlySchema }),
+      system:
+        'You are a medspa sales advisor. Return additionalRecommendations only. ' +
+        'Use exact treatment names and prices from the provided list. No markdown, no emojis.',
+      messages: [{ role: 'user', content: userPrompt }],
+    }).then((r) => r.output.additionalRecommendations).catch(() => [] as Array<{ name: string; price: number; reason: string }>)
+  })
+
+  const [patientSummaryStructured, additionalRecommendations] = await Promise.all([
+    patientSummaryPromise,
+    additionalRecsPromise,
+  ])
+
+  return {
+    patientSummaryStructured: patientSummaryStructured ?? null,
+    additionalRecommendations: additionalRecommendations ?? [],
+  }
+}
+
+// ─── Main background worker ────────────────────────────────────────────────────
 
 export async function enrichReportAsync(
   pendingReportId: string,
   clinicId: string,
   userInput: Record<string, unknown>,
+  excludedTreatmentIds: Set<string> = new Set(),
 ): Promise<void> {
   const supabase = getServiceSupabase()
   if (!supabase) {
@@ -118,21 +220,9 @@ export async function enrichReportAsync(
   }
 
   const enrichmentFields: EnrichmentFields = {}
+  const briefPrompt = buildBriefPrompt(userInput)
 
   // ── 1. Consultant Brief + Patient Summary ──────────────────────────────────
-  const briefPrompt = `Generate the consultant brief using only provided data.
-User info:
-- Name: ${String(userInput.name || '—')}
-- Age: ${String(userInput.age || '—')}
-- Occupation: ${String(userInput.occupation || '—')}
-- Goals: ${String(userInput.goals || '—')}
-- Budget: ${String(userInput.budget ?? '—')}
-- Experience: ${String(userInput.experience || '—')}
-- Recovery preference: ${String(userInput.recovery || '—')}
-- Customer status: ${String(userInput.clinicHistory || '—')}
-- Local/NYC: ${String(userInput.isNYC ?? '—')}
-- Referral: ${String(userInput.referral || '—')}`
-
   try {
     const { output } = await generateText({
       model: getLlunaAnthropicModel(),
@@ -198,13 +288,7 @@ User info:
     }
 
     const { menu } = await resolveClinicMenu(clinicId)
-    menuContext = menu.treatments
-      .slice(0, 30)
-      .map((t) => {
-        const price = priceSummary(t)
-        return `- ${t.name}${price ? `: ${price}` : ''}${t.description ? ` (${t.description})` : ''}`
-      })
-      .join('\n')
+    menuContext = buildMenuContext(menu.treatments, excludedTreatmentIds)
   } catch (e) {
     console.warn('[enrichment] context fetch partial failure:', e instanceof Error ? e.message : e)
   }
@@ -226,7 +310,7 @@ Lead data:
 - Referral discount (USD): ${referBonusUsd == null ? 'not configured' : `$${referBonusUsd}`}
 ${publicActivities ? `- Clinic activities/promotions: ${publicActivities}` : ''}
 
-${menuContext ? `Available treatments (pick additionalRecommendations only from this list):\n${menuContext}` : ''}
+${menuContext ? `Available treatments (pick additionalRecommendations only from this list — exclude treatments already in their Essential/Optimal/Premium plans):\n${menuContext}` : ''}
 
 Constraints:
 - English only. salesMethodology each field 20-45 words. salesMethodologyNew items max 20-25 words each.
@@ -291,7 +375,10 @@ Constraints:
       salesSentences: enrichmentFields.salesSentences,
     } : {}),
     ...(enrichmentFields.salesMethodologyNew ? { salesMethodologyNew: enrichmentFields.salesMethodologyNew } : {}),
-    ...(enrichmentFields.additionalRecommendations?.length ? { additionalRecommendations: enrichmentFields.additionalRecommendations } : {}),
+    // Only write additionalRecommendations if the fast path didn't already populate them
+    ...(enrichmentFields.additionalRecommendations?.length &&
+        !(Array.isArray(rec.additionalRecommendations) && (rec.additionalRecommendations as unknown[]).length > 0)
+      ? { additionalRecommendations: enrichmentFields.additionalRecommendations } : {}),
     enriched_at: enrichmentFields.enriched_at,
   }
 

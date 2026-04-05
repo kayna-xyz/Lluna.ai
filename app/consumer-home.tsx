@@ -3433,7 +3433,7 @@ function ProfileScreen({
                     ...s,
                     aiRecommendation: s.aiRecommendation
                       ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
-                      : s.aiRecommendation,
+                      : ({ additionalRecommendations: result.additionalRecommendations } as AIRecommendation),
                   }))
                 }
                 setReportProgress(95)
@@ -4437,6 +4437,13 @@ export default function LlunaApp({
       }).then((result) => {
         if (!result.ok) {
           console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
+        } else if (result.additionalRecommendations?.length) {
+          setState((s) => ({
+            ...s,
+            aiRecommendation: s.aiRecommendation
+              ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
+              : ({ additionalRecommendations: result.additionalRecommendations } as AIRecommendation),
+          }))
         }
       })
     }, 700)

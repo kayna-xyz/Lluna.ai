@@ -888,23 +888,31 @@ export function ClientReportPanel({
                             <div className="mt-3 border-t pt-3 space-y-3">
                               <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
                               <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
-                              {treatments.map((t, tIdx) => (
-                                <div
-                                  key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
-                                  className="rounded border p-2"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <p className="font-medium">{treatmentLabelFromUnknown(t)}</p>
-                                    <p className="text-xs">${Number(t.cost) || 0}</p>
+                              {treatments.map((t, tIdx) => {
+                                const menuDesc =
+                                  String(t.description || '').trim() ||
+                                  MENU_BY_ID.get(String(t.treatmentId || ''))?.description?.trim()
+                                return (
+                                  <div
+                                    key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
+                                    className="rounded border p-2"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <p className="font-medium">{treatmentLabelFromUnknown(t)}</p>
+                                      <p className="text-xs">${Number(t.cost) || 0}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {t.units ? `${t.units} units ` : ""}
+                                      {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
+                                      {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">{String(t.reason || "—")}</p>
+                                    {menuDesc && (
+                                      <p className="text-xs text-muted-foreground/70 mt-1 italic">{menuDesc}</p>
+                                    )}
                                   </div>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {t.units ? `${t.units} units ` : ""}
-                                    {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
-                                    {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">{String(t.reason || "—")}</p>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>

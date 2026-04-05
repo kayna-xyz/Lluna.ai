@@ -3,7 +3,7 @@ import { getServiceSupabase } from '@/lib/supabase/admin'
 import { getAuthSupabase } from '@/lib/supabase/server-auth'
 import type { StoredReportData } from '@/lib/report-payload'
 import { resolveClinicForRequest } from '@/lib/tenant'
-import { enrichReportAsync } from '@/lib/report-enrichment'
+import { enrichReportAsync, generateFastEnrichment } from '@/lib/report-enrichment'
 
 /** True if this row is still an open questionnaire (not yet advanced by consultant flow). */
 function pendingReportStillOpen(row: { status?: unknown; status_text?: unknown }): boolean {
@@ -13,6 +13,25 @@ function pendingReportStillOpen(row: { status?: unknown; status_text?: unknown }
   if (!effective) return true
   if (effective === 'pending' || effective === 'new') return true
   return false
+}
+
+function asRec(v: unknown): Record<string, unknown> {
+  return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
+}
+
+/** Collect all treatmentIds already present in Essential/Optimal/Premium plans. */
+function extractPlanTreatmentIds(reportData: StoredReportData): Set<string> {
+  const ids = new Set<string>()
+  const rec = asRec((reportData as unknown as Record<string, unknown>).recommendation)
+  const plans = Array.isArray(rec.plans) ? (rec.plans as Record<string, unknown>[]) : []
+  for (const plan of plans) {
+    const treatments = Array.isArray(plan.treatments) ? (plan.treatments as Record<string, unknown>[]) : []
+    for (const t of treatments) {
+      const id = String(t.treatmentId || '').trim()
+      if (id) ids.add(id)
+    }
+  }
+  return ids
 }
 
 export async function POST(req: Request) {
@@ -43,14 +62,15 @@ export async function POST(req: Request) {
   const clinicId = tenant.clinic.id
 
   const reportData = (body.reportData ?? {}) as StoredReportData
+  const userInput = (reportData.userInput ?? {}) as Record<string, unknown>
+  const planTreatmentIds = extractPlanTreatmentIds(reportData)
 
   const ui = reportData.userInput
   const clientName = ui?.name ?? body.name ?? 'Unknown'
   const phone = ui?.phone ?? body.phone ?? null
   const email = ui?.email ?? body.email ?? null
 
-  // ── Write base report to pending_reports ──────────────────────────────────
-  // No AI calls here — enrichment runs in the background after response.
+  // ── 1. Write base report to DB + run fast AI enrichment in parallel ──────────
   const pendingPayload = {
     clinic_id: clinicId,
     session_id: sessionId,
@@ -97,7 +117,7 @@ export async function POST(req: Request) {
     pendingReportId = inserted?.id ?? null
   }
 
-  // ── Write base report to clients ──────────────────────────────────────────
+  // ── 2. Write base report to clients ──────────────────────────────────────────
   const clientPayload = {
     clinic_id: clinicId,
     session_id: sessionId,
@@ -127,11 +147,43 @@ export async function POST(req: Request) {
     if (error) console.error('clients insert error:', error)
   }
 
-  // ── Fire background enrichment (non-blocking) ─────────────────────────────
-  if (pendingReportId) {
-    const userInput = (reportData.userInput ?? {}) as Record<string, unknown>
-    after(() => enrichReportAsync(pendingReportId!, clinicId, userInput))
+  // ── 3. Fast enrichment: patientSummaryStructured + additionalRecommendations ──
+  // Hard 9s timeout so a slow AI call never causes a Vercel function timeout.
+  const FAST_TIMEOUT_MS = 6000
+  const fastFallback = { patientSummaryStructured: null, additionalRecommendations: [] as Array<{ name: string; price: number; reason: string }> }
+  const fast = await Promise.race([
+    generateFastEnrichment(clinicId, userInput, planTreatmentIds),
+    new Promise<typeof fastFallback>((resolve) => setTimeout(() => resolve(fastFallback), FAST_TIMEOUT_MS)),
+  ]).catch((e) => {
+    console.error('[new-report] fast enrichment failed:', e instanceof Error ? e.message : e)
+    return fastFallback
+  })
+
+  // Write fast results to DB so consultant sees them immediately
+  if (pendingReportId && (fast.patientSummaryStructured || fast.additionalRecommendations.length)) {
+    const rd = asRec(reportData)
+    const rec = asRec(rd.recommendation)
+    const fastRec: Record<string, unknown> = {
+      ...rec,
+      ...(fast.patientSummaryStructured ? { patientSummaryStructured: fast.patientSummaryStructured } : {}),
+      ...(fast.additionalRecommendations.length ? { additionalRecommendations: fast.additionalRecommendations } : {}),
+    }
+    const fastRd = { ...rd, recommendation: fastRec }
+    void supabase.from('pending_reports').update({ report_data: fastRd }).eq('id', pendingReportId)
+    void supabase.from('clients').update({ report_data: fastRd })
+      .eq('clinic_id', clinicId).eq('session_id', sessionId)
   }
 
-  return Response.json({ ok: true, sessionId, clinicId })
+  // ── 4. Fire background enrichment for consultantBrief + salesMethodology ─────
+  if (pendingReportId) {
+    after(() => enrichReportAsync(pendingReportId!, clinicId, userInput, planTreatmentIds))
+  }
+
+  return Response.json({
+    ok: true,
+    sessionId,
+    clinicId,
+    additionalRecommendations: fast.additionalRecommendations,
+    patientSummaryStructured: fast.patientSummaryStructured,
+  })
 }

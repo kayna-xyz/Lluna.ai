@@ -69,7 +69,7 @@ function normalizeRecommendation(rec: RecommendationOutput, menuById: Map<string
       treatments: plan.treatments.map((t) => {
         const menu = menuById.get(t.treatmentId)
         if (!menu) throw new Error(`Unknown treatmentId: ${t.treatmentId}`)
-        return { ...t, treatmentName: menu.name }
+        return { ...t, treatmentName: menu.name, description: menu.description || '' }
       }),
     })),
   }
