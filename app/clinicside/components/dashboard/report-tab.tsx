@@ -955,10 +955,10 @@ export function ClientReportPanel({
                                       <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
                                       <div className="flex items-center gap-1 shrink-0">
                                         {parsed.duration && (
-                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.duration}</span>
+                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsed.duration}</span>
                                         )}
                                         {parsed.downtime && (
-                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.downtime}</span>
+                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsed.downtime}</span>
                                         )}
                                         <p className="text-xs font-medium ml-1">${Number(t.cost) || 0}</p>
                                       </div>
@@ -998,10 +998,10 @@ export function ClientReportPanel({
                             <p className="text-sm font-medium">{r.name}</p>
                             <div className="flex items-center gap-1 shrink-0">
                               {parsedR.duration && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.duration}</span>
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsedR.duration}</span>
                               )}
                               {parsedR.downtime && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.downtime}</span>
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsedR.downtime}</span>
                               )}
                               <p className="text-sm font-semibold ml-1">${r.price.toLocaleString()}</p>
                             </div>
