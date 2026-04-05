@@ -18,7 +18,12 @@ export function buildRecommendationSchemas(menuById: Map<string, ClinicMenuTreat
     role: z.enum(['direct', 'synergy', 'revenue']).describe(
       "'direct' = main need, 'synergy' = extends first, 'revenue' = optional add-on.",
     ),
-    reason: z.string().describe('One sentence, clinical plain language tied to goal.'),
+    reason: z.string().describe(
+      'Exactly 2 lines separated by \\n. ' +
+      'Line 1: one direct sentence tied to this patient\'s goal — no filler, no "based on your goals", no companion-treatment references. ' +
+      'Line 2: exactly "Duration: X | Downtime: X | Repeat: X" — fill each X with a concise value (e.g. "3–6 months", "None", "Every 6 months"). ' +
+      'No other text. No duplicated sentences across treatments in the same plan.',
+    ),
     units: z.number().nullable().describe('For neurotoxin'),
     syringes: z.number().nullable().describe('For fillers'),
     sessions: z.number().nullable().describe('For devices/peels'),

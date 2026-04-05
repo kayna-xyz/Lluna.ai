@@ -38,6 +38,31 @@ const briefSchema = z.object({
   }),
 })
 
+// ─── Minimal fast-path schemas ─────────────────────────────────────────────────
+
+const patientSummaryOnlySchema = z.object({
+  patientSummaryStructured: briefSchema.shape.patientSummaryStructured,
+})
+
+const additionalRecsReasonSchema = z.object({
+  additionalRecommendations: z
+    .array(z.object({
+      name: z.string(),
+      price: z.number(),
+      reason: z.string().describe(
+        'Exactly 2 lines separated by \\n. ' +
+        'Line 1: one direct sentence — no filler, no "based on your goals". ' +
+        'Line 2: exactly "Duration: X | Downtime: X | Repeat: X".',
+      ),
+    }))
+    .min(1)
+    .max(3),
+})
+
+const additionalRecsOnlySchema = z.object({
+  additionalRecommendations: additionalRecsReasonSchema.shape.additionalRecommendations,
+})
+
 const salesSchema = z.object({
   salesMethodology: z.object({
     comboSynergy: z.string(),
@@ -48,24 +73,7 @@ const salesSchema = z.object({
     patient_insight: z.array(z.string()).describe('2-3 sharp insights about this patient.'),
     sales_angles: z.array(z.string()).describe('2-3 actionable talking points for the consultant.'),
   }),
-  additionalRecommendations: z
-    .array(z.object({
-      name: z.string(),
-      price: z.number(),
-      reason: z.string(),
-    }))
-    .min(1)
-    .max(3),
-})
-
-// ─── Minimal fast-path schemas ─────────────────────────────────────────────────
-
-const patientSummaryOnlySchema = z.object({
-  patientSummaryStructured: briefSchema.shape.patientSummaryStructured,
-})
-
-const additionalRecsOnlySchema = z.object({
-  additionalRecommendations: salesSchema.shape.additionalRecommendations,
+  additionalRecommendations: additionalRecsReasonSchema.shape.additionalRecommendations,
 })
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────

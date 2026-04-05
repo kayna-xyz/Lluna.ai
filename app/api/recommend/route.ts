@@ -201,6 +201,14 @@ Rules:
 
   const patientSystem = `You are an aesthetic medicine advisor writing to the patient. You MUST only recommend treatments from the CLINIC MENU listed below. Use only the exact ids, names, and pricing from that menu — nothing else.
 
+TREATMENT REASON FORMAT — MANDATORY for every treatment:
+- reason field must be exactly 2 lines separated by \\n.
+- Line 1: one direct sentence explaining the clinical effect for THIS patient's specific goal. No filler ("based on your goals", "given that", "as a complement"). No reference to other treatments in the plan.
+- Line 2: exactly "Duration: X | Downtime: X | Repeat: X" with a concise real value per tag.
+- Do NOT duplicate sentences across treatments within the same plan.
+- Do NOT include companion-treatment or synergy notes in reason.
+
+
 STRICT GROUNDING — MANDATORY:
 1) Only recommend treatments whose id and name appear verbatim in the MENU below. Never invent names, brand names, or treatments not in the menu.
 2) Use only the pricing values shown in the MENU. Do not invent prices.

@@ -573,6 +573,16 @@ export function ClientReportPanel({
 
   const isEnriched = typeof realRec?.enriched_at === "string" && !!realRec.enriched_at
 
+  // Recompute long-term possibility score from deterministic formula
+  const ltpIsLocal = consultantBrief.referralAbility.isLocal === "yes"
+  const ltpTier = consultantBrief.consumptionCapability.tier
+  const ltpPurchasing = ltpTier === "Premium" ? "high" : ltpTier === "Mid" ? "mid" : "low"
+  const ltpScore = Math.min(5,
+    (ltpIsLocal ? 3 : 0) +
+    (ltpPurchasing === "mid" ? 1 : 0) +
+    (ltpPurchasing === "high" ? 2 : 0),
+  ) || 1
+
   const experienceText =
     realUi.experience === "first"
       ? "First-time"
@@ -623,6 +633,59 @@ export function ClientReportPanel({
 
             {/* ════ LEFT COLUMN ════ */}
             <div className="space-y-5">
+
+              {/* Card 0: Consultant Brief — top-left */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultant Brief</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-3">
+
+                    {/* Purchasing Power */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchasing Power</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{consultantBrief.consumptionCapability.score}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.consumptionCapability.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${consultantBrief.consumptionCapability.score * 20}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Long-term Possibility */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Long-term Possibility</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{ltpScore}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.longTermPossibility.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${ltpScore * 20}%` }} />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground capitalize">{consultantBrief.longTermPossibility.isReturning}</p>
+                    </div>
+
+                    {/* Referral Ability */}
+                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Referral Ability</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold leading-none">{consultantBrief.referralAbility.score}</span>
+                        <span className="text-xs text-muted-foreground">/5</span>
+                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.referralAbility.tier}</Badge>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${consultantBrief.referralAbility.score * 20}%` }} />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Local: {consultantBrief.referralAbility.isLocal}</p>
+                    </div>
+
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Card 1: Patient Info */}
               <Card>
@@ -710,19 +773,6 @@ export function ClientReportPanel({
                 <CardContent className="space-y-3">
                   {salesMethodologyNew ? (
                     <>
-                      {salesMethodologyNew.patient_insight.length > 0 && (
-                        <div className="rounded-md border bg-muted/30 p-3">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Patient Insight</p>
-                          <ul className="space-y-1">
-                            {salesMethodologyNew.patient_insight.map((item, i) => (
-                              <li key={i} className="text-sm flex gap-2">
-                                <span className="text-muted-foreground shrink-0">·</span>
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                       {salesMethodologyNew.sales_angles.length > 0 && (
                         <div className="rounded-md border bg-primary/5 border-primary/20 p-3">
                           <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sales Angles</p>
@@ -781,77 +831,6 @@ export function ClientReportPanel({
             {/* ════ RIGHT COLUMN ════ */}
             <div className="space-y-5">
 
-              {/* Card 3: Consultant Brief — 3 horizontal cards */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultant Brief</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-3">
-
-                    {/* Purchasing Power */}
-                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
-                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Purchasing Power</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold leading-none">{consultantBrief.consumptionCapability.score}</span>
-                        <span className="text-xs text-muted-foreground">/5</span>
-                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.consumptionCapability.tier}</Badge>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-muted">
-                        <div
-                          className="h-1.5 rounded-full bg-primary transition-all"
-                          style={{ width: `${consultantBrief.consumptionCapability.score * 20}%` }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
-                        {consultantBrief.consumptionCapability.reason}
-                      </p>
-                    </div>
-
-                    {/* Long-term Possibility */}
-                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
-                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Long-term Possibility</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold leading-none">{consultantBrief.longTermPossibility.score}</span>
-                        <span className="text-xs text-muted-foreground">/5</span>
-                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.longTermPossibility.tier}</Badge>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-muted">
-                        <div
-                          className="h-1.5 rounded-full bg-primary transition-all"
-                          style={{ width: `${consultantBrief.longTermPossibility.score * 20}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Status: {consultantBrief.longTermPossibility.isReturning}</p>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
-                        {consultantBrief.longTermPossibility.reason}
-                      </p>
-                    </div>
-
-                    {/* Referral Ability */}
-                    <div className="flex flex-col rounded-lg border bg-muted/30 p-3 space-y-2">
-                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Referral Ability</p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold leading-none">{consultantBrief.referralAbility.score}</span>
-                        <span className="text-xs text-muted-foreground">/5</span>
-                        <Badge variant="secondary" className="ml-auto text-[10px] px-1.5">{consultantBrief.referralAbility.tier}</Badge>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-muted">
-                        <div
-                          className="h-1.5 rounded-full bg-primary transition-all"
-                          style={{ width: `${consultantBrief.referralAbility.score * 20}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Local: {consultantBrief.referralAbility.isLocal}</p>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
-                        {consultantBrief.referralAbility.reason}
-                      </p>
-                    </div>
-
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Card 4: Recommended Plans */}
               {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
                 <Card>
@@ -874,7 +853,7 @@ export function ClientReportPanel({
                           >
                             <div className="flex items-center justify-between">
                               <p className="font-medium">
-                                {String(plan.name || "Plan")} — {String(plan.tagline || "")}
+                                {String(plan.name || "Plan")}
                               </p>
                               <p className="text-xs text-muted-foreground ml-2 shrink-0">
                                 {isExpanded ? "Hide details" : "Show details"}
@@ -889,9 +868,6 @@ export function ClientReportPanel({
                               <p className="text-xs text-muted-foreground">{String(plan.whyThisPlan || "—")}</p>
                               <p className="text-xs text-muted-foreground">{String(plan.synergyNote || "—")}</p>
                               {treatments.map((t, tIdx) => {
-                                const menuDesc =
-                                  String(t.description || '').trim() ||
-                                  MENU_BY_ID.get(String(t.treatmentId || ''))?.description?.trim()
                                 return (
                                   <div
                                     key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
@@ -906,10 +882,7 @@ export function ClientReportPanel({
                                       {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
                                       {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
                                     </p>
-                                    <p className="text-xs text-muted-foreground mt-1">{String(t.reason || "—")}</p>
-                                    {menuDesc && (
-                                      <p className="text-xs text-muted-foreground/70 mt-1 italic">{menuDesc}</p>
-                                    )}
+                                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{String(t.reason || "—")}</p>
                                   </div>
                                 )
                               })}
@@ -933,7 +906,7 @@ export function ClientReportPanel({
                       <div key={i} className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">{r.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{r.reason}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{r.reason}</p>
                         </div>
                         <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
                       </div>

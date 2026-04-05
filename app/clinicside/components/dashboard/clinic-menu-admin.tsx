@@ -714,6 +714,9 @@ export function ClinicMenuAdmin({
                     className="mt-3 space-y-4 border-t border-border pt-3"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {t.description?.trim() && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t.description}</p>
+                    )}
                     {(t.pricing_model === 'table' || t.pricing_table) && t.pricing_table && (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
