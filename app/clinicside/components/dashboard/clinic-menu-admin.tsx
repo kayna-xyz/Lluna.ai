@@ -548,7 +548,7 @@ export function ClinicMenuAdmin({
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Import file</CardTitle>
           <p className="text-xs text-muted-foreground">
-            .xlsx / .xls / .csv / .txt / .json / .pdf — server returns draftMenu and saves it.
+            .xlsx / .xls / .csv / .txt / .json / .pdf / .png / .jpg / .jpeg / .webp — server returns draftMenu and saves it.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -560,7 +560,7 @@ export function ClinicMenuAdmin({
               <input
                 type="file"
                 className="absolute inset-0 opacity-0 cursor-pointer"
-                  accept=".csv,.txt,.xlsx,.xls,.json,.pdf"
+                  accept=".csv,.txt,.xlsx,.xls,.json,.pdf,.png,.jpg,.jpeg,.webp"
                 onChange={(e) => {
                   const f = e.target.files?.[0]
                   if (f) importFile(f)
