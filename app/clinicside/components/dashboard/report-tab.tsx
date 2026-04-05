@@ -1100,7 +1100,7 @@ export function ClientReportPanel({
                       <div key={i} className="rounded-md border bg-muted/20 p-3">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-medium">{r.name}</p>
-                          <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
+                          <p className="text-sm font-semibold ml-1 shrink-0">${r.price.toLocaleString()}</p>
                         </div>
                         {r.description && (
                           <p className="text-xs text-muted-foreground mt-1">{r.description}</p>

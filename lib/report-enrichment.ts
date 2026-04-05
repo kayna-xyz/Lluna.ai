@@ -387,11 +387,13 @@ Constraints:
         model: getLlunaAnthropicModel(),
         output: Output.object({ schema: beforeYouStepOutSchema }),
         system:
-          'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare or cleansing add-ons from the menu above. ' +
-          'RULES: Only pick items related to skincare, cleansing, facials, peels, or skin boosters. ' +
-          'Price MUST be between $30 and $200 per session. ' +
-          'Use exact names and prices from the provided list. No markdown, no emojis. ' +
-          'If fewer than 2 suitable items exist in the menu, return what is available (minimum 1).',
+          'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare add-ons from the menu above. ' +
+          'STRICT RULES:\n' +
+          '1. Only pick treatments explicitly related to cleaning, hydrating, or skin (e.g. cleanser, hydrafacial, skin booster, hydration, facial, exfoliation). ' +
+          'DO NOT pick injectables, laser, body contouring, or anything unrelated to skin cleansing/hydration.\n' +
+          '2. Price MUST be between $35 and $200 per session — exclude anything outside this range.\n' +
+          '3. Use exact names and prices from the provided list. No markdown, no emojis.\n' +
+          '4. If fewer than 2 suitable items exist, return only what qualifies (minimum 1).',
         messages: [{ role: 'user', content: `Available clinic treatments:\n${skincareCtx}` }],
       })
       enrichmentFields.beforeYouStepOut = output.beforeYouStepOut
