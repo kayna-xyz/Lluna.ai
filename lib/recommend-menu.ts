@@ -7,9 +7,13 @@ export function menuToMaps(menu: ClinicMenu) {
   return { menuById, nameSet }
 }
 
-/** Returns true if a pricing key represents a package/bundle tier (should be ignored for base price). */
-function isPackageKey(key: string): boolean {
-  return /pack|bundle|\bx\s*of\b|\d\s*pack|\d\s*session/i.test(key)
+/**
+ * Returns true if a pricing key represents a package / bundle tier.
+ * These are ALWAYS ignored when extracting the base (per-session / per-unit) price.
+ * Matches: "package", "package of", "pack", "packN", "bundle", "x of N", "N sessions"
+ */
+export function isPackageKey(key: string): boolean {
+  return /package\s+of|package|\bpack\b|bundle|\bx\s+of\b|\d+\s*(pack|sessions?|syringes?|units?)/i.test(key)
 }
 
 /**
@@ -50,8 +54,11 @@ export function firstNumericPrice(pricing: Record<string, unknown> | undefined):
     if (isPackageKey(key)) continue
     if (val && typeof val === 'object') {
       const nested = val as Record<string, unknown>
-      const s = typeof nested.single === 'number' && nested.single > 0 ? nested.single : 0
-      if (s > 0 && s < min) min = s
+      // Within nested object, only read non-package keys
+      for (const [nKey, nVal] of Object.entries(nested)) {
+        if (isPackageKey(nKey)) continue
+        if (typeof nVal === 'number' && nVal > 0 && nVal < min) min = nVal
+      }
     }
   }
   return min === Infinity ? 0 : min
