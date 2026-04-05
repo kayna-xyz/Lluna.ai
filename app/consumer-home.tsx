@@ -2165,9 +2165,6 @@ function ClinicMenuScreen({
                 )}
               </div>
             </div>
-            <p style={{ fontSize: 12, color: COLORS.text, margin: 0, marginTop: 8, lineHeight: 1.5 }}>
-              {treatment.description}
-            </p>
           </div>
           ))
         )}
@@ -4334,6 +4331,7 @@ export default function LlunaApp({
   const sessionIdRef = useRef('')
   const clinicIdRef = useRef('')
   // const reviewShownRef = useRef(false)
+  const reportSyncedRef = useRef(false)
   const [clientSessionId, setClientSessionId] = useState('')
   const [clinicSlug, setClinicSlug] = useState('default')
   // 45-minute timeout — starts when the report screen (screen 10) is shown.
@@ -4408,10 +4406,18 @@ export default function LlunaApp({
     }
   }, [])
 
+  // One-shot sync: fires once when screen 10 is first reached.
+  // reportSyncedRef prevents re-runs when aiRecommendation or other state updates.
   useEffect(() => {
-    if (state.screen !== 10 || !state.aiRecommendation) return
+    if (state.screen !== 10) {
+      reportSyncedRef.current = false
+      return
+    }
+    if (!state.aiRecommendation) return
+    if (reportSyncedRef.current) return
     const sid = clientSessionId.trim()
     if (!sid) return
+    reportSyncedRef.current = true
     const t = setTimeout(() => {
       void syncReportToBackend(sid, {
         goals: state.goals,
@@ -4431,13 +4437,6 @@ export default function LlunaApp({
       }).then((result) => {
         if (!result.ok) {
           console.warn('[Lluna] /api/new-report failed:', result.status, result.error)
-        } else if (result.additionalRecommendations?.length) {
-          setState((s) => ({
-            ...s,
-            aiRecommendation: s.aiRecommendation
-              ? { ...s.aiRecommendation, additionalRecommendations: result.additionalRecommendations }
-              : s.aiRecommendation,
-          }))
         }
       })
     }, 700)
@@ -4460,6 +4459,47 @@ export default function LlunaApp({
     state.referral,
     state.photo,
   ])
+
+  // Poll for enrichment completion after report is synced.
+  useEffect(() => {
+    if (state.screen !== 10) return
+    const sid = clientSessionId.trim()
+    if (!sid) return
+    let attempts = 0
+    const maxAttempts = 8
+    let timerId: ReturnType<typeof setTimeout>
+    const poll = () => {
+      if (attempts >= maxAttempts) return
+      attempts++
+      void fetch(`/api/report-enrichment?sessionId=${encodeURIComponent(sid)}&clinic=${encodeURIComponent(clinicSlug)}`)
+        .then((r) => r.json() as Promise<{
+          enriched: boolean
+          additionalRecommendations?: Array<{ name: string; price: number; reason: string }>
+          salesMethodologyNew?: unknown
+          patientSummaryStructured?: unknown
+        }>)
+        .then((data) => {
+          if (data.enriched) {
+            if (data.additionalRecommendations?.length) {
+              setState((s) => ({
+                ...s,
+                aiRecommendation: s.aiRecommendation
+                  ? { ...s.aiRecommendation, additionalRecommendations: data.additionalRecommendations }
+                  : s.aiRecommendation,
+              }))
+            }
+          } else if (attempts < maxAttempts) {
+            timerId = setTimeout(poll, 2500)
+          }
+        })
+        .catch(() => {
+          if (attempts < maxAttempts) timerId = setTimeout(poll, 2500)
+        })
+    }
+    // Start polling after initial sync delay
+    timerId = setTimeout(poll, 3000)
+    return () => clearTimeout(timerId)
+  }, [clientSessionId, clinicSlug, state.screen])
 
   useEffect(() => {
     try {

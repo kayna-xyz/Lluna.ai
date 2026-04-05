@@ -571,6 +571,8 @@ export function ClientReportPanel({
         ? (realRec.summary as string)
         : null
 
+  const isEnriched = typeof realRec?.enriched_at === "string" && !!realRec.enriched_at
+
   const experienceText =
     realUi.experience === "first"
       ? "First-time"
@@ -685,12 +687,18 @@ export function ClientReportPanel({
                   </div>
 
                   {/* AI patient summary */}
-                  {patientSummary && (
+                  {patientSummary ? (
                     <div className="border-t pt-3">
                       <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">AI Patient Summary</p>
                       <p className="text-sm whitespace-pre-wrap">{patientSummary}</p>
                     </div>
-                  )}
+                  ) : !isEnriched ? (
+                    <div className="border-t pt-3 space-y-1.5 animate-pulse">
+                      <div className="h-3 w-28 rounded bg-muted" />
+                      <div className="h-3 w-full rounded bg-muted" />
+                      <div className="h-3 w-4/5 rounded bg-muted" />
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
 
@@ -750,6 +758,16 @@ export function ClientReportPanel({
                         <div key={`${row.type}-${idx}`} className="rounded-md border bg-muted/30 p-3">
                           <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">{row.type}</p>
                           <p className="text-sm whitespace-pre-wrap">{row.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : !isEnriched ? (
+                    <div className="space-y-2 animate-pulse">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="rounded-md border bg-muted/30 p-3 space-y-1.5">
+                          <div className="h-2.5 w-24 rounded bg-muted" />
+                          <div className="h-3 w-full rounded bg-muted" />
+                          <div className="h-3 w-3/4 rounded bg-muted" />
                         </div>
                       ))}
                     </div>
@@ -897,7 +915,7 @@ export function ClientReportPanel({
               )}
 
               {/* Card 4b: Additional Recommendations */}
-              {additionalRecommendations.length > 0 && (
+              {additionalRecommendations.length > 0 ? (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
@@ -914,7 +932,24 @@ export function ClientReportPanel({
                     ))}
                   </CardContent>
                 </Card>
-              )}
+              ) : !isEnriched ? (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 animate-pulse">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3">
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-36 rounded bg-muted" />
+                          <div className="h-2.5 w-full rounded bg-muted" />
+                        </div>
+                        <div className="h-3 w-12 rounded bg-muted shrink-0" />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ) : null}
 
               {/* Card 5: Final Plan + Final Price */}
               <Card>
