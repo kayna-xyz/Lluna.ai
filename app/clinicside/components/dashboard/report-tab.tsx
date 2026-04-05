@@ -915,17 +915,17 @@ export function ClientReportPanel({
                                     key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`}
                                     className="rounded border p-2"
                                   >
-                                    <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
-                                    <div className="flex items-center justify-between mt-1">
-                                      <div className="flex gap-1 flex-wrap">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
+                                      <div className="flex items-center gap-1 shrink-0">
                                         {parsed.duration && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.duration}</span>
                                         )}
                                         {parsed.downtime && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsed.downtime}</span>
                                         )}
+                                        <p className="text-xs font-medium ml-1">${Number(t.cost) || 0}</p>
                                       </div>
-                                      <p className="text-xs font-medium ml-2 shrink-0">${Number(t.cost) || 0}</p>
                                     </div>
                                     {parsed.description && (
                                       <p className="text-xs text-muted-foreground mt-1">{parsed.description}</p>
@@ -958,17 +958,17 @@ export function ClientReportPanel({
                       const parsedR = getTreatmentTags(r)
                       return (
                         <div key={i} className="rounded-md border bg-muted/20 p-3">
-                          <p className="text-sm font-medium">{r.name}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex gap-1 flex-wrap">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium">{r.name}</p>
+                            <div className="flex items-center gap-1 shrink-0">
                               {parsedR.duration && (
                                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.duration}</span>
                               )}
                               {parsedR.downtime && (
                                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{parsedR.downtime}</span>
                               )}
+                              <p className="text-sm font-semibold ml-1">${r.price.toLocaleString()}</p>
                             </div>
-                            <p className="text-sm font-semibold shrink-0">${r.price.toLocaleString()}</p>
                           </div>
                           {parsedR.description && (
                             <p className="text-xs text-muted-foreground mt-1">{parsedR.description}</p>
