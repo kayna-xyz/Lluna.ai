@@ -25,15 +25,23 @@ export function resolveTreatmentCost(
     return base > 0 ? base : null
   }
 
-  // Simple pricing: apply quantity multipliers first, then base price
+  // Simple pricing
   const p = menu.pricing as Record<string, unknown> | undefined
   if (p) {
+    // firstTimer / nonMember: absolute priority when present (only applies to treatments that have them)
+    const firstTimerKey = Object.keys(p).find((k) => /first.?timer/i.test(k))
+    if (firstTimerKey && typeof p[firstTimerKey] === 'number' && (p[firstTimerKey] as number) > 0)
+      return p[firstTimerKey] as number
+    const nonMemberKey = Object.keys(p).find((k) => /non.?member/i.test(k))
+    if (nonMemberKey && typeof p[nonMemberKey] === 'number' && (p[nonMemberKey] as number) > 0)
+      return p[nonMemberKey] as number
+    // Quantity-based pricing (applied before single to honour unit counts)
     if (typeof p.perUnit === 'number' && p.perUnit > 0 && t.units && t.units > 0) return p.perUnit * t.units
     if (typeof p.perSyringe === 'number' && p.perSyringe > 0 && t.syringes && t.syringes > 0) return p.perSyringe * t.syringes
     if (typeof p.perSession === 'number' && p.perSession > 0 && t.sessions && t.sessions > 0) return p.perSession * t.sessions
   }
 
-  // Fall through to base price extraction (handles single + nested, skips packages)
+  // Fall through: single / nested single (skips packages) via firstNumericPriceForTreatment
   const base = firstNumericPriceForTreatment(menu)
   return base > 0 ? base : null
 }
