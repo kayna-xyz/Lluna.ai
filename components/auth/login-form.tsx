@@ -98,7 +98,7 @@ export function LoginForm() {
       </div>
 
       <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8">
-        <p className="text-xs text-muted-foreground">© 2026 Lluna AI. All Rights Reserved.</p>
+        <p className="text-xs text-muted-foreground">@ 2026 Lluna AI Inc.</p>
       </div>
     </div>
   )

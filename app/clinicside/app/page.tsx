@@ -266,6 +266,9 @@ export default function DashboardPage() {
           </TabsContent>
         </div>
       </Tabs>
+      <div className="shrink-0 border-t px-6 py-2">
+        <p className="text-[11px] text-muted-foreground">@ 2026 Lluna AI Inc.</p>
+      </div>
     </div>
   )
 }

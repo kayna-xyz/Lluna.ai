@@ -48,7 +48,7 @@ export function FooterSection() {
         </div>
 
         <p className="text-[12px] text-white/30">
-          © 2026 Lluna AI, Inc.
+          @ 2026 Lluna AI Inc.
         </p>
       </div>
     </footer>

@@ -1994,7 +1994,7 @@ function PrivacyPolicyScreen({ onBack }: { onBack: () => void }) {
         </p>
         
         <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 32 }}>
-          2026 Lluna AI. All rights reserved.
+          @ 2026 Lluna AI Inc.
         </p>
       </div>
     </div>
@@ -2083,7 +2083,7 @@ function WelcomeScreen({
           </span>
         </p>
         <p style={{ fontSize: 11, color: COLORS.muted, textAlign: 'center', marginTop: 8 }}>
-          @2026 Lluna AI. All rights reserved
+          @ 2026 Lluna AI Inc.
         </p>
       </div>
     </div>
