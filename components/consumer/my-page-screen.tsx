@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import type { MeActivitySession, MeActivityVisit } from "@/lib/me-activity-types"
@@ -50,6 +50,7 @@ export function MyPageScreen({
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
   const [activityIndex, setActivityIndex] = useState(0)
+  const touchStartX = useRef<number | null>(null)
 
   const handleSignOut = async () => {
     if (signingOut) return
@@ -210,6 +211,15 @@ export function MyPageScreen({
               border: `1px solid ${COLORS.border}`,
               position: "relative",
               overflow: "hidden",
+            }}
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null) return
+              const dx = e.changedTouches[0].clientX - touchStartX.current
+              touchStartX.current = null
+              if (Math.abs(dx) < 40) return
+              const n = activities.length
+              setActivityIndex((i) => dx < 0 ? (i + 1) % n : (i - 1 + n) % n)
             }}
           >
             <div style={{ position: "relative", minHeight: 60 }}>

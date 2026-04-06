@@ -1815,7 +1815,7 @@ function ClinicMenuScreen({
             style={{
               fontSize: 12,
               color: COLORS.text,
-              background: COLORS.white,
+              background: COLORS.bg,
               border: `1px solid ${COLORS.border}`,
               borderRadius: 6,
               padding: '4px 8px',
@@ -2019,8 +2019,8 @@ function WelcomeScreen({
           src={logoUrl}
           alt={clinicName}
           style={{
-            width: 64,
-            height: 64,
+            width: 128,
+            height: 128,
             borderRadius: '50%',
             objectFit: 'cover',
             display: 'block',
@@ -2031,8 +2031,8 @@ function WelcomeScreen({
       ) : (
         <div
           style={{
-            width: 60,
-            height: 60,
+            width: 120,
+            height: 120,
             borderRadius: '50%',
             margin: '0 auto 16px',
             background: `

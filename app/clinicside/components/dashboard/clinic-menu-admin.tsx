@@ -361,6 +361,19 @@ export function ClinicMenuAdmin({
     setIsDirty(true)
   }
 
+  const moveCategory = (catId: string, dir: -1 | 1) => {
+    setWorking((prev) => {
+      if (!prev) return prev
+      const cats = [...(prev.categories ?? [])]
+      const idx = cats.findIndex((c) => c.id === catId)
+      const next = idx + dir
+      if (next < 0 || next >= cats.length) return prev
+      ;[cats[idx], cats[next]] = [cats[next], cats[idx]]
+      return { ...prev, categories: cats }
+    })
+    setIsDirty(true)
+  }
+
   // ── Treatment image uploads ───────────────────────────────────────────────
 
   const uploadAsset = async (
@@ -1112,13 +1125,35 @@ export function ClinicMenuAdmin({
             {(working?.categories ?? []).length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">No folders yet.</p>
             ) : (
-              (working?.categories ?? []).map((cat) => (
+              (working?.categories ?? []).map((cat, idx, arr) => (
                 <div key={cat.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{cat.name}</p>
                     <p className="text-[10px] text-muted-foreground">{cat.treatment_ids.length} treatment{cat.treatment_ids.length === 1 ? "" : "s"}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      disabled={idx === 0}
+                      onClick={() => moveCategory(cat.id, -1)}
+                      aria-label="Move up"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      disabled={idx === arr.length - 1}
+                      onClick={() => moveCategory(cat.id, 1)}
+                      aria-label="Move down"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
                     <Button
                       type="button"
                       size="sm"
