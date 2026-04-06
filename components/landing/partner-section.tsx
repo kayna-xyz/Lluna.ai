@@ -70,7 +70,7 @@ export function PartnerSection() {
             Bring your clients closer — and keep them longer. Lluna&apos;s 24/7 AI consultant becomes an extension of your practice.
           </p>
           <a
-            href="mailto:kayna@lluna.ai"
+            href="/clinicside/auth"
             className="inline-block bg-foreground text-background px-8 h-12 leading-[48px] text-[15px] hover:bg-gold transition-colors duration-300"
           >
             Become a Partner

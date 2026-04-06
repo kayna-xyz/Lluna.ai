@@ -37,7 +37,7 @@ export function AccentLine() {
         }`}
         style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
       >
-        Not a SaaS. Lluna shows up as a functioning member of your team.
+        Not software. A revenue-generating member of your team.
       </p>
     </div>
   );

@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 
 const stats = [
-  { value: "20%+", label: "overall revenue boost from day one" },
-  { value: "$70→$20", label: "patient acquisition cost via referrals" },
-  { value: "10–20%", label: "higher basket value per visit" },
+  { value: "60%+", label: "overall revenue boost from day one" },
+  { value: "$70→$5", label: "patient acquisition cost via referrals" },
+  { value: "1.6x", label: "higher basket value per visit" },
   { value: "80%+", label: "reduction in consultation time but 2x more efficient" },
 ];
 

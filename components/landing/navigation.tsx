@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import { getBrowserSupabase } from "@/lib/supabase/browser-client";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { name: "How It Works", href: "/#how-it-works" },
@@ -14,7 +14,7 @@ const navLinks = [
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,8 +24,8 @@ export function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleStart = () => {
-    alert("Currently only available for enterprises.");
+  const handleEnterprise = () => {
+    router.push("/clinicside/auth");
   };
 
   return (
@@ -59,11 +59,10 @@ export function Navigation() {
           {/* Desktop CTA */}
           <div className="hidden md:block">
             <button
-              onClick={handleStart}
-              disabled={loading}
-              className="bg-foreground text-background px-6 h-10 text-[13px] hover:bg-gold transition-colors duration-300 disabled:opacity-60"
+              onClick={handleEnterprise}
+              className="bg-foreground text-background px-6 h-10 text-[13px] hover:bg-gold transition-colors duration-300"
             >
-              {loading ? "…" : "Start"}
+              Enterprise sign in
             </button>
           </div>
 
@@ -114,11 +113,10 @@ export function Navigation() {
             style={{ transitionDelay: isMobileMenuOpen ? "300ms" : "0ms" }}
           >
             <button
-              onClick={() => { setIsMobileMenuOpen(false); void handleStart(); }}
-              disabled={loading}
-              className="w-full bg-foreground text-background h-12 text-[15px] disabled:opacity-60"
+              onClick={() => { setIsMobileMenuOpen(false); handleEnterprise(); }}
+              className="w-full bg-foreground text-background h-12 text-[15px]"
             >
-              {loading ? "…" : "Start"}
+              Enterprise sign in
             </button>
           </div>
         </div>

@@ -74,7 +74,7 @@ export function HeroSection() {
                 isVisible ? "opacity-100" : "opacity-0"
               }`}
             >
-              Your aesthetic consultant works 24/7. Lluna is the AI layer between great clinics and the patients who trust them.
+              AI Copilot for Facial Aesthetic Consultants — Close more deals in 80% less time.
             </p>
 
             {/* CTAs */}
