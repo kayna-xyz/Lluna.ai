@@ -20,7 +20,7 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
-import { RECOVERY_RULES, inferTags, inferDuration } from "../../../../lib/treatment-price-resolver"
+import { RECOVERY_RULES, inferTags, inferEffectDuration } from "../../../../lib/treatment-price-resolver"
 import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
 
 interface ClientReportPanelProps {
@@ -112,27 +112,28 @@ function normalizeRecoveryTag(downtime: string, treatmentName: string): string {
 }
 
 /** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
-function getTreatmentTags(t: Record<string, unknown>): { description: string; duration: string; downtime: string; tags: string[] } {
+function getTreatmentTags(t: Record<string, unknown>): { description: string; effectDuration: string; downtime: string; tags: string[] } {
   let description = String(t.description || "").trim()
-  let duration = String(t.duration || "").trim()
   let downtime = String(t.downtime || "").trim()
-  if (!duration || !downtime) {
+  if (!downtime) {
     // Legacy fallback: parse from reason string
     const raw = String(t.reason || "").trim()
     const [line1 = "", line2 = ""] = raw.split("\n")
     if (!description) description = line1.trim()
-    if (!duration) duration = line2.match(/Duration:\s*([^|]+)/i)?.[1]?.trim() || ""
     if (!downtime) downtime = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
   }
   const treatmentName = String(t.treatmentName || t.name || "")
   // Tags: use stored tags if present, otherwise infer from name
   const storedTags = Array.isArray(t.tags) ? (t.tags as string[]) : null
   const tags = storedTags ?? inferTags(treatmentName)
-  // Duration: use stored/AI value if valid, otherwise infer from name
-  const resolvedDuration = normalizeDurationTag(duration) || inferDuration(treatmentName)
+  // Effect duration: stored effect_duration → stored duration (backward compat) → infer
+  const storedEffectDuration =
+    String(t.effect_duration || "").trim() ||
+    String(t.duration || "").trim()  // backward compat: old data may have duration
+  const effectDuration = normalizeDurationTag(storedEffectDuration) || inferEffectDuration(treatmentName)
   return {
     description,
-    duration: resolvedDuration,
+    effectDuration,
     downtime: normalizeRecoveryTag(downtime, treatmentName),
     tags,
   }
@@ -1016,8 +1017,8 @@ export function ClientReportPanel({
                                     <div className="flex items-start justify-between gap-2">
                                       <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
                                       <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                                        {parsed.duration && (
-                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsed.duration}</span>
+                                        {parsed.effectDuration && (
+                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">Lasts {parsed.effectDuration}</span>
                                         )}
                                         {parsed.downtime && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsed.downtime}</span>
@@ -1062,8 +1063,8 @@ export function ClientReportPanel({
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-medium">{r.name}</p>
                             <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                              {parsedR.duration && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsedR.duration}</span>
+                              {parsedR.effectDuration && (
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">Lasts {parsedR.effectDuration}</span>
                               )}
                               {parsedR.downtime && (
                                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsedR.downtime}</span>

@@ -24,7 +24,7 @@ export type ClinicMenuTreatment = {
   beforeAfterUrl?: string
   // Enriched metadata — persisted on save, inferred from treatment name
   recovery_period?: string
-  duration?: string
+  effect_duration?: string
   tags?: string[]
 }
 

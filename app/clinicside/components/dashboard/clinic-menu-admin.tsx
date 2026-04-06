@@ -35,7 +35,7 @@ type MenuTreatment = {
   posterUrl?: string
   beforeAfterUrl?: string
   recovery_period?: string
-  duration?: string
+  effect_duration?: string
   tags?: string[]
 }
 
@@ -725,9 +725,9 @@ export function ClinicMenuAdmin({
                         {[hasPoster && "Poster", hasBa && "B/A"].filter(Boolean).join(" · ")}
                       </span>
                     )}
-                    {t.duration && (
-                      <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
-                        {t.duration}
+                    {t.effect_duration && (
+                      <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                        Lasts {t.effect_duration}
                       </span>
                     )}
                     {t.recovery_period && (

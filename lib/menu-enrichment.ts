@@ -1,7 +1,7 @@
 import { generateText } from 'ai'
 import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import type { ClinicMenu, ClinicMenuTreatment } from '@/lib/clinic-menu'
-import { RECOVERY_RULES, inferDuration, inferTags } from '@/lib/treatment-price-resolver'
+import { RECOVERY_RULES, inferEffectDuration, inferTags } from '@/lib/treatment-price-resolver'
 
 /** Summarise pricing for the prompt (no invention — only what the treatment provides). */
 function pricingSnippet(t: ClinicMenuTreatment): string {
@@ -88,7 +88,7 @@ export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMe
 }
 
 /**
- * Deterministically enrich every treatment with recovery_period, duration, and tags.
+ * Deterministically enrich every treatment with recovery_period, effect_duration, and tags.
  * Always overwrites these fields so they stay in sync with the rules.
  * Pure/synchronous — no AI call required.
  */
@@ -97,12 +97,12 @@ export function enrichMenuMetadata(menu: ClinicMenu): ClinicMenu {
     ...menu,
     treatments: menu.treatments.map((t) => {
       const recovery_period = inferRecoveryPeriod(t.name)
-      const duration = inferDuration(t.name)
+      const effect_duration = inferEffectDuration(t.name)
       const tags = inferTags(t.name)
       return {
         ...t,
         ...(recovery_period ? { recovery_period } : {}),
-        ...(duration ? { duration } : {}),
+        ...(effect_duration ? { effect_duration } : {}),
         ...(tags.length ? { tags } : {}),
       }
     }),

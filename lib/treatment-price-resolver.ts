@@ -50,23 +50,26 @@ export const RECOVERY_RULES: [RegExp, string][] = [
   [/\b(hydrafacial|facial|skin booster|cocktail microneedling|booster)\b/i, '0 days'],
 ]
 
-/** Deterministic session duration by treatment type. */
-export const DURATION_RULES: [RegExp, string][] = [
-  [/\b(botox|toxin|neuromodulator|neurotoxin|dysport|xeomin)\b/i, '15–30 min'],
-  [/\b(filler|juvederm|restylane|voluma|syringe|ha filler|lip filler)\b/i, '30–60 min'],
-  [/\b(morpheus|rf microneedling|radiofrequency microneedling)\b/i, '60–90 min'],
-  [/\b(thermage)\b/i, '60–120 min'],
-  [/\b(ultraformer|hifu|7d facelift)\b/i, '60–90 min'],
-  [/\b(fotona)\b/i, '60–90 min'],
-  [/\b(co2|fractional resurfacing)\b/i, '60–90 min'],
-  [/\b(ipl|stellar|lumenis|broadband|photofacial)\b/i, '30–60 min'],
-  [/\b(pico|picosecond)\b/i, '30–60 min'],
-  [/\b(hydrafacial|hydra facial)\b/i, '60–90 min'],
-  [/\b(chemical peel|vi peel|medical peel)\b/i, '30–60 min'],
-  [/\b(skin booster|cocktail|booster)\b/i, '45–60 min'],
-  [/\b(accent|body contouring|minifx|bodyfx)\b/i, '45–60 min'],
-  [/\b(laser)\b/i, '30–60 min'],
-  [/\b(facial)\b/i, '45–60 min'],
+/** How long results last after treatment (effect duration, not procedure time). */
+export const EFFECT_DURATION_RULES: [RegExp, string][] = [
+  [/\b(botox|toxin|neuromodulator|neurotoxin|dysport|xeomin)\b/i, '3–4 months'],
+  [/\b(lip filler|juvederm ultra|restylane)\b/i, '6–12 months'],
+  [/\b(voluma|cheek filler)\b/i, '12–18 months'],
+  [/\b(filler|juvederm|syringe|ha filler)\b/i, '6–12 months'],
+  [/\b(morpheus|rf microneedling|radiofrequency microneedling)\b/i, '12–18 months'],
+  [/\b(thermage)\b/i, '12–24 months'],
+  [/\b(ultraformer|hifu|7d facelift)\b/i, '12–18 months'],
+  [/\b(fotona 4d|4d facelift|fotona 6d|6d)\b/i, '12–18 months'],
+  [/\b(fotona)\b/i, '6–12 months'],
+  [/\b(co2|fractional resurfacing)\b/i, '1–3 years'],
+  [/\b(ipl|stellar|lumenis|broadband|photofacial)\b/i, '6–12 months'],
+  [/\b(pico|picosecond)\b/i, '6–12 months'],
+  [/\b(hydrafacial|hydra facial)\b/i, '4–6 weeks'],
+  [/\b(chemical peel|vi peel|medical peel)\b/i, '2–6 months'],
+  [/\b(skin booster|cocktail|booster)\b/i, '3–6 months'],
+  [/\b(accent|body contouring|minifx|bodyfx)\b/i, '6–12 months'],
+  [/\b(laser)\b/i, '6–12 months'],
+  [/\b(facial)\b/i, '4–6 weeks'],
 ]
 
 /** Deterministic tags by treatment type. */
@@ -92,9 +95,9 @@ export const TAG_RULES: [RegExp, string[]][] = [
   [/\b(facial)\b/i, ['Facial', 'Glow']],
 ]
 
-/** Infer session duration from treatment name. Returns empty string if no rule matches. */
-export function inferDuration(name: string): string {
-  for (const [pattern, value] of DURATION_RULES) {
+/** Infer how long results last from treatment name. Returns empty string if no rule matches. */
+export function inferEffectDuration(name: string): string {
+  for (const [pattern, value] of EFFECT_DURATION_RULES) {
     if (pattern.test(name)) return value
   }
   return ''
