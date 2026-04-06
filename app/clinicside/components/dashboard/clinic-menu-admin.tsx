@@ -20,6 +20,7 @@ import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import type { ClinicMenuCategory } from "@/lib/clinic-menu"
 
 type PricingTableRow = { label: string; values: Record<string, number | null> }
 type PricingTable = { columns: string[]; rows: PricingTableRow[] }
@@ -40,11 +41,7 @@ type MenuTreatment = {
   tags?: string[]
 }
 
-type MenuCategory = {
-  id: string
-  name: string
-  treatment_ids: string[]
-}
+type MenuCategory = ClinicMenuCategory
 
 type FullMenu = { clinicName: string; treatments: MenuTreatment[]; categories?: MenuCategory[] }
 
@@ -205,6 +202,7 @@ export function ClinicMenuAdmin({
       return false
     }
     setSaving(true)
+    console.log('[persistMenu] saving menu — categories:', menu.categories ?? [])
     try {
       const res = await clinicFetch("/api/menu", {
         method: "POST",

@@ -81,6 +81,7 @@ export async function saveMenuToDatabase(
   const supabase = getServiceSupabase()
   if (supabase) {
     const now = new Date().toISOString()
+    console.log('[menu-store] saving — categories:', menu.categories ?? [])
     // Upsert: UPDATE in place if clinic_id row exists, INSERT otherwise.
     // clinic_menu_store has one row per clinic (clinic_id is the PK).
     const { error } = await supabase

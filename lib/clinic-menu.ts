@@ -28,9 +28,16 @@ export type ClinicMenuTreatment = {
   tags?: string[]
 }
 
+export type ClinicMenuCategory = {
+  id: string
+  name: string
+  treatment_ids: string[]
+}
+
 export type ClinicMenu = {
   clinicName: string
   treatments: ClinicMenuTreatment[]
+  categories?: ClinicMenuCategory[]
 }
 
 /**
