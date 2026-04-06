@@ -40,6 +40,7 @@ export function Navigation() {
         <div className="flex items-center justify-between px-8 lg:px-16 xl:px-24 h-20">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2.5">
+            <img src="/lluna-logo.png" alt="Lluna" className="h-7 w-7 object-contain" />
             <span className="font-semibold text-lg tracking-tight">Lluna</span>
           </a>
 
