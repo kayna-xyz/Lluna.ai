@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
+const GATE_KEY = "lluna_enterprise_unlocked"
+const GATE_CODE = "888888"
+
 function resolveNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/")) return "/clinicside/app"
   if (raw.startsWith("//")) return "/clinicside/app"
@@ -22,6 +25,27 @@ export function ClinicAuthForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = resolveNextPath(searchParams.get("next"))
+
+  const [unlocked, setUnlocked] = useState(false)
+  const [gateInput, setGateInput] = useState("")
+  const [gateError, setGateError] = useState(false)
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(GATE_KEY) === "1") setUnlocked(true)
+    } catch { /* ignore */ }
+  }, [])
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (gateInput.trim() === GATE_CODE) {
+      try { sessionStorage.setItem(GATE_KEY, "1") } catch { /* ignore */ }
+      setUnlocked(true)
+    } else {
+      setGateError(true)
+      setGateInput("")
+    }
+  }
 
   const [tab, setTab] = useState<"login" | "register">("login")
   const [loginEmail, setLoginEmail] = useState("")
@@ -127,6 +151,57 @@ export function ClinicAuthForm() {
     },
     [regAddress, regClinicName, regEmail, regPassword, regPhone, nextPath, router],
   )
+
+  if (!unlocked) {
+    return (
+      <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12">
+        <Link
+          href="/"
+          className="absolute top-6 left-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Back
+        </Link>
+
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-xl font-normal tracking-tight text-foreground">
+              Clinic · Enterprise
+            </h1>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+              If you are interested, reach out to{" "}
+              <a href="mailto:kayna@lluna.ai" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                kayna@lluna.ai
+              </a>{" "}
+              to book a demo. Only clinics partnered with us can experience the products.
+            </p>
+          </div>
+
+          <form onSubmit={handleUnlock} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="gate-code" className="text-sm text-muted-foreground">
+                Access code
+              </Label>
+              <Input
+                id="gate-code"
+                type="password"
+                autoComplete="off"
+                value={gateInput}
+                onChange={(e) => { setGateInput(e.target.value); setGateError(false) }}
+                placeholder="Enter access code"
+                required
+              />
+              {gateError && (
+                <p className="text-xs text-destructive">Incorrect code. Please try again.</p>
+              )}
+            </div>
+            <Button type="submit" className="w-full">
+              Unlock
+            </Button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12">
