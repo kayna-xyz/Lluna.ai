@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     .select('id, session_id, client_name, phone, email, report_data, report_summary, created_at')
     .eq('clinic_id', tenant.clinic.id)
     .order('created_at', { ascending: false })
+    .limit(100)
 
   if (error) {
     console.error('clients list', error)

@@ -68,12 +68,15 @@ export async function POST(req: Request) {
     .eq('session_id', sessionId)
     .maybeSingle()
 
+  const report_summary = consultantFinalPlan.final_plan_text || null
+
   if (existingClient) {
     const { error: u1 } = await supabase
       .from('clients')
       .update({
         report_data,
         total_price,
+        ...(report_summary !== null ? { report_summary } : {}),
       })
       .eq('clinic_id', clinicId)
       .eq('session_id', sessionId)
@@ -87,6 +90,7 @@ export async function POST(req: Request) {
       session_id: sessionId,
       report_data,
       total_price,
+      ...(report_summary !== null ? { report_summary } : {}),
     })
     if (ins) {
       console.error('final-solution insert clients', ins)

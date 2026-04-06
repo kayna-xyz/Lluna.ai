@@ -5,15 +5,6 @@ import type { StoredReportData } from '@/lib/report-payload'
 import { resolveClinicForRequest } from '@/lib/tenant'
 import { enrichReportAsync, generateFastEnrichment } from '@/lib/report-enrichment'
 
-/** True if this row is still an open questionnaire (not yet advanced by consultant flow). */
-function pendingReportStillOpen(row: { status?: unknown; status_text?: unknown }): boolean {
-  const s = String(row.status ?? '').trim()
-  const st = String(row.status_text ?? '').trim()
-  const effective = s || st
-  if (!effective) return true
-  if (effective === 'pending' || effective === 'new') return true
-  return false
-}
 
 function asRec(v: unknown): Record<string, unknown> {
   return v && typeof v === 'object' ? (v as Record<string, unknown>) : {}
@@ -82,40 +73,19 @@ export async function POST(req: Request) {
     status: 'pending',
   }
 
-  const { data: latestPending } = await supabase
-    .from('pending_reports')
-    .select('id, status, status_text')
-    .eq('clinic_id', clinicId)
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
   const nowIso = new Date().toISOString()
   let pendingReportId: string | null = null
 
-  if (latestPending?.id && pendingReportStillOpen(latestPending)) {
-    const { error: pendingUpdateError } = await supabase
-      .from('pending_reports')
-      .update({ ...pendingPayload, updated_at: nowIso })
-      .eq('id', latestPending.id as string)
-    if (pendingUpdateError) {
-      console.error('pending_reports update error:', pendingUpdateError)
-      return Response.json({ error: pendingUpdateError.message }, { status: 500 })
-    }
-    pendingReportId = latestPending.id as string
-  } else {
-    const { data: inserted, error: pendingInsertError } = await supabase
-      .from('pending_reports')
-      .insert({ ...pendingPayload, updated_at: nowIso })
-      .select('id')
-      .single()
-    if (pendingInsertError) {
-      console.error('pending_reports insert error:', pendingInsertError)
-      return Response.json({ error: pendingInsertError.message }, { status: 500 })
-    }
-    pendingReportId = inserted?.id ?? null
+  const { data: upserted, error: pendingUpsertError } = await supabase
+    .from('pending_reports')
+    .upsert({ ...pendingPayload, updated_at: nowIso }, { onConflict: 'clinic_id,session_id' })
+    .select('id')
+    .single()
+  if (pendingUpsertError) {
+    console.error('pending_reports upsert error:', pendingUpsertError)
+    return Response.json({ error: pendingUpsertError.message }, { status: 500 })
   }
+  pendingReportId = upserted?.id ?? null
 
   // ── 2. Write base report to clients ──────────────────────────────────────────
   const clientPayload = {
