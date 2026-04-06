@@ -4888,7 +4888,8 @@ export default function LlunaApp({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        position: 'relative'
+        position: 'relative',
+        paddingTop: 16,
       }}>
         <div
           style={
