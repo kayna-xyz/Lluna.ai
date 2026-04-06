@@ -44,9 +44,6 @@ export function syncConsumerClinicFromLocation(): string {
     const fromUrl = params.get('clinic')?.trim() || params.get('clinicSlug')?.trim()
     const prevStored = localStorage.getItem(LLUNA_CLINIC_SLUG_KEY)
     if (fromUrl) {
-      if (prevStored && prevStored !== fromUrl) {
-        localStorage.setItem('lluna_session_id', crypto.randomUUID())
-      }
       localStorage.setItem(LLUNA_CLINIC_SLUG_KEY, fromUrl)
       return fromUrl
     }

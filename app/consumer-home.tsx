@@ -4198,11 +4198,7 @@ export default function LlunaApp({
       syncConsumerClinicLinkSession()
       const slug = syncConsumerClinicFromLocation()
       setClinicSlug(slug)
-      let s = localStorage.getItem('lluna_session_id')
-      if (!s) {
-        s = crypto.randomUUID()
-        localStorage.setItem('lluna_session_id', s)
-      }
+      const s = crypto.randomUUID()
       sessionIdRef.current = s
       setClientSessionId(s)
 
@@ -4240,11 +4236,7 @@ export default function LlunaApp({
     try {
       let s = sessionIdRef.current
       if (s) return s
-      s = localStorage.getItem('lluna_session_id') || ''
-      if (!s) {
-        s = crypto.randomUUID()
-        localStorage.setItem('lluna_session_id', s)
-      }
+      s = crypto.randomUUID()
       sessionIdRef.current = s
       setClientSessionId(s)
       return s
