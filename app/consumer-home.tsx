@@ -1708,29 +1708,10 @@ function ClinicMenuScreen({
   setTreatmentFilter: (v: 'popular' | 'price-low' | 'price-high' | 'comprehensive') => void
   clinicMenu: ClinicMenu | null
 }) {
-  const { clinicName, tagline, activities, testimonials, clinicPhone, clinicWorkTime, logoUrl, mdTeam } = useContext(ConsumerClinicUiContext)
-  const [activityIndex, setActivityIndex] = useState(0)
   const [treatmentSearch, setTreatmentSearch] = useState("")
   const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
 
-  useEffect(() => {
-    setActivityIndex((i) => {
-      const n = activities.length
-      if (n === 0) return 0
-      return i >= n ? 0 : i
-    })
-  }, [activities.length])
-
-  useEffect(() => {
-    const n = activities.length
-    if (n <= 1) return
-    const interval = setInterval(() => {
-      setActivityIndex((i) => (i + 1) % n)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [activities.length])
-  
   const treatments = clinicMenu?.treatments ?? []
   // For uploaded menus we may not have popularity or normalized numeric prices in a single field.
   // Keep the UI filter but fall back to a stable alphabetical sort when data is missing.
@@ -1790,18 +1771,6 @@ function ClinicMenuScreen({
     return 'See pricing'
   }
 
-  const popularTreatmentsTop = useMemo(() => {
-    const src = clinicMenu?.treatments ?? []
-    return [...src]
-      .sort((a, b) => {
-        const pa = typeof (a as { popularity?: number }).popularity === 'number' ? (a as { popularity?: number }).popularity! : 0
-        const pb = typeof (b as { popularity?: number }).popularity === 'number' ? (b as { popularity?: number }).popularity! : 0
-        if (pb !== pa) return pb - pa
-        return a.name.localeCompare(b.name)
-      })
-      .slice(0, 4)
-  }, [clinicMenu?.treatments])
-  
   if (selectedTreatment) {
     return (
       <TreatmentDetailScreen
@@ -1821,273 +1790,7 @@ function ClinicMenuScreen({
           setHelpRequest={setHelpRequest}
         />
       )}
-      
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={clinicName || "Clinic"}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: `1px solid ${COLORS.border}`,
-                flexShrink: 0,
-              }}
-            />
-          ) : null}
-          <div>
-            <h1 style={{
-              fontSize: 20,
-              fontWeight: 400,
-              fontFamily: "'IBM Plex Serif', serif",
-              color: COLORS.text,
-              margin: 0,
-            }}>
-              {clinicName || "Clinic"}
-            </h1>
-            {tagline ? (
-              <p style={{ fontSize: 12, color: COLORS.success, margin: 0 }}>{tagline}</p>
-            ) : null}
-            {clinicPhone ? (
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 2 }}>{clinicPhone}</p>
-            ) : null}
-            {clinicWorkTime ? (
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{clinicWorkTime}</p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-      
-      {/* Rolling Activities - Compact */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ 
-          fontSize: 11, 
-          fontWeight: 500, 
-          letterSpacing: '0.1em', 
-          color: COLORS.muted,
-          marginBottom: 12 
-        }}>
-          CURRENT ACTIVITIES
-        </p>
-        
-        <div style={{
-          background: COLORS.bg,
-          borderRadius: 12,
-          padding: 16,
-          border: `1px solid ${COLORS.border}`,
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Smooth transition container */}
-          <div style={{ 
-            position: 'relative',
-            minHeight: 60
-          }}>
-            {activities.length === 0 ? (
-              <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-                No activities yet. Your clinic can add highlights in the advisor portal (Activities → Info).
-              </p>
-            ) : (
-              activities.map((activity, i) => (
-              <div 
-                key={i}
-                style={{
-                  position: i === activityIndex ? 'relative' : 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  opacity: i === activityIndex ? 1 : 0,
-                  transform: 'translateY(0px)',
-                  transition: 'opacity 0.45s ease-in-out',
-                  pointerEvents: i === activityIndex ? 'auto' : 'none'
-                }}
-              >
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  marginBottom: 8
-                }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: 0 }}>
-                    {activity.title}
-                  </h3>
-                  {activity.badge && (
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      background: activity.type === 'loyalty' ? 'rgba(107, 126, 107, 0.15)' : 'rgba(198, 125, 59, 0.15)',
-                      color: activity.type === 'loyalty' ? COLORS.success : '#C67D3B',
-                      padding: '3px 8px',
-                      borderRadius: 999
-                    }}>
-                      {activity.badge}
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-                  {activity.description}
-                </p>
-              </div>
-            ))
-            )}
-          </div>
-          
-          {/* Dots indicator */}
-          {activities.length > 0 ? (
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
-            {activities.map((_, i) => (
-              <div
-                key={i}
-                onClick={() => setActivityIndex(i)}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: i === activityIndex ? COLORS.accent : COLORS.border,
-                  cursor: 'pointer',
-                  transition: 'background 0.3s ease'
-                }}
-              />
-            ))}
-          </div>
-          ) : null}
-        </div>
-      </div>
-      
-      {/* MD Team Section */}
-      {mdTeam.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <p style={{
-            fontSize: 11,
-            fontWeight: 500,
-            letterSpacing: '0.1em',
-            color: COLORS.muted,
-            marginBottom: 12
-          }}>
-            MD TEAM
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {mdTeam.map((member) => (
-              <div
-                key={member.id}
-                style={{
-                  background: COLORS.bg,
-                  borderRadius: 12,
-                  padding: 14,
-                  border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                {member.photo_url ? (
-                  <img
-                    src={member.photo_url}
-                    alt={member.name}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      marginBottom: 10,
-                      border: `1px solid ${COLORS.border}`,
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    background: COLORS.navBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 10,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: COLORS.accent,
-                  }}>
-                    {member.name.split(/\s+/).filter(Boolean).map((n: string) => n[0]).join('') || '?'}
-                  </div>
-                )}
-                <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: 'block' }}>
-                  {member.name}
-                </span>
-                {member.experience ? (
-                  <span style={{ fontSize: 11, color: COLORS.accent, display: 'block', marginTop: 2 }}>
-                    {member.experience}
-                  </span>
-                ) : null}
-                {member.about ? (
-                  <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 6, lineHeight: 1.4 }}>
-                    {member.about}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Famous Visitors Section */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ 
-          fontSize: 11, 
-          fontWeight: 500, 
-          letterSpacing: '0.1em', 
-          color: COLORS.muted,
-          marginBottom: 12 
-        }}>
-          TRUSTED BY
-        </p>
-        
-        <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
-          {testimonials.length === 0 ? (
-            <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>
-              No testimonials yet. Add them in the advisor portal (Activities → Info).
-            </p>
-          ) : (
-            testimonials.map((visitor, i) => (
-            <div
-              key={i}
-              style={{
-                minWidth: 180,
-                background: COLORS.bg,
-                borderRadius: 12,
-                padding: 14,
-                border: `1px solid ${COLORS.border}`
-              }}
-            >
-              <div style={{ 
-                width: 36, 
-                height: 36, 
-                borderRadius: '50%', 
-                background: COLORS.navBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 10,
-                fontSize: 14,
-                fontWeight: 600,
-                color: COLORS.accent
-              }}>
-                {visitor.name.split(/\s+/).filter(Boolean).map(n => n[0]).join('') || '?'}
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: 'block' }}>
-                {visitor.name}
-              </span>
-              <span style={{ fontSize: 11, color: COLORS.accent, display: 'block', marginTop: 2 }}>
-                {visitor.role}
-              </span>
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 8, fontStyle: 'italic' }}>
-                &ldquo;{visitor.testimonial}&rdquo;
-              </p>
-            </div>
-            ))
-          )}
-        </div>
-      </div>
-      
+
       {/* All Treatments with Filter */}
       <div>
         <div style={{ 
@@ -4465,7 +4168,7 @@ export default function LlunaApp({
     clinicInfoName: string
   }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [], clinicInfoName: "" })
   const [navTabs, setNavTabs] = useState<string[]>(() =>
-    initialViaClinicLink ? ["Clinic menu", "Report", "My"] : ["My"],
+    initialViaClinicLink ? ["Menu", "Report", "About"] : ["About"],
   )
   // Google Review 弹窗（顾问 final-solution 后触发）— 暂时关闭
   // const [showReviewModal, setShowReviewModal] = useState(false)
@@ -4949,20 +4652,20 @@ export default function LlunaApp({
 
 
   const getActiveTab = () => {
-    if (state.showClinicMenu) return "Clinic menu"
-    if (state.showMy) return "My"
+    if (state.showClinicMenu) return "Menu"
+    if (state.showMy) return "About"
     if (state.showJourney) return "My Journey"
     if (state.showProfile) return "Profile"
     return navTabs.includes("My Journey")
       ? "My Journey"
       : navTabs.includes("Report")
         ? "Report"
-        : "My"
+        : "About"
   }
 
   const handleTabClick = (tab: string) => {
-    if (!hasFullConsumerUi && (tab === "Clinic menu" || tab === "Report")) return
-    if (tab === "Clinic menu") {
+    if (!hasFullConsumerUi && (tab === "Menu" || tab === "Report")) return
+    if (tab === "Menu") {
       setState(s => ({
         ...s,
         showClinicMenu: true,
@@ -4999,7 +4702,7 @@ export default function LlunaApp({
         showPrivacyPolicy: false,
         ...(s.screen >= 10 ? { screen: 10 } : {}),
       }))
-    } else if (tab === "My") {
+    } else if (tab === "About") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -5017,7 +4720,17 @@ export default function LlunaApp({
     }
 
     if (state.showMy) {
-      return <MyPageScreen />
+      return (
+        <MyPageScreen
+          clinicName={consumerUiValue.clinicName}
+          tagline={consumerUiValue.tagline}
+          logoUrl={consumerUiValue.logoUrl}
+          clinicPhone={consumerUiValue.clinicPhone}
+          clinicWorkTime={consumerUiValue.clinicWorkTime}
+          activities={consumerUiValue.activities}
+          testimonials={consumerUiValue.testimonials}
+        />
+      )
     }
 
     if (state.showClinicMenu) {
