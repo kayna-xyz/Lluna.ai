@@ -28,9 +28,16 @@ type ClinicMenuTreatment = {
   beforeAfterUrl?: string
 }
 
+type ClinicMenuCategory = {
+  id: string
+  name: string
+  treatment_ids: string[]
+}
+
 type ClinicMenu = {
   clinicName: string
   treatments: ClinicMenuTreatment[]
+  categories?: ClinicMenuCategory[]
 }
 
 type HistoryTreatment = {
@@ -1705,6 +1712,7 @@ function ClinicMenuScreen({
   const [activityIndex, setActivityIndex] = useState(0)
   const [treatmentSearch, setTreatmentSearch] = useState("")
   const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
 
   useEffect(() => {
     setActivityIndex((i) => {
@@ -1746,16 +1754,22 @@ function ClinicMenuScreen({
     return a.name.localeCompare(b.name)
   })
 
+  const categories = clinicMenu?.categories ?? []
+  const activeCategoryIds: Set<string> | null =
+    selectedCategoryId === "all"
+      ? null
+      : new Set(categories.find((c) => c.id === selectedCategoryId)?.treatment_ids ?? [])
+
   const treatmentSearchNormalized = treatmentSearch.trim().toLowerCase()
-  const visibleTreatments =
-    treatmentSearchNormalized.length === 0
-      ? sortedTreatments
-      : sortedTreatments.filter((t) => {
-          const name = t.name.toLowerCase()
-          const category = (t.category || "").toLowerCase()
-          const description = (t.description || "").toLowerCase()
-          return [name, category, description].some((s) => s.includes(treatmentSearchNormalized))
-        })
+  const visibleTreatments = sortedTreatments
+    .filter((t) => activeCategoryIds === null || activeCategoryIds.has(t.id))
+    .filter((t) => {
+      if (!treatmentSearchNormalized) return true
+      const name = t.name.toLowerCase()
+      const category = (t.category || "").toLowerCase()
+      const description = (t.description || "").toLowerCase()
+      return [name, category, description].some((s) => s.includes(treatmentSearchNormalized))
+    })
 
   const getPrimaryPriceLabel = (t: ClinicMenuTreatment): string => {
     if (t.pricing_model === 'table' && t.pricing_table) {
@@ -2130,6 +2144,39 @@ function ClinicMenuScreen({
             }}
           />
         </div>
+
+        {/* Category filter pills — only shown when categories exist */}
+        {categories.length > 0 && (
+          <div
+            className="hide-scrollbar"
+            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}
+          >
+            {[{ id: 'all', name: 'All' }, ...categories].map((cat) => {
+              const active = selectedCategoryId === cat.id
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  style={{
+                    flexShrink: 0,
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? COLORS.white : COLORS.text,
+                    background: active ? COLORS.accent : COLORS.bg,
+                    border: `1px solid ${active ? COLORS.accent : COLORS.border}`,
+                    borderRadius: 999,
+                    padding: '5px 14px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                >
+                  {cat.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {visibleTreatments.length === 0 ? (
           <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 13 }}>
