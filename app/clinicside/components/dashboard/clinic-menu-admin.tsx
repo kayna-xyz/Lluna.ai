@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil, Save, Folder } from "lucide-react"
+import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil, Save, Folder, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -361,14 +361,19 @@ export function ClinicMenuAdmin({
     setIsDirty(true)
   }
 
-  const moveCategory = (catId: string, dir: -1 | 1) => {
+  const dragCatIndex = useRef<number | null>(null)
+
+  const onCatDragStart = (idx: number) => { dragCatIndex.current = idx }
+
+  const onCatDrop = (targetIdx: number) => {
+    const from = dragCatIndex.current
+    dragCatIndex.current = null
+    if (from === null || from === targetIdx) return
     setWorking((prev) => {
       if (!prev) return prev
       const cats = [...(prev.categories ?? [])]
-      const idx = cats.findIndex((c) => c.id === catId)
-      const next = idx + dir
-      if (next < 0 || next >= cats.length) return prev
-      ;[cats[idx], cats[next]] = [cats[next], cats[idx]]
+      const [moved] = cats.splice(from, 1)
+      cats.splice(targetIdx, 0, moved)
       return { ...prev, categories: cats }
     })
     setIsDirty(true)
@@ -1125,35 +1130,29 @@ export function ClinicMenuAdmin({
             {(working?.categories ?? []).length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">No folders yet.</p>
             ) : (
-              (working?.categories ?? []).map((cat, idx, arr) => (
-                <div key={cat.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+              (working?.categories ?? []).map((cat, idx) => (
+                <div
+                  key={cat.id}
+                  draggable
+                  onDragStart={() => onCatDragStart(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => onCatDrop(idx)}
+                  className="flex items-center gap-2 rounded-md border px-2 py-2 transition-colors hover:bg-muted/40"
+                >
+                  {/* Drag handle */}
+                  <div
+                    className="flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md bg-muted/60 text-muted-foreground active:cursor-grabbing"
+                    aria-label="Drag to reorder"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{cat.name}</p>
                     <p className="text-[10px] text-muted-foreground">{cat.treatment_ids.length} treatment{cat.treatment_ids.length === 1 ? "" : "s"}</p>
                   </div>
+
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      disabled={idx === 0}
-                      onClick={() => moveCategory(cat.id, -1)}
-                      aria-label="Move up"
-                    >
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      disabled={idx === arr.length - 1}
-                      onClick={() => moveCategory(cat.id, 1)}
-                      aria-label="Move down"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </Button>
                     <Button
                       type="button"
                       size="sm"
