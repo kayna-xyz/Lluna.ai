@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil, Save } from "lucide-react"
+import { Loader2, Upload, Plus, ChevronRight, ChevronDown, ChevronUp, Trash2, Pencil, Save, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import { cn } from "@/lib/utils"
@@ -39,7 +40,13 @@ type MenuTreatment = {
   tags?: string[]
 }
 
-type FullMenu = { clinicName: string; treatments: MenuTreatment[] }
+type MenuCategory = {
+  id: string
+  name: string
+  treatment_ids: string[]
+}
+
+type FullMenu = { clinicName: string; treatments: MenuTreatment[]; categories?: MenuCategory[] }
 
 const MAX_MENU_IMPORT_BYTES = 50 * 1024 * 1024
 const MAX_MENU_PDF_BYTES = 10 * 1024 * 1024
@@ -84,6 +91,13 @@ export function ClinicMenuAdmin({
   const [addingTreatment, setAddingTreatment] = useState(false)
   const [newTreatmentName, setNewTreatmentName] = useState("")
   const [newTreatmentPrice, setNewTreatmentPrice] = useState("")
+
+  // Category management
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null)
+  const [categoryNameDraft, setCategoryNameDraft] = useState("")
+  const [categoryTreatmentIds, setCategoryTreatmentIds] = useState<Set<string>>(new Set())
 
   const [importProgress, setImportProgress] = useState(0)
   const [importProcessing, setImportProcessing] = useState(false)
@@ -299,6 +313,54 @@ export function ClinicMenuAdmin({
     setAddingTreatment(false)
     setNewTreatmentName("")
     setNewTreatmentPrice("")
+  }
+
+  // ── Category management ───────────────────────────────────────────────────
+
+  const openNewCategory = () => {
+    setCategoryNameDraft("")
+    setCategoryTreatmentIds(new Set())
+    setEditingCategory({ id: "", name: "", treatment_ids: [] })
+  }
+
+  const openEditCategory = (cat: MenuCategory) => {
+    setCategoryNameDraft(cat.name)
+    setCategoryTreatmentIds(new Set(cat.treatment_ids))
+    setEditingCategory(cat)
+  }
+
+  const saveCategory = () => {
+    const name = categoryNameDraft.trim()
+    if (!name || !working) return
+    const treatment_ids = Array.from(categoryTreatmentIds)
+    setWorking((prev) => {
+      if (!prev) return prev
+      const existing = prev.categories ?? []
+      if (editingCategory?.id) {
+        // Edit
+        return {
+          ...prev,
+          categories: existing.map((c) =>
+            c.id === editingCategory.id ? { ...c, name, treatment_ids } : c,
+          ),
+        }
+      } else {
+        // Add
+        const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 30) + "_" + Date.now()
+        return { ...prev, categories: [...existing, { id, name, treatment_ids }] }
+      }
+    })
+    setIsDirty(true)
+    setEditingCategory(null)
+  }
+
+  const deleteCategory = (catId: string) => {
+    setWorking((prev) => {
+      if (!prev) return prev
+      return { ...prev, categories: (prev.categories ?? []).filter((c) => c.id !== catId) }
+    })
+    if (selectedCategoryId === catId) setSelectedCategoryId("all")
+    setIsDirty(true)
   }
 
   // ── Treatment image uploads ───────────────────────────────────────────────
@@ -604,6 +666,15 @@ export function ClinicMenuAdmin({
                 type="button"
                 variant="outline"
                 size="sm"
+                onClick={() => setShowCategoryManager(true)}
+              >
+                <Folder className="h-3.5 w-3.5 mr-1.5" />
+                Folders
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setAddingTreatment(true)}
               >
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
@@ -626,9 +697,51 @@ export function ClinicMenuAdmin({
           {isDirty && (
             <p className="text-xs text-amber-600 mt-1">Unsaved changes</p>
           )}
+          {/* Category filter bar */}
+          {(working?.categories?.length ?? 0) > 0 && (
+            <div className="flex gap-1.5 flex-wrap pt-1">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId("all")}
+                className={cn(
+                  "rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors",
+                  selectedCategoryId === "all"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-muted-foreground border-transparent hover:border-border",
+                )}
+              >
+                All
+              </button>
+              {(working?.categories ?? []).map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors",
+                    selectedCategoryId === cat.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-transparent hover:border-border",
+                  )}
+                >
+                  {cat.name}
+                  <span className="ml-1 opacity-60">
+                    ({cat.treatment_ids.length})
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-2 max-h-[600px] overflow-auto">
-          {(working?.treatments ?? []).map((t) => {
+          {(() => {
+            const all = working?.treatments ?? []
+            const cats = working?.categories ?? []
+            const activeCat = cats.find((c) => c.id === selectedCategoryId)
+            return activeCat
+              ? all.filter((t) => activeCat.treatment_ids.includes(t.id))
+              : all
+          })().map((t) => {
             const expanded = expandedTreatmentId === t.id
             const hasPoster = Boolean(t.posterUrl)
             const hasBa = Boolean(t.beforeAfterUrl)
@@ -880,6 +993,7 @@ export function ClinicMenuAdmin({
           })}
 
           {/* ── Add treatment inline form ──────────────────────────────── */}
+
           {addingTreatment && (
             <div className="rounded-md border border-dashed p-3 space-y-2">
               <Input
@@ -984,6 +1098,151 @@ export function ClinicMenuAdmin({
               onClick={() => void submitUploadDialog()}
             >
               {uploadSubmitting ? "Uploading…" : "Upload"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Category Manager Dialog ─────────────────────────────────────── */}
+      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Folders</DialogTitle>
+            <DialogDescription>Organise treatments into folders for quick filtering.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {(working?.categories ?? []).length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">No folders yet.</p>
+            ) : (
+              (working?.categories ?? []).map((cat) => (
+                <div key={cat.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{cat.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{cat.treatment_ids.length} treatment{cat.treatment_ids.length === 1 ? "" : "s"}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setShowCategoryManager(false)
+                        openEditCategory(cat)
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                      onClick={() => deleteCategory(cat.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter className="flex-row gap-2 sm:justify-between">
+            <Button
+              type="button"
+              onClick={() => {
+                setShowCategoryManager(false)
+                openNewCategory()
+              }}
+            >
+              Add folder
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCategoryManager(false)}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add / Edit Category Dialog ──────────────────────────────────── */}
+      <Dialog
+        open={editingCategory !== null}
+        onOpenChange={(open) => { if (!open) setEditingCategory(null) }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCategory?.id ? "Edit folder" : "New folder"}</DialogTitle>
+            <DialogDescription>Give the folder a name and choose which treatments belong to it.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cat-name" className="text-xs">Folder name</Label>
+              <Input
+                id="cat-name"
+                value={categoryNameDraft}
+                onChange={(e) => setCategoryNameDraft(e.target.value)}
+                placeholder="e.g. Injectables"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Treatments</Label>
+              <div className="max-h-60 overflow-y-auto space-y-1 rounded-md border p-2">
+                {(working?.treatments ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2 text-center">No treatments in menu.</p>
+                ) : (
+                  (working?.treatments ?? []).map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-muted/50 cursor-pointer"
+                      onClick={() =>
+                        setCategoryTreatmentIds((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(t.id)) next.delete(t.id)
+                          else next.add(t.id)
+                          return next
+                        })
+                      }
+                    >
+                      <Checkbox
+                        id={`cat-t-${t.id}`}
+                        checked={categoryTreatmentIds.has(t.id)}
+                        onCheckedChange={(checked) =>
+                          setCategoryTreatmentIds((prev) => {
+                            const next = new Set(prev)
+                            if (checked) next.add(t.id)
+                            else next.delete(t.id)
+                            return next
+                          })
+                        }
+                      />
+                      <label htmlFor={`cat-t-${t.id}`} className="text-xs cursor-pointer flex-1 truncate">
+                        {t.name}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingCategory(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!categoryNameDraft.trim()}
+              onClick={saveCategory}
+            >
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
