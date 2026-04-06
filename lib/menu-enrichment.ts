@@ -22,6 +22,91 @@ function pricingSnippet(t: ClinicMenuTreatment): string {
   return ''
 }
 
+function inferRecoveryPeriod(name: string): string {
+  for (const [pattern, value] of RECOVERY_RULES) {
+    if (pattern.test(name)) return value
+  }
+  return ''
+}
+
+/** True when all three metadata fields are already populated — skip AI re-enrichment. */
+function metadataComplete(t: ClinicMenuTreatment): boolean {
+  return !!(t.recovery_period?.trim() && t.effect_duration?.trim() && t.tags?.length)
+}
+
+type MetadataEntry = {
+  id: string
+  recovery_period: string
+  effect_duration: string
+  tags: string[]
+}
+
+/**
+ * Single batched AI call to generate recovery_period, effect_duration, and tags
+ * for a list of treatments. Returns a map of id → metadata.
+ * On failure returns an empty map — callers must fall back to rule inference.
+ */
+async function generateTreatmentMetadataBatch(
+  treatments: ClinicMenuTreatment[],
+): Promise<Map<string, MetadataEntry>> {
+  if (!treatments.length) return new Map()
+
+  const treatmentLines = treatments
+    .map((t) => {
+      const desc = t.description?.trim() ? ` | description: ${t.description.trim()}` : ''
+      return `- id: ${t.id} | name: ${t.name}${t.category ? ` | category: ${t.category}` : ''}${desc}`
+    })
+    .join('\n')
+
+  const prompt =
+    `Generate metadata for these medical aesthetic treatments.\n\n` +
+    `Treatments:\n${treatmentLines}\n\n` +
+    `Return a JSON array only — no markdown, no commentary:\n` +
+    `[\n` +
+    `  {\n` +
+    `    "id": "<id>",\n` +
+    `    "recovery_period": "<e.g. 0 days | 2–3 days | 1–2 weeks>",\n` +
+    `    "effect_duration": "<e.g. 3–4 months | 12–18 months | 1–3 years>",\n` +
+    `    "tags": ["<tag1>", "<tag2>", "<tag3>"]\n` +
+    `  }\n` +
+    `]`
+
+  try {
+    const { text } = await generateText({
+      model: getLlunaAnthropicModel(),
+      system:
+        'You are a medical aesthetic expert generating structured metadata for clinic treatments. ' +
+        'Rules: ' +
+        '(1) recovery_period: how long downtime/redness lasts after the procedure (e.g. "0 days", "2–3 days", "1–2 weeks"). ' +
+        '(2) effect_duration: how long the treatment results last (e.g. "3–4 months", "6–12 months", "1–3 years"). ' +
+        '(3) tags: 2–4 short descriptive strings (e.g. "Anti-aging", "Skin Tightening", "No Downtime", "Quick Procedure"). ' +
+        '(4) Only use information derivable from the treatment name, category, and description — do not invent. ' +
+        '(5) Output valid JSON array only — no markdown fences, no commentary.',
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+    const parsed = JSON.parse(cleaned) as unknown
+    if (!Array.isArray(parsed)) return new Map()
+
+    const entries = (parsed as Record<string, unknown>[])
+      .filter((e) => typeof e.id === 'string')
+      .map((e): MetadataEntry => ({
+        id: String(e.id),
+        recovery_period: typeof e.recovery_period === 'string' ? e.recovery_period.trim() : '',
+        effect_duration: typeof e.effect_duration === 'string' ? e.effect_duration.trim() : '',
+        tags: Array.isArray(e.tags)
+          ? (e.tags as unknown[]).map(String).filter(Boolean)
+          : [],
+      }))
+
+    return new Map(entries.map((e) => [e.id, e]))
+  } catch (e) {
+    console.warn('[menu-enrichment] AI metadata generation failed:', e instanceof Error ? e.message : e)
+    return new Map()
+  }
+}
+
 type DescriptionEntry = { id: string; description: string }
 
 /**
@@ -32,7 +117,7 @@ type DescriptionEntry = { id: string; description: string }
  */
 export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMenu> {
   const toEnrich = menu.treatments.filter((t) => !t.description?.trim())
-  if (!toEnrich.length) return enrichMenuMetadata(menu)
+  if (!toEnrich.length) return await enrichMenuMetadata(menu)
 
   const treatmentLines = toEnrich
     .map((t) => {
@@ -70,10 +155,10 @@ export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMe
     }
   } catch (e) {
     console.warn('[menu-enrichment] AI description generation failed, skipping:', e instanceof Error ? e.message : e)
-    return enrichMenuMetadata(menu)
+    return await enrichMenuMetadata(menu)
   }
 
-  if (!entries.length) return enrichMenuMetadata(menu)
+  if (!entries.length) return await enrichMenuMetadata(menu)
 
   const descById = new Map(entries.map((e) => [e.id, e.description]))
   const withDescriptions: ClinicMenu = {
@@ -88,30 +173,31 @@ export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMe
 }
 
 /**
- * Deterministically enrich every treatment with recovery_period, effect_duration, and tags.
- * Always overwrites these fields so they stay in sync with the rules.
- * Pure/synchronous — no AI call required.
+ * Enrich every treatment with recovery_period, effect_duration, and tags.
+ * Idempotent: treatments that already have all three fields are skipped (no AI re-call).
+ * Strategy per treatment: AI result → rule inference → safe default ("Varies" / []).
  */
-export function enrichMenuMetadata(menu: ClinicMenu): ClinicMenu {
+export async function enrichMenuMetadata(menu: ClinicMenu): Promise<ClinicMenu> {
+  const needsEnrichment = menu.treatments.filter((t) => !metadataComplete(t))
+
+  // Batch AI call only for treatments missing metadata
+  const aiResults = await generateTreatmentMetadataBatch(needsEnrichment)
+
   return {
     ...menu,
     treatments: menu.treatments.map((t) => {
-      const recovery_period = inferRecoveryPeriod(t.name)
-      const effect_duration = inferEffectDuration(t.name)
-      const tags = inferTags(t.name)
-      return {
-        ...t,
-        ...(recovery_period ? { recovery_period } : {}),
-        ...(effect_duration ? { effect_duration } : {}),
-        ...(tags.length ? { tags } : {}),
-      }
+      if (metadataComplete(t)) return t // already fully enriched — skip
+
+      const ai = aiResults.get(t.id)
+
+      const recovery_period =
+        (ai?.recovery_period || inferRecoveryPeriod(t.name)) || 'Varies'
+      const effect_duration =
+        (ai?.effect_duration || inferEffectDuration(t.name)) || 'Varies'
+      const tags =
+        (ai?.tags?.length ? ai.tags : inferTags(t.name).length ? inferTags(t.name) : [])
+
+      return { ...t, recovery_period, effect_duration, tags }
     }),
   }
-}
-
-function inferRecoveryPeriod(name: string): string {
-  for (const [pattern, value] of RECOVERY_RULES) {
-    if (pattern.test(name)) return value
-  }
-  return ''
 }
