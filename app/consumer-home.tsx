@@ -4872,40 +4872,41 @@ export default function LlunaApp({
 
   return (
     <ConsumerClinicUiContext.Provider value={consumerUiValue}>
-    <div 
-      style={{ 
+    <div
+      style={{
         maxWidth: 'min(100%, 480px)',
         width: '100%',
-        margin: '0 auto', 
-        minHeight: '100vh', 
+        margin: '0 auto',
+        height: '100dvh',
+        overflow: 'hidden',
         background: COLORS.bg,
         position: 'relative'
       }}
     >
-      <div style={{ 
-        background: COLORS.outerBg, 
-        minHeight: '100vh',
+      <div style={{
+        background: COLORS.outerBg,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         position: 'relative'
       }}>
         <div
           style={
             {
-              /* Glassmorphism sticky top navigation */
+              /* Top navigation — always 62px from top of container */
                 padding: '0 12px',
                 boxSizing: 'border-box',
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'stretch',
-              position: 'sticky',
-              top: 0,
+              flexShrink: 0,
               zIndex: 50,
                 background: 'transparent',
                 backdropFilter: 'none',
                 WebkitBackdropFilter: 'none',
                 borderBottom: 'none',
                 boxShadow: 'none',
-                transition: 'none',
             }
           }
         >
@@ -4963,8 +4964,8 @@ export default function LlunaApp({
             </div>
         </div>
         
-        {/* Screen Content */}
-        <div style={{ padding: '0 28px' }}>
+        {/* Screen Content — fills remaining height and scrolls */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px' }}>
           <ScreenWrapper visible={visible}>
             {renderScreen()}
           </ScreenWrapper>

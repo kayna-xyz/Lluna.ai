@@ -205,7 +205,7 @@ export function MyPageScreen({
           </p>
           <div
             style={{
-              background: COLORS.bg,
+              background: COLORS.outer,
               borderRadius: 12,
               padding: 16,
               border: `1px solid ${COLORS.border}`,
@@ -294,7 +294,7 @@ export function MyPageScreen({
                 key={i}
                 style={{
                   minWidth: 180,
-                  background: COLORS.bg,
+                  background: COLORS.outer,
                   borderRadius: 12,
                   padding: 14,
                   border: `1px solid ${COLORS.border}`,
