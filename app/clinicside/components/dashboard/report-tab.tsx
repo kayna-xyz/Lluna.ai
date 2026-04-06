@@ -20,8 +20,10 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
+import type { ClinicMenuTreatment } from "../../../../lib/clinic-menu"
 import { RECOVERY_RULES, inferTags, inferFixedMetadata } from "../../../../lib/treatment-price-resolver"
 import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
+import { TreatmentSearchBar } from "./treatment-search"
 
 interface ClientReportPanelProps {
   selectedClientReport?: ClientNotification | null
@@ -596,6 +598,19 @@ export function ClientReportPanel({
   const [aligning, setAligning] = useState(false)
   const [alignedTherapies, setAlignedTherapies] = useState<Record<string, unknown>[]>([])
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({})
+  const [menuTreatments, setMenuTreatments] = useState<ClinicMenuTreatment[]>([])
+
+  // Load clinic menu once for the treatment search bar
+  useEffect(() => {
+    clinicFetch("/api/menu-store")
+      .then((r) => r.json())
+      .then((data: { menu?: { treatments?: unknown } }) => {
+        if (Array.isArray(data.menu?.treatments)) {
+          setMenuTreatments(data.menu.treatments as ClinicMenuTreatment[])
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Seed inputs from DB whenever the selected report changes (different client or fresh load)
   useEffect(() => {
@@ -980,6 +995,11 @@ export function ClientReportPanel({
 
             {/* ════ RIGHT COLUMN ════ */}
             <div className="space-y-5">
+
+              {/* Treatment search */}
+              {menuTreatments.length > 0 && (
+                <TreatmentSearchBar treatments={menuTreatments} />
+              )}
 
               {/* Card 4: Recommended Plans */}
               {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
