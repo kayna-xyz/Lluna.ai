@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
+import { ReferralPerformanceCard } from "./referral-performance-card"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
 import type { ClinicMenuTreatment } from "../../../../lib/clinic-menu"
@@ -472,54 +473,58 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
         </Card>
       </div>
 
-      {/* Basket Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Budget vs Actual Spend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                  tickFormatter={(value) => `$${value / 1000}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                  }}
-                  formatter={(value: number) => formatCurrency(value)}
-                />
-                <Bar
-                  dataKey="statedBudget"
-                  name="Budget"
-                  fill="var(--muted)"
-                  radius={[3, 3, 0, 0]}
-                />
-                <Bar
-                  dataKey="actualSpend"
-                  name="Actual"
-                  fill="var(--primary)"
-                  radius={[3, 3, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Basket Chart + Referral Performance side by side */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Budget vs Actual Spend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickFormatter={(value) => `$${value / 1000}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
+                  <Bar
+                    dataKey="statedBudget"
+                    name="Budget"
+                    fill="var(--muted)"
+                    radius={[3, 3, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="actualSpend"
+                    name="Actual"
+                    fill="var(--primary)"
+                    radius={[3, 3, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <ReferralPerformanceCard totalClients={clients.length} />
+      </div>
     </div>
   )
 }

@@ -12,7 +12,6 @@ import {
   TopReferrersSection,
 } from "../components/dashboard/report-tab"
 import { ReferralMemo } from "../components/dashboard/referral-memo"
-import { ReferralPerformanceCard } from "../components/dashboard/referral-performance-card"
 
 import { type Client } from "../lib/data"
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
@@ -216,11 +215,8 @@ export default function DashboardPage() {
                 </TabsList>
 
                 <TabsContent value="data" className="mt-0 space-y-6">
-                  {/* 1. Key metrics */}
+                  {/* 1. Key metrics + charts */}
                   <DashboardAnalyticsSection clients={dbClients} />
-
-                  {/* 1b. Referral performance */}
-                  <ReferralPerformanceCard totalClients={dbClients.length} />
 
                   {/* 2. Clients table */}
                   <div>
