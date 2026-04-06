@@ -22,6 +22,10 @@ export type ClinicMenuTreatment = {
   pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
+  // Enriched metadata — persisted on save, inferred from treatment name
+  recovery_period?: string
+  duration?: string
+  tags?: string[]
 }
 
 export type ClinicMenu = {

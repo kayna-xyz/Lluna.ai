@@ -20,7 +20,7 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
-import { RECOVERY_RULES } from "../../../../lib/treatment-price-resolver"
+import { RECOVERY_RULES, inferTags, inferDuration } from "../../../../lib/treatment-price-resolver"
 import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
 
 interface ClientReportPanelProps {
@@ -112,7 +112,7 @@ function normalizeRecoveryTag(downtime: string, treatmentName: string): string {
 }
 
 /** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
-function getTreatmentTags(t: Record<string, unknown>): { description: string; duration: string; downtime: string } {
+function getTreatmentTags(t: Record<string, unknown>): { description: string; duration: string; downtime: string; tags: string[] } {
   let description = String(t.description || "").trim()
   let duration = String(t.duration || "").trim()
   let downtime = String(t.downtime || "").trim()
@@ -125,10 +125,16 @@ function getTreatmentTags(t: Record<string, unknown>): { description: string; du
     if (!downtime) downtime = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
   }
   const treatmentName = String(t.treatmentName || t.name || "")
+  // Tags: use stored tags if present, otherwise infer from name
+  const storedTags = Array.isArray(t.tags) ? (t.tags as string[]) : null
+  const tags = storedTags ?? inferTags(treatmentName)
+  // Duration: use stored/AI value if valid, otherwise infer from name
+  const resolvedDuration = normalizeDurationTag(duration) || inferDuration(treatmentName)
   return {
     description,
-    duration: normalizeDurationTag(duration),
+    duration: resolvedDuration,
     downtime: normalizeRecoveryTag(downtime, treatmentName),
+    tags,
   }
 }
 
@@ -1009,13 +1015,16 @@ export function ClientReportPanel({
                                   >
                                     <div className="flex items-start justify-between gap-2">
                                       <p className="font-medium text-sm">{treatmentLabelFromUnknown(t)}</p>
-                                      <div className="flex items-center gap-1 shrink-0">
+                                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                                         {parsed.duration && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsed.duration}</span>
                                         )}
                                         {parsed.downtime && (
                                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsed.downtime}</span>
                                         )}
+                                        {parsed.tags.slice(0, 2).map((tag) => (
+                                          <span key={tag} className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{tag}</span>
+                                        ))}
                                         <p className="text-xs font-medium ml-1">{displayCost != null ? `$${displayCost.toLocaleString()}` : "—"}</p>
                                       </div>
                                     </div>
@@ -1052,13 +1061,16 @@ export function ClientReportPanel({
                         <div key={i} className="rounded-md border bg-muted/20 p-3">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-medium">{r.name}</p>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                               {parsedR.duration && (
                                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">Duration: {parsedR.duration}</span>
                               )}
                               {parsedR.downtime && (
                                 <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">Recovery: {parsedR.downtime}</span>
                               )}
+                              {parsedR.tags.slice(0, 2).map((tag) => (
+                                <span key={tag} className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">{tag}</span>
+                              ))}
                               <p className="text-sm font-semibold ml-1">${r.price.toLocaleString()}</p>
                             </div>
                           </div>

@@ -1,6 +1,7 @@
 import { generateText } from 'ai'
 import { getLlunaAnthropicModel } from '@/lib/anthropic-model'
 import type { ClinicMenu, ClinicMenuTreatment } from '@/lib/clinic-menu'
+import { RECOVERY_RULES, inferDuration, inferTags } from '@/lib/treatment-price-resolver'
 
 /** Summarise pricing for the prompt (no invention — only what the treatment provides). */
 function pricingSnippet(t: ClinicMenuTreatment): string {
@@ -31,7 +32,7 @@ type DescriptionEntry = { id: string; description: string }
  */
 export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMenu> {
   const toEnrich = menu.treatments.filter((t) => !t.description?.trim())
-  if (!toEnrich.length) return menu
+  if (!toEnrich.length) return enrichMenuMetadata(menu)
 
   const treatmentLines = toEnrich
     .map((t) => {
@@ -69,13 +70,13 @@ export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMe
     }
   } catch (e) {
     console.warn('[menu-enrichment] AI description generation failed, skipping:', e instanceof Error ? e.message : e)
-    return menu
+    return enrichMenuMetadata(menu)
   }
 
-  if (!entries.length) return menu
+  if (!entries.length) return enrichMenuMetadata(menu)
 
   const descById = new Map(entries.map((e) => [e.id, e.description]))
-  return {
+  const withDescriptions: ClinicMenu = {
     ...menu,
     treatments: menu.treatments.map((t) => {
       if (t.description?.trim()) return t // never overwrite existing
@@ -83,4 +84,34 @@ export async function enrichMenuDescriptions(menu: ClinicMenu): Promise<ClinicMe
       return generated ? { ...t, description: generated } : t
     }),
   }
+  return enrichMenuMetadata(withDescriptions)
+}
+
+/**
+ * Deterministically enrich every treatment with recovery_period, duration, and tags.
+ * Always overwrites these fields so they stay in sync with the rules.
+ * Pure/synchronous — no AI call required.
+ */
+export function enrichMenuMetadata(menu: ClinicMenu): ClinicMenu {
+  return {
+    ...menu,
+    treatments: menu.treatments.map((t) => {
+      const recovery_period = inferRecoveryPeriod(t.name)
+      const duration = inferDuration(t.name)
+      const tags = inferTags(t.name)
+      return {
+        ...t,
+        ...(recovery_period ? { recovery_period } : {}),
+        ...(duration ? { duration } : {}),
+        ...(tags.length ? { tags } : {}),
+      }
+    }),
+  }
+}
+
+function inferRecoveryPeriod(name: string): string {
+  for (const [pattern, value] of RECOVERY_RULES) {
+    if (pattern.test(name)) return value
+  }
+  return ''
 }

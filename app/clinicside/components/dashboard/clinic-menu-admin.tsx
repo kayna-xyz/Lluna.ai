@@ -34,6 +34,9 @@ type MenuTreatment = {
   pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
+  recovery_period?: string
+  duration?: string
+  tags?: string[]
 }
 
 type FullMenu = { clinicName: string; treatments: MenuTreatment[] }
@@ -722,6 +725,21 @@ export function ClinicMenuAdmin({
                         {[hasPoster && "Poster", hasBa && "B/A"].filter(Boolean).join(" · ")}
                       </span>
                     )}
+                    {t.duration && (
+                      <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                        {t.duration}
+                      </span>
+                    )}
+                    {t.recovery_period && (
+                      <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                        {t.recovery_period} recovery
+                      </span>
+                    )}
+                    {t.tags && t.tags.length > 0 && t.tags.slice(0, 2).map((tag) => (
+                      <span key={tag} className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-muted text-muted-foreground">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
 
                   {/* Action buttons */}
