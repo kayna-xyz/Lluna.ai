@@ -76,16 +76,52 @@ export async function POST(req: Request) {
   const nowIso = new Date().toISOString()
   let pendingReportId: string | null = null
 
+  // Safe upsert: try unique-constraint upsert first; fall back to select-then-update/insert
+  // so the route works even if migration 013 hasn't been applied yet.
   const { data: upserted, error: pendingUpsertError } = await supabase
     .from('pending_reports')
     .upsert({ ...pendingPayload, updated_at: nowIso }, { onConflict: 'clinic_id,session_id' })
     .select('id')
     .single()
+
   if (pendingUpsertError) {
-    console.error('pending_reports upsert error:', pendingUpsertError)
-    return Response.json({ error: pendingUpsertError.message }, { status: 500 })
+    // Constraint may not exist yet — fall back to explicit select → update/insert
+    console.warn('pending_reports upsert (onConflict) failed, falling back:', pendingUpsertError.message)
+
+    const { data: existing } = await supabase
+      .from('pending_reports')
+      .select('id')
+      .eq('clinic_id', clinicId)
+      .eq('session_id', sessionId)
+      .maybeSingle()
+
+    if (existing?.id) {
+      const { data: updated, error: updateErr } = await supabase
+        .from('pending_reports')
+        .update({ ...pendingPayload, updated_at: nowIso })
+        .eq('id', existing.id)
+        .select('id')
+        .single()
+      if (updateErr) {
+        console.error('pending_reports update error:', updateErr)
+        return Response.json({ error: updateErr.message }, { status: 500 })
+      }
+      pendingReportId = updated?.id ?? existing.id
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from('pending_reports')
+        .insert({ ...pendingPayload, updated_at: nowIso })
+        .select('id')
+        .single()
+      if (insertErr) {
+        console.error('pending_reports insert error:', insertErr)
+        return Response.json({ error: insertErr.message }, { status: 500 })
+      }
+      pendingReportId = inserted?.id ?? null
+    }
+  } else {
+    pendingReportId = upserted?.id ?? null
   }
-  pendingReportId = upserted?.id ?? null
 
   // ── 2. Write base report to clients ──────────────────────────────────────────
   const clientPayload = {
