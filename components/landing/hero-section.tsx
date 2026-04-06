@@ -8,7 +8,6 @@ import { getBrowserSupabase } from "@/lib/supabase/browser-client";
 export function HeroSection() {
   const [isVisible, setIsVisible] = useState(false);
   const [heroOpacity, setHeroOpacity] = useState(1);
-  const [loading, setLoading] = useState(false);
   const rafRef = useRef<number | null>(null);
   const router = useRouter();
 
@@ -30,10 +29,6 @@ export function HeroSection() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  const handleStart = () => {
-    alert("Currently only available for enterprises.");
-  };
 
   const handleEnterprise = () => {
     router.push("/clinicside/auth");
@@ -89,17 +84,10 @@ export function HeroSection() {
               }`}
             >
               <button
-                onClick={handleStart}
-                disabled={loading}
-                className="bg-foreground text-background px-6 sm:px-8 h-12 text-[14px] sm:text-[15px] hover:bg-gold transition-colors duration-300 whitespace-nowrap disabled:opacity-60"
-              >
-                {loading ? "…" : "Start"}
-              </button>
-              <button
                 onClick={handleEnterprise}
-                className="bg-transparent border border-foreground text-foreground px-4 sm:px-8 h-12 text-[14px] sm:text-[15px] hover:bg-foreground hover:text-background transition-colors duration-300 whitespace-nowrap"
+                className="bg-foreground text-background px-6 sm:px-8 h-12 text-[14px] sm:text-[15px] hover:bg-gold transition-colors duration-300 whitespace-nowrap"
               >
-                I&apos;m an enterprise
+                Enterprise sign in
               </button>
             </div>
           </div>
