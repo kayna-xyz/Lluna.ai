@@ -20,7 +20,7 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import type { Client } from "../../lib/data"
 import { MENU_BY_ID } from "../../../../lib/clinic-menu"
-import { RECOVERY_RULES, inferTags, inferEffectDuration } from "../../../../lib/treatment-price-resolver"
+import { RECOVERY_RULES, inferTags, inferFixedMetadata } from "../../../../lib/treatment-price-resolver"
 import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
 
 interface ClientReportPanelProps {
@@ -75,17 +75,6 @@ const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
   t007: "Thermage FLX",
 }
 
-/** Normalize a duration tag to a clean numeric range. Returns "" if unparseable. */
-function normalizeDurationTag(raw: string): string {
-  const s = raw.trim()
-  if (!s) return ""
-  if (/^permanent$/i.test(s)) return "Permanent"
-  const normalized = s
-    .replace(/\s+to\s+/gi, "–")
-    .replace(/\s*[-—]\s*/g, "–")
-  if (!/\d/.test(normalized)) return ""
-  return normalized
-}
 
 /**
  * Normalize recovery (downtime) with 3-tier fallback:
@@ -111,32 +100,68 @@ function normalizeRecoveryTag(downtime: string, treatmentName: string): string {
   return "3–7 days"
 }
 
-/** Prefer native structured fields; fall back to parsing legacy reason string for old reports. */
+/** Format recovery_period_days as a display string. */
+function formatRecoveryDays(days: number): string {
+  if (days === 0) return 'No downtime'
+  return `${days} day${days === 1 ? '' : 's'}`
+}
+
+/** Format effect_duration_months as a display string. */
+function formatEffectMonths(months: number): string {
+  if (months < 1) return '< 1 month'
+  return `${months} month${months === 1 ? '' : 's'}`
+}
+
+/**
+ * Resolve display metadata for a treatment object.
+ *
+ * Numeric fields (recovery_period_days, effect_duration_months) take priority.
+ * Source chain:
+ *   1. Stored numeric fields on the object (from enriched menu)
+ *   2. Fixed rules via inferFixedMetadata (deterministic, by name)
+ *   3. String fallback — parse legacy AI recommendation fields (downtime string)
+ */
 function getTreatmentTags(t: Record<string, unknown>): { description: string; effectDuration: string; downtime: string; tags: string[] } {
-  let description = String(t.description || "").trim()
-  let downtime = String(t.downtime || "").trim()
-  if (!downtime) {
-    // Legacy fallback: parse from reason string
-    const raw = String(t.reason || "").trim()
-    const [line1 = "", line2 = ""] = raw.split("\n")
-    if (!description) description = line1.trim()
-    if (!downtime) downtime = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
-  }
   const treatmentName = String(t.treatmentName || t.name || "")
-  // Tags: use stored tags if present, otherwise infer from name
+
+  // Numeric fields — present when this treatment came from an enriched menu row
+  const storedDays = typeof t.recovery_period_days === 'number' ? t.recovery_period_days : null
+  const storedMonths = typeof t.effect_duration_months === 'number' ? t.effect_duration_months : null
+
+  // Fixed rules as secondary source (always deterministic)
+  const fixed = inferFixedMetadata(treatmentName)
+
+  const recoveryDays = storedDays ?? fixed?.recovery_period_days ?? null
+  const effectMonths = storedMonths ?? fixed?.effect_duration_months ?? null
+
+  // Format numeric values, or fall back to legacy string parsing
+  let downtimeStr: string
+  if (recoveryDays !== null) {
+    downtimeStr = formatRecoveryDays(recoveryDays)
+  } else {
+    let downtimeFallback = String(t.downtime || "").trim()
+    if (!downtimeFallback) {
+      const raw = String(t.reason || "").trim()
+      const [, line2 = ""] = raw.split("\n")
+      downtimeFallback = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
+    }
+    downtimeStr = normalizeRecoveryTag(downtimeFallback, treatmentName)
+  }
+
+  const effectDuration = effectMonths !== null ? formatEffectMonths(effectMonths) : ''
+
+  // Description: prefer stored, fall back to first line of reason
+  let description = String(t.description || "").trim()
+  if (!description) {
+    const raw = String(t.reason || "").trim()
+    description = raw.split("\n")[0]?.trim() || ""
+  }
+
+  // Tags: stored → inferred
   const storedTags = Array.isArray(t.tags) ? (t.tags as string[]) : null
   const tags = storedTags ?? inferTags(treatmentName)
-  // Effect duration: stored effect_duration → stored duration (backward compat) → infer
-  const storedEffectDuration =
-    String(t.effect_duration || "").trim() ||
-    String(t.duration || "").trim()  // backward compat: old data may have duration
-  const effectDuration = normalizeDurationTag(storedEffectDuration) || inferEffectDuration(treatmentName)
-  return {
-    description,
-    effectDuration,
-    downtime: normalizeRecoveryTag(downtime, treatmentName),
-    tags,
-  }
+
+  return { description, effectDuration, downtime: downtimeStr, tags }
 }
 
 function treatmentLabelFromUnknown(t: Record<string, unknown>) {

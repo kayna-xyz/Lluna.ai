@@ -34,8 +34,8 @@ type MenuTreatment = {
   pricing_table?: PricingTable
   posterUrl?: string
   beforeAfterUrl?: string
-  recovery_period?: string
-  effect_duration?: string
+  recovery_period_days?: number | null
+  effect_duration_months?: number | null
   tags?: string[]
 }
 
@@ -725,14 +725,14 @@ export function ClinicMenuAdmin({
                         {[hasPoster && "Poster", hasBa && "B/A"].filter(Boolean).join(" · ")}
                       </span>
                     )}
-                    {t.effect_duration && (
+                    {t.effect_duration_months != null && (
                       <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                        Lasts {t.effect_duration}
+                        Lasts {t.effect_duration_months} month{t.effect_duration_months === 1 ? '' : 's'}
                       </span>
                     )}
-                    {t.recovery_period && (
+                    {t.recovery_period_days != null && (
                       <span className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
-                        {t.recovery_period} recovery
+                        {t.recovery_period_days === 0 ? 'No downtime' : `${t.recovery_period_days} day${t.recovery_period_days === 1 ? '' : 's'} recovery`}
                       </span>
                     )}
                     {t.tags && t.tags.length > 0 && t.tags.slice(0, 2).map((tag) => (

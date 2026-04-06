@@ -50,27 +50,60 @@ export const RECOVERY_RULES: [RegExp, string][] = [
   [/\b(hydrafacial|facial|skin booster|cocktail microneedling|booster)\b/i, '0 days'],
 ]
 
-/** How long results last after treatment (effect duration, not procedure time). */
-export const EFFECT_DURATION_RULES: [RegExp, string][] = [
-  [/\b(botox|toxin|neuromodulator|neurotoxin|dysport|xeomin)\b/i, '3–4 months'],
-  [/\b(lip filler|juvederm ultra|restylane)\b/i, '6–12 months'],
-  [/\b(voluma|cheek filler)\b/i, '12–18 months'],
-  [/\b(filler|juvederm|syringe|ha filler)\b/i, '6–12 months'],
-  [/\b(morpheus|rf microneedling|radiofrequency microneedling)\b/i, '12–18 months'],
-  [/\b(thermage)\b/i, '12–24 months'],
-  [/\b(ultraformer|hifu|7d facelift)\b/i, '12–18 months'],
-  [/\b(fotona 4d|4d facelift|fotona 6d|6d)\b/i, '12–18 months'],
-  [/\b(fotona)\b/i, '6–12 months'],
-  [/\b(co2|fractional resurfacing)\b/i, '1–3 years'],
-  [/\b(ipl|stellar|lumenis|broadband|photofacial)\b/i, '6–12 months'],
-  [/\b(pico|picosecond)\b/i, '6–12 months'],
-  [/\b(hydrafacial|hydra facial)\b/i, '4–6 weeks'],
-  [/\b(chemical peel|vi peel|medical peel)\b/i, '2–6 months'],
-  [/\b(skin booster|cocktail|booster)\b/i, '3–6 months'],
-  [/\b(accent|body contouring|minifx|bodyfx)\b/i, '6–12 months'],
-  [/\b(laser)\b/i, '6–12 months'],
-  [/\b(facial)\b/i, '4–6 weeks'],
+export type FixedMetadata = {
+  recovery_period_days: number
+  effect_duration_months: number
+}
+
+/**
+ * Authoritative numeric metadata for well-known treatment types.
+ * These values always override AI inference — they are clinical protocol defaults.
+ * Order matters: more specific patterns must come before broader ones.
+ */
+export const FIXED_METADATA_RULES: { pattern: RegExp; recovery_period_days: number; effect_duration_months: number }[] = [
+  // Neuromodulators
+  { pattern: /\b(botox|dysport|xeomin|toxin|neuromodulator|neurotoxin)\b/i,           recovery_period_days: 14, effect_duration_months: 4 },
+  // Long-lasting fillers (check before generic filler)
+  { pattern: /\b(sculptra)\b/i,                                                         recovery_period_days: 3,  effect_duration_months: 24 },
+  { pattern: /\b(radiesse)\b/i,                                                         recovery_period_days: 3,  effect_duration_months: 12 },
+  { pattern: /\b(voluma|cheek filler)\b/i,                                              recovery_period_days: 3,  effect_duration_months: 18 },
+  // HA fillers
+  { pattern: /\b(filler|juvederm|restylane|syringe|ha filler|lip filler)\b/i,          recovery_period_days: 3,  effect_duration_months: 12 },
+  // Energy-based tightening
+  { pattern: /\b(morpheus|rf microneedling|radiofrequency microneedling|inmode)\b/i,   recovery_period_days: 7,  effect_duration_months: 12 },
+  { pattern: /\b(thermage)\b/i,                                                         recovery_period_days: 7,  effect_duration_months: 18 },
+  { pattern: /\b(ultraformer|hifu|7d facelift)\b/i,                                    recovery_period_days: 7,  effect_duration_months: 18 },
+  { pattern: /\b(fotona 4d|4d facelift|fotona 6d|6d)\b/i,                             recovery_period_days: 7,  effect_duration_months: 18 },
+  { pattern: /\b(fotona|smootheye|liplase)\b/i,                                         recovery_period_days: 7,  effect_duration_months: 12 },
+  { pattern: /\b(thread lift|instalift|nova threads|onda)\b/i,                          recovery_period_days: 7,  effect_duration_months: 12 },
+  // Resurfacing
+  { pattern: /\b(co2|fractional resurfacing)\b/i,                                       recovery_period_days: 14, effect_duration_months: 24 },
+  { pattern: /\b(vi peel|vipeel|chemical peel|medical peel)\b/i,                       recovery_period_days: 10, effect_duration_months: 2 },
+  // Laser
+  { pattern: /\b(ipl|stellar|lumenis|broadband|photofacial)\b/i,                       recovery_period_days: 7,  effect_duration_months: 6 },
+  { pattern: /\b(pico|picosecond)\b/i,                                                  recovery_period_days: 5,  effect_duration_months: 6 },
+  // Facials / no downtime
+  { pattern: /\b(hydrafacial|hydra facial)\b/i,                                         recovery_period_days: 0,  effect_duration_months: 1 },
+  { pattern: /\b(skin booster|cocktail|booster)\b/i,                                    recovery_period_days: 2,  effect_duration_months: 6 },
+  // Body
+  { pattern: /\b(accent|body contouring|minifx|bodyfx)\b/i,                            recovery_period_days: 0,  effect_duration_months: 6 },
+  // Generic laser (broad — keep last)
+  { pattern: /\b(laser)\b/i,                                                             recovery_period_days: 7,  effect_duration_months: 6 },
+  { pattern: /\b(facial)\b/i,                                                            recovery_period_days: 0,  effect_duration_months: 1 },
 ]
+
+/**
+ * Return authoritative numeric metadata for a treatment, or null if no rule matches.
+ * Fixed rules always take priority over AI inference.
+ */
+export function inferFixedMetadata(name: string, _category?: string, _description?: string): FixedMetadata | null {
+  for (const rule of FIXED_METADATA_RULES) {
+    if (rule.pattern.test(name)) {
+      return { recovery_period_days: rule.recovery_period_days, effect_duration_months: rule.effect_duration_months }
+    }
+  }
+  return null
+}
 
 /** Deterministic tags by treatment type. */
 export const TAG_RULES: [RegExp, string[]][] = [
@@ -94,14 +127,6 @@ export const TAG_RULES: [RegExp, string[]][] = [
   [/\b(laser)\b/i, ['Laser Treatment', 'Anti-aging']],
   [/\b(facial)\b/i, ['Facial', 'Glow']],
 ]
-
-/** Infer how long results last from treatment name. Returns empty string if no rule matches. */
-export function inferEffectDuration(name: string): string {
-  for (const [pattern, value] of EFFECT_DURATION_RULES) {
-    if (pattern.test(name)) return value
-  }
-  return ''
-}
 
 /** Infer treatment tags from treatment name. Returns empty array if no rule matches. */
 export function inferTags(name: string): string[] {
