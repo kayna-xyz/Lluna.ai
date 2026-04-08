@@ -602,7 +602,7 @@ export function ClientReportPanel({
   const [submitting, setSubmitting] = useState(false)
   const [aligning, setAligning] = useState(false)
   const [alignedTherapies, setAlignedTherapies] = useState<Record<string, unknown>[]>([])
-  const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({})
+  // expandedPlans removed — plans now shown as side-by-side cards
   const [menuTreatments, setMenuTreatments] = useState<ClinicMenuTreatment[]>([])
 
   useEffect(() => {
@@ -840,43 +840,32 @@ export function ClientReportPanel({
                 <TreatmentSearchBar treatments={menuTreatments} />
               )}
 
-              {/* Recommended Plans */}
+              {/* Recommended Plans — 3 side-by-side cards */}
               {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommended Plans</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    {(realRec.plans as Record<string, unknown>[]).map((plan, idx) => {
-                      const key = String(plan.name || idx)
-                      const isExpanded = !!expandedPlans[key]
-                      const treatments = Array.isArray((plan as Record<string, unknown>).treatments)
-                        ? ((plan as Record<string, unknown>).treatments as Record<string, unknown>[])
-                        : []
-                      const planLabels = ["", "Most popular", "Best value"]
-                      const planLabel = planLabels[idx] ?? ""
-                      return (
-                        <div key={key} className="rounded-md border p-3">
-                          <button
-                            type="button"
-                            className="w-full text-left"
-                            onClick={() => setExpandedPlans((s) => ({ ...s, [key]: !s[key] }))}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">{String(plan.name || "Plan")}</span>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(realRec.plans as Record<string, unknown>[]).map((plan, idx) => {
+                        const treatments = Array.isArray((plan as Record<string, unknown>).treatments)
+                          ? ((plan as Record<string, unknown>).treatments as Record<string, unknown>[])
+                          : []
+                        const planLabels = ["", "Most popular", "Best value"]
+                        const planLabel = planLabels[idx] ?? ""
+                        return (
+                          <div key={String(plan.name || idx)} className="rounded-lg border p-3 flex flex-col gap-2">
+                            <div>
+                              <div className="flex items-start justify-between gap-1 mb-1">
+                                <span className="text-sm font-semibold leading-snug">{String(plan.name || "Plan")}</span>
                                 {planLabel && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5">{planLabel}</Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">{planLabel}</Badge>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-sm font-semibold">${(Number(plan.totalCost) || 0).toLocaleString()}</span>
-                                <span className="text-xs text-muted-foreground">{isExpanded ? "↑" : "↓"}</span>
-                              </div>
+                              <p className="text-sm font-semibold text-primary">${(Number(plan.totalCost) || 0).toLocaleString()}</p>
                             </div>
-                          </button>
-                          {isExpanded && (
-                            <div className="mt-3 border-t pt-3 space-y-2">
+                            <div className="space-y-2 border-t pt-2">
                               {treatments.map((rawT, tIdx) => {
                                 const t: Record<string, unknown> = {
                                   treatmentId: String(rawT.treatmentId || ""),
@@ -895,23 +884,25 @@ export function ClientReportPanel({
                                 const parsed = getTreatmentTags(t)
                                 const displayCost = resolveDisplayCost(t)
                                 return (
-                                  <div key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`} className="rounded border p-2">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <p className="text-sm font-medium">{treatmentLabelFromUnknown(t)}</p>
-                                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                                        {parsed.effectDuration && (
-                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700">Lasts {parsed.effectDuration}</span>
-                                        )}
-                                        {parsed.downtime && (
-                                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700">Recovery: {parsed.downtime}</span>
-                                        )}
-                                        <p className="text-xs font-medium ml-1">{displayCost != null ? `$${displayCost.toLocaleString()}` : "—"}</p>
-                                      </div>
+                                  <div key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`} className="text-xs">
+                                    <div className="flex items-start justify-between gap-1">
+                                      <p className="font-medium leading-snug">{treatmentLabelFromUnknown(t)}</p>
+                                      {displayCost != null && (
+                                        <p className="shrink-0 font-medium ml-1">${displayCost.toLocaleString()}</p>
+                                      )}
                                     </div>
                                     {parsed.description && (
-                                      <p className="text-xs text-muted-foreground mt-1">{parsed.description}</p>
+                                      <p className="text-muted-foreground mt-0.5 leading-snug">{parsed.description}</p>
                                     )}
-                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                      {parsed.effectDuration && (
+                                        <span className="inline-flex items-center rounded px-1 py-0.5 bg-blue-50 text-blue-700">Lasts {parsed.effectDuration}</span>
+                                      )}
+                                      {parsed.downtime && (
+                                        <span className="inline-flex items-center rounded px-1 py-0.5 bg-orange-50 text-orange-700">↓ {parsed.downtime}</span>
+                                      )}
+                                    </div>
+                                    <p className="text-muted-foreground mt-0.5">
                                       {t.units ? `${t.units} units ` : ""}
                                       {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
                                       {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
@@ -920,19 +911,19 @@ export function ClientReportPanel({
                                 )
                               })}
                             </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Additional Recommendations */}
+              {/* Best Alternatives */}
               {additionalRecommendations.length > 0 ? (
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Best Alternatives</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {additionalRecommendations.map((r, i) => {
@@ -962,7 +953,7 @@ export function ClientReportPanel({
               ) : !isEnriched ? (
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Additional Recommendations</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Best Alternatives</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 animate-pulse">
                     {[1, 2].map((i) => (
@@ -978,11 +969,11 @@ export function ClientReportPanel({
                 </Card>
               ) : null}
 
-              {/* Before You Step Out */}
+              {/* 0 Cost Add-ons */}
               {beforeYouStepOut.length > 0 && (
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Before You Step Out</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">0 Cost Add-ons</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {beforeYouStepOut.map((r, i) => (
