@@ -196,23 +196,6 @@ export default function DashboardPage() {
 
         {/* Primary nav */}
         <nav className="flex flex-col gap-0.5 p-3 flex-1">
-          <button className={navItemClass("report")} onClick={() => setActiveTab("report")}>
-            <FileText className="h-4 w-4 shrink-0" />
-            Plan
-            {newCount > 0 && (
-              <span className="ml-auto h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center shrink-0">
-                {newCount}
-              </span>
-            )}
-          </button>
-          <button className={navItemClass("dashboard")} onClick={() => setActiveTab("dashboard")}>
-            <Database className="h-4 w-4 shrink-0" />
-            Data
-          </button>
-        </nav>
-
-        {/* Bottom: notifications + settings + logout */}
-        <div className="p-3 border-t space-y-0.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={cn("flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left text-muted-foreground hover:text-foreground hover:bg-accent/50")}>
@@ -255,6 +238,23 @@ export default function DashboardPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <button className={navItemClass("report")} onClick={() => setActiveTab("report")}>
+            <FileText className="h-4 w-4 shrink-0" />
+            Plan
+            {newCount > 0 && (
+              <span className="ml-auto h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center shrink-0">
+                {newCount}
+              </span>
+            )}
+          </button>
+          <button className={navItemClass("dashboard")} onClick={() => setActiveTab("dashboard")}>
+            <Database className="h-4 w-4 shrink-0" />
+            Data
+          </button>
+        </nav>
+
+        {/* Bottom: settings + logout */}
+        <div className="p-3 border-t space-y-0.5">
           <button className={navItemClass("activities")} onClick={() => setActiveTab("activities")}>
             <Settings className="h-4 w-4 shrink-0" />
             Settings
