@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Database, Activity, FileText, BarChart2, Gift } from "lucide-react"
+import { Database, Settings, FileText, BarChart2, Gift } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader, type ClientNotification } from "../components/dashboard/header"
 import { ClientTable } from "../components/dashboard/client-table"
@@ -21,7 +21,7 @@ import { mapRowToClient } from "../lib/map-db-client"
 type DashboardSubTab = "data" | "referral"
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("dashboard")
+  const [activeTab, setActiveTab] = useState("report")
   const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>("data")
   const [selectedClientReport, setSelectedClientReport] = useState<ClientNotification | null>(null)
   const [dbClients, setDbClients] = useState<Client[]>([])
@@ -167,14 +167,7 @@ export default function DashboardPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col overflow-hidden">
         <div className="px-6 border-b">
-          <TabsList className="h-11 bg-transparent p-0 gap-6">
-            <TabsTrigger
-              value="dashboard"
-              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
-            >
-              <Database className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
+          <TabsList className="h-11 bg-transparent p-0 gap-6 w-full">
             <TabsTrigger
               value="report"
               className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
@@ -183,11 +176,19 @@ export default function DashboardPage() {
               Report
             </TabsTrigger>
             <TabsTrigger
+              value="dashboard"
+              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+            >
+              <Database className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <div className="flex-1" />
+            <TabsTrigger
               value="activities"
               className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
-              <Activity className="h-4 w-4" />
-              Activities
+              <Settings className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
         </div>
@@ -247,7 +248,7 @@ export default function DashboardPage() {
               <div className="mb-4">
                 <h2 className="text-lg font-semibold">Report</h2>
                 <p className="text-sm text-muted-foreground">
-                  View the client report you last opened, or choose a client in Dashboard.
+                  Select a client from Dashboard to view their report.
                 </p>
               </div>
               <ClientReportPanel
