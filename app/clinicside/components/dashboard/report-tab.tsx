@@ -685,24 +685,6 @@ export function ClientReportPanel({
 
       {selectedClientReport && (
         <div className="space-y-5">
-          {/* ── Full-width patient header ── */}
-          <div className="flex items-start justify-between rounded-lg border bg-card px-5 py-4">
-            <div className="space-y-0.5">
-              <h3 className="text-base font-semibold">{selectedClientReport.clientName}</h3>
-              <p className="text-sm text-muted-foreground">
-                {[customerStatus !== "—" ? customerStatus : null, isLocalText !== "—" ? isLocalText : null]
-                  .filter(Boolean)
-                  .join(" · ") || "—"}
-              </p>
-              {budgetNum > 0 && (
-                <p className="text-sm font-medium pt-0.5">Budget: ${budgetNum.toLocaleString()}</p>
-              )}
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseClientReport}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
           {/* ── Asymmetric 2-col: 1/3 left, 2/3 right ── */}
           <div className="grid grid-cols-[1fr_2fr] gap-5 items-start">
 
@@ -718,7 +700,7 @@ export function ClientReportPanel({
                     { label: "Budget", value: budgetNum > 0 ? `$${budgetNum.toLocaleString()}` : "—" },
                     { label: "Location", value: isLocalText },
                     { label: "Status", value: customerStatus },
-                    { label: "Recovery", value: recoveryText },
+                    { label: "Preference", value: recoveryText },
                   ] as { label: string; value: string }[]).map(({ label, value }) => (
                     <div key={label} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{label}</span>
@@ -752,6 +734,100 @@ export function ClientReportPanel({
                     <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-2 text-xs font-semibold text-emerald-700">
                       <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
                       +{Math.round((uplift / budgetNum) * 100)}% above budget
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Final Plan */}
+              <Card className="gap-2">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final Plan</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <textarea
+                    className="w-full min-h-[80px] rounded-md border bg-background p-2 text-sm"
+                    placeholder="Final plan notes for the file…"
+                    value={finalText}
+                    onChange={(e) => setFinalText(e.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={aligning || !finalText.trim()}
+                      onClick={async () => {
+                        setAligning(true)
+                        try {
+                          const res = await fetch("/api/align-final-plan", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ consultantText: finalText }),
+                          })
+                          const data = await res.json()
+                          if (res.ok && data.result) {
+                            setAlignedTherapies(data.result.therapies || [])
+                            setFinalPrice(String(data.result.total_price ?? ""))
+                          }
+                        } finally {
+                          setAligning(false)
+                        }
+                      }}
+                    >
+                      {aligning ? "Aligning…" : "Align with menu (AI)"}
+                    </Button>
+                  </div>
+                  {alignedTherapies.length > 0 && (
+                    <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                      {alignedTherapies.map((t, i) => (
+                        <li key={i}>
+                          {(t.treatmentName as string) || (t.treatmentId as string)} ~ ${Number(t.linePrice) || 0}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      placeholder="Total price"
+                      value={finalPrice}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setFinalPrice(e.target.value)}
+                      className="max-w-[160px]"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={submitting || !selectedClientReport.sessionId || finalPrice.trim() === ""}
+                      onClick={async () => {
+                        if (!selectedClientReport.sessionId) return
+                        setSubmitting(true)
+                        try {
+                          const res = await clinicFetch("/api/final-solution", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              sessionId: selectedClientReport.sessionId,
+                              reportId: selectedClientReport.id,
+                              final_plan_text: finalText,
+                              total_price: Number(finalPrice),
+                              therapies: alignedTherapies,
+                            }),
+                          })
+                          if (res.ok) {
+                            onRefreshClients?.()
+                          }
+                        } finally {
+                          setSubmitting(false)
+                        }
+                      }}
+                    >
+                      {submitting ? "Saving…" : "Save"}
+                    </Button>
+                  </div>
+                  {showUplift && (
+                    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                      <ArrowUpRight className="h-4 w-4 shrink-0" />
+                      <span>Budget uplift: <strong>+${uplift.toLocaleString()}</strong> above stated budget</span>
                     </div>
                   )}
                 </CardContent>
@@ -924,99 +1000,6 @@ export function ClientReportPanel({
                 </Card>
               )}
 
-              {/* Final Plan */}
-              <Card className="gap-2">
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final Plan</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <textarea
-                    className="w-full min-h-[80px] rounded-md border bg-background p-2 text-sm"
-                    placeholder="Final plan notes for the file…"
-                    value={finalText}
-                    onChange={(e) => setFinalText(e.target.value)}
-                  />
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={aligning || !finalText.trim()}
-                      onClick={async () => {
-                        setAligning(true)
-                        try {
-                          const res = await fetch("/api/align-final-plan", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ consultantText: finalText }),
-                          })
-                          const data = await res.json()
-                          if (res.ok && data.result) {
-                            setAlignedTherapies(data.result.therapies || [])
-                            setFinalPrice(String(data.result.total_price ?? ""))
-                          }
-                        } finally {
-                          setAligning(false)
-                        }
-                      }}
-                    >
-                      {aligning ? "Aligning…" : "Align with menu (AI)"}
-                    </Button>
-                  </div>
-                  {alignedTherapies.length > 0 && (
-                    <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-                      {alignedTherapies.map((t, i) => (
-                        <li key={i}>
-                          {(t.treatmentName as string) || (t.treatmentId as string)} ~ ${Number(t.linePrice) || 0}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      placeholder="Total price"
-                      value={finalPrice}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setFinalPrice(e.target.value)}
-                      className="max-w-[160px]"
-                    />
-                    <Button
-                      size="sm"
-                      disabled={submitting || !selectedClientReport.sessionId || finalPrice.trim() === ""}
-                      onClick={async () => {
-                        if (!selectedClientReport.sessionId) return
-                        setSubmitting(true)
-                        try {
-                          const res = await clinicFetch("/api/final-solution", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              sessionId: selectedClientReport.sessionId,
-                              reportId: selectedClientReport.id,
-                              final_plan_text: finalText,
-                              total_price: Number(finalPrice),
-                              therapies: alignedTherapies,
-                            }),
-                          })
-                          if (res.ok) {
-                            onRefreshClients?.()
-                          }
-                        } finally {
-                          setSubmitting(false)
-                        }
-                      }}
-                    >
-                      {submitting ? "Saving…" : "Save"}
-                    </Button>
-                  </div>
-                  {showUplift && (
-                    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                      <ArrowUpRight className="h-4 w-4 shrink-0" />
-                      <span>Budget uplift: <strong>+${uplift.toLocaleString()}</strong> above stated budget</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>

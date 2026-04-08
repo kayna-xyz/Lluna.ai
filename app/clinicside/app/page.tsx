@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Database, Settings, FileText, BarChart2, Gift } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader, type ClientNotification } from "../components/dashboard/header"
@@ -9,7 +9,6 @@ import { ActivitiesTab } from "../components/dashboard/activities-tab"
 import {
   ClientReportPanel,
   DashboardAnalyticsSection,
-  TopReferrersSection,
 } from "../components/dashboard/report-tab"
 import { ReferralMemo } from "../components/dashboard/referral-memo"
 
@@ -27,6 +26,7 @@ export default function DashboardPage() {
   const [dbClients, setDbClients] = useState<Client[]>([])
   const [notifications, setNotifications] = useState<ClientNotification[]>([])
   const [tenantReady, setTenantReady] = useState(false)
+  const seenIdsRef = useRef<Set<string>>(new Set())
   const POLL_MS = 5000
 
   const loadClients = useCallback(async () => {
@@ -123,6 +123,20 @@ export default function DashboardPage() {
     }
   }, [notifications, selectedClientReport])
 
+  // Auto-jump to Plan tab when a new survey arrives
+  useEffect(() => {
+    const newOnes = notifications.filter((n) => n.isNew && !seenIdsRef.current.has(n.id))
+    if (newOnes.length > 0) {
+      const first = newOnes[0]
+      setSelectedClientReport(first)
+      setActiveTab("report")
+      newOnes.forEach((n) => seenIdsRef.current.add(n.id))
+    } else {
+      // Seed seen IDs on first load so existing items don't trigger auto-jump
+      notifications.forEach((n) => seenIdsRef.current.add(n.id))
+    }
+  }, [notifications])
+
   const handleNotificationClick = (notification: ClientNotification) => {
     setSelectedClientReport(notification)
     setActiveTab("report")
@@ -167,17 +181,17 @@ export default function DashboardPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col overflow-hidden">
         <div className="px-6 border-b">
-          <TabsList className="h-11 bg-transparent p-0 gap-6 w-full">
+          <TabsList className="h-11 bg-transparent p-0 gap-0 w-full">
             <TabsTrigger
               value="report"
-              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="rounded-none px-5 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <FileText className="h-4 w-4" />
-              Report
+              Plan
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="rounded-none px-5 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <Database className="h-4 w-4" />
               Dashboard
@@ -185,7 +199,7 @@ export default function DashboardPage() {
             <div className="flex-1" />
             <TabsTrigger
               value="activities"
-              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="rounded-none px-5 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <Settings className="h-4 w-4" />
               Settings
@@ -237,7 +251,6 @@ export default function DashboardPage() {
 
                 <TabsContent value="referral" className="mt-0 space-y-6">
                   <ReferralMemo />
-                  <TopReferrersSection />
                 </TabsContent>
               </Tabs>
             </div>
@@ -246,9 +259,9 @@ export default function DashboardPage() {
           <TabsContent value="report" className="m-0 flex-1 overflow-auto data-[state=inactive]:hidden">
             <div className="p-6">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold">Report</h2>
+                <h2 className="text-lg font-semibold">Plan</h2>
                 <p className="text-sm text-muted-foreground">
-                  Select a client from Dashboard to view their report.
+                  Select a client from Dashboard to view their plan.
                 </p>
               </div>
               <ClientReportPanel
