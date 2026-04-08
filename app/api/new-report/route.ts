@@ -54,6 +54,7 @@ export async function POST(req: Request) {
 
   const reportData = (body.reportData ?? {}) as StoredReportData
   const userInput = (reportData.userInput ?? {}) as Record<string, unknown>
+  const recommendation = (reportData.recommendation ?? {}) as Record<string, unknown>
   const planTreatmentIds = extractPlanTreatmentIds(reportData)
 
   const ui = reportData.userInput
@@ -117,12 +118,15 @@ export async function POST(req: Request) {
     if (error) console.error('clients insert error:', error)
   }
 
-  // ── 3. Fast enrichment: patientSummaryStructured + additionalRecommendations ──
-  // Hard 9s timeout so a slow AI call never causes a Vercel function timeout.
+  // ── 3. Fast enrichment: patientSummaryStructured + categoryRecommendations ──
   const FAST_TIMEOUT_MS = 6000
-  const fastFallback = { patientSummaryStructured: null, additionalRecommendations: [] as Array<{ name: string; price: number; reason: string }>, beforeYouStepOut: [] as Array<{ name: string; price: number; description: string }> }
+  const fastFallback = {
+    patientSummaryStructured: null,
+    categoryRecommendations: [] as import('@/lib/report-enrichment').CategoryRecommendation[],
+    zeroCostAddOns: [] as import('@/lib/report-enrichment').ZeroCostAddOn[],
+  }
   const fast = await Promise.race([
-    generateFastEnrichment(clinicId, userInput, planTreatmentIds),
+    generateFastEnrichment(clinicId, userInput, recommendation),
     new Promise<typeof fastFallback>((resolve) => setTimeout(() => resolve(fastFallback), FAST_TIMEOUT_MS)),
   ]).catch((e) => {
     console.error('[new-report] fast enrichment failed:', e instanceof Error ? e.message : e)
@@ -130,14 +134,14 @@ export async function POST(req: Request) {
   })
 
   // Write fast results to DB so consultant sees them immediately
-  if (pendingReportId && (fast.patientSummaryStructured || fast.additionalRecommendations.length || fast.beforeYouStepOut.length)) {
+  if (pendingReportId && (fast.patientSummaryStructured || fast.categoryRecommendations.length || fast.zeroCostAddOns.length)) {
     const rd = asRec(reportData)
     const rec = asRec(rd.recommendation)
     const fastRec: Record<string, unknown> = {
       ...rec,
       ...(fast.patientSummaryStructured ? { patientSummaryStructured: fast.patientSummaryStructured } : {}),
-      ...(fast.additionalRecommendations.length ? { additionalRecommendations: fast.additionalRecommendations } : {}),
-      ...(fast.beforeYouStepOut.length ? { beforeYouStepOut: fast.beforeYouStepOut } : {}),
+      ...(fast.categoryRecommendations.length ? { categoryRecommendations: fast.categoryRecommendations } : {}),
+      ...(fast.zeroCostAddOns.length ? { zeroCostAddOns: fast.zeroCostAddOns } : {}),
     }
     const fastRd = { ...rd, recommendation: fastRec }
     void supabase.from('pending_reports').update({ report_data: fastRd }).eq('id', pendingReportId)
@@ -154,8 +158,8 @@ export async function POST(req: Request) {
     ok: true,
     sessionId,
     clinicId,
-    additionalRecommendations: fast.additionalRecommendations,
-    beforeYouStepOut: fast.beforeYouStepOut,
+    categoryRecommendations: fast.categoryRecommendations,
+    zeroCostAddOns: fast.zeroCostAddOns,
     patientSummaryStructured: fast.patientSummaryStructured,
   })
 }

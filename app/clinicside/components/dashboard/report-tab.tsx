@@ -6,7 +6,6 @@ import { DollarSign, Target, X, ArrowUpRight, ArrowDownRight } from "lucide-reac
 import { Button } from "@/components/ui/button"
 import type { ClientNotification } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
   BarChart,
@@ -20,10 +19,7 @@ import {
 import { clinicFetch } from "@/app/clinicside/lib/clinic-api"
 import { ReferralPerformanceCard } from "./referral-performance-card"
 import type { Client } from "../../lib/data"
-import { MENU_BY_ID } from "../../../../lib/clinic-menu"
 import type { ClinicMenuTreatment } from "../../../../lib/clinic-menu"
-import { RECOVERY_RULES, inferTags, inferFixedMetadata } from "../../../../lib/treatment-price-resolver"
-import { firstNumericPriceForTreatment } from "../../../../lib/recommend-menu"
 import { TreatmentSearchBar } from "./treatment-search"
 
 interface ClientReportPanelProps {
@@ -36,30 +32,6 @@ function asRec(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" ? (v as Record<string, unknown>) : {}
 }
 
-/**
- * Resolve display cost from menu data. Uses the same deterministic rules as the server.
- * Falls back to stored cost if no menu entry found (e.g. custom clinic menu).
- * Returns null only if both menu and stored cost are absent.
- */
-function resolveDisplayCost(t: Record<string, unknown>): number | null {
-  const treatmentId = String(t.treatmentId || "")
-  const storedCost = Number(t.cost) || null
-  const menuEntry = MENU_BY_ID.get(treatmentId)
-  if (!menuEntry) return storedCost
-
-  const p = menuEntry.pricing as Record<string, unknown> | undefined
-  const units = Number(t.units) || 0
-  const syringes = Number(t.syringes) || 0
-
-  if (p && typeof p.perUnit === "number" && p.perUnit > 0 && units > 0) return p.perUnit * units
-  if (p && typeof p.perSyringe === "number" && p.perSyringe > 0 && syringes > 0) return p.perSyringe * syringes
-  if (p && typeof p.single === "number" && p.single > 0) return p.single
-
-  const base = firstNumericPriceForTreatment(menuEntry)
-  if (base > 0) return base
-  return storedCost
-}
-
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -68,116 +40,6 @@ function formatCurrency(amount: number) {
   }).format(amount)
 }
 
-const LEGACY_TREATMENT_NAME_BY_ID: Record<string, string> = {
-  t001: "Toxin —— Botox",
-  t002: "Filler —— Juvederm Ultra XC/Restylane",
-  t003: "Morpheus8 by InMode",
-  t004: "MiniFX by InMode",
-  t005: "Hydrafacial Syndeo",
-  t006: "VI Peel + Precision Plus",
-  t007: "Thermage FLX",
-}
-
-
-/**
- * Normalize recovery (downtime) with 3-tier fallback:
- * 1. Deterministic rule by treatment name
- * 2. Stored numeric-range value from AI (if valid)
- * 3. Default "3–7 days"
- * Never allows "None", "Minimal", or free text.
- */
-function normalizeRecoveryTag(downtime: string, treatmentName: string): string {
-  // Tier 1: deterministic rules
-  for (const [pattern, value] of RECOVERY_RULES) {
-    if (pattern.test(treatmentName)) return value
-  }
-  // Tier 2: accept stored value only if it's a valid numeric range
-  const s = downtime.trim()
-  if (s) {
-    const normalized = s.replace(/\s+to\s+/gi, "–").replace(/\s*[-—]\s*/g, "–")
-    if (/\d/.test(normalized) && !/^(none|minimal|permanent|no downtime)/i.test(normalized)) {
-      return normalized
-    }
-  }
-  // Tier 3: default
-  return "3–7 days"
-}
-
-/** Format recovery_period_days as a display string. */
-function formatRecoveryDays(days: number): string {
-  if (days === 0) return 'No downtime'
-  return `${days} day${days === 1 ? '' : 's'}`
-}
-
-/** Format effect_duration_months as a display string. */
-function formatEffectMonths(months: number): string {
-  if (months < 1) return '< 1 month'
-  return `${months} month${months === 1 ? '' : 's'}`
-}
-
-/**
- * Resolve display metadata for a treatment object.
- *
- * Numeric fields (recovery_period_days, effect_duration_months) take priority.
- * Source chain:
- *   1. Stored numeric fields on the object (from enriched menu)
- *   2. Fixed rules via inferFixedMetadata (deterministic, by name)
- *   3. String fallback — parse legacy AI recommendation fields (downtime string)
- */
-function getTreatmentTags(t: Record<string, unknown>): { description: string; effectDuration: string; downtime: string; tags: string[] } {
-  const treatmentName = String(t.treatmentName || t.name || "")
-
-  // Numeric fields — present when this treatment came from an enriched menu row
-  const storedDays = typeof t.recovery_period_days === 'number' ? t.recovery_period_days : null
-  const storedMonths = typeof t.effect_duration_months === 'number' ? t.effect_duration_months : null
-
-  // Fixed rules as secondary source (always deterministic)
-  const fixed = inferFixedMetadata(treatmentName)
-
-  const recoveryDays = storedDays ?? fixed?.recovery_period_days ?? null
-  const effectMonths = storedMonths ?? fixed?.effect_duration_months ?? null
-
-  // Format numeric values, or fall back to legacy string parsing
-  let downtimeStr: string
-  if (recoveryDays !== null) {
-    downtimeStr = formatRecoveryDays(recoveryDays)
-  } else {
-    let downtimeFallback = String(t.downtime || "").trim()
-    if (!downtimeFallback) {
-      const raw = String(t.reason || "").trim()
-      const [, line2 = ""] = raw.split("\n")
-      downtimeFallback = line2.match(/Downtime:\s*([^|]+)/i)?.[1]?.trim() || ""
-    }
-    downtimeStr = normalizeRecoveryTag(downtimeFallback, treatmentName)
-  }
-
-  const effectDuration = effectMonths !== null ? formatEffectMonths(effectMonths) : ''
-
-  // Description: prefer stored, fall back to first line of reason
-  let description = String(t.description || "").trim()
-  if (!description) {
-    const raw = String(t.reason || "").trim()
-    description = raw.split("\n")[0]?.trim() || ""
-  }
-
-  // Tags: stored → inferred
-  const storedTags = Array.isArray(t.tags) ? (t.tags as string[]) : null
-  const tags = storedTags ?? inferTags(treatmentName)
-
-  return { description, effectDuration, downtime: downtimeStr, tags }
-}
-
-function treatmentLabelFromUnknown(t: Record<string, unknown>) {
-  const rawName = String(t.treatmentName || "").trim()
-  if (rawName) return rawName
-  const rawId = String(t.treatmentId || "").trim()
-  if (!rawId) return "—"
-  return (
-    MENU_BY_ID.get(rawId)?.name ||
-    LEGACY_TREATMENT_NAME_BY_ID[rawId] ||
-    rawId
-  )
-}
 
 type BriefTier = "Premium" | "Mid" | "Budget"
 type BriefBlock = {
@@ -629,30 +491,37 @@ export function ClientReportPanel({
   const realRec = asRec(realRd.recommendation)
   const finalPlan = asRec(realRd.consultantFinalPlan)
 
-  const additionalRecommendations = Array.isArray(realRec?.additionalRecommendations)
-    ? (realRec.additionalRecommendations as Record<string, unknown>[])
-        .map((r) => ({
-          name: String(r.name || ""),
-          price: Number(r.price) || 0,
-          description: String(r.description || ""),
-          duration: String(r.duration || ""),
-          downtime: String(r.downtime || ""),
-          reason: String(r.reason || ""),
-        }))
-        .filter((r) => r.name)
-    : []
-
-  const beforeYouStepOut = Array.isArray(realRec?.beforeYouStepOut)
-    ? (realRec.beforeYouStepOut as Record<string, unknown>[])
-        .map((r) => ({
-          name: String(r.name || ""),
-          price: Number(r.price) || 0,
-          description: String(r.description || ""),
-        }))
-        .filter((r) => r.name)
-    : []
-
   const isEnriched = typeof realRec?.enriched_at === "string" && !!realRec.enriched_at
+
+  // Category-based recommendations (new schema)
+  const categoryRecommendations = Array.isArray(realRec?.categoryRecommendations)
+    ? (realRec.categoryRecommendations as Record<string, unknown>[]).map((cat) => ({
+        name: String(cat.name || ""),
+        treatments: Array.isArray(cat.treatments)
+          ? (cat.treatments as Record<string, unknown>[]).map((t) => ({
+              treatmentId: String(t.treatmentId || ""),
+              treatmentName: String(t.treatmentName || ""),
+              description: String(t.description || ""),
+              cost: Number(t.cost) || 0,
+              duration: String(t.duration || ""),
+              downtime: String(t.downtime || ""),
+              units: t.units != null ? Number(t.units) : null,
+              syringes: t.syringes != null ? Number(t.syringes) : null,
+              sessions: t.sessions != null ? Number(t.sessions) : null,
+              fillerType: t.fillerType != null ? String(t.fillerType) : null,
+            }))
+          : [],
+      })).filter((cat) => cat.name && cat.treatments.length > 0)
+    : []
+
+  const zeroCostAddOns = Array.isArray(realRec?.zeroCostAddOns)
+    ? (realRec.zeroCostAddOns as Record<string, unknown>[]).map((t) => ({
+        treatmentId: String(t.treatmentId || ""),
+        treatmentName: String(t.treatmentName || ""),
+        description: String(t.description || ""),
+        cost: Number(t.cost) || 0,
+      })).filter((t) => t.treatmentName)
+    : []
 
   const recoveryText =
     realUi.recovery === "lunchtime"
@@ -834,129 +703,59 @@ export function ClientReportPanel({
               </Card>
             </div>
 
-            {/* ════ RIGHT: Plans + Add-ons + Final Plan ════ */}
+            {/* ════ RIGHT: Category Recommendations + 0 Cost to Ask ════ */}
             <div className="space-y-5">
               {menuTreatments.length > 0 && (
                 <TreatmentSearchBar treatments={menuTreatments} />
               )}
 
-              {/* Recommended Plans — 3 side-by-side cards */}
-              {Array.isArray(realRec?.plans) && (realRec.plans as Record<string, unknown>[]).length > 0 && (
-                <Card className="gap-2">
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommended Plans</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(realRec.plans as Record<string, unknown>[]).map((plan, idx) => {
-                        const treatments = Array.isArray((plan as Record<string, unknown>).treatments)
-                          ? ((plan as Record<string, unknown>).treatments as Record<string, unknown>[])
-                          : []
-                        const planLabels = ["", "Most popular", "Best value"]
-                        const planLabel = planLabels[idx] ?? ""
-                        return (
-                          <div key={String(plan.name || idx)} className="rounded-lg border p-3 flex flex-col gap-2">
-                            <div>
-                              <div className="flex items-start justify-between gap-1 mb-1">
-                                <span className="text-sm font-semibold leading-snug">{String(plan.name || "Plan")}</span>
-                                {planLabel && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">{planLabel}</Badge>
-                                )}
-                              </div>
-                              <p className="text-sm font-semibold text-primary">${(Number(plan.totalCost) || 0).toLocaleString()}</p>
-                            </div>
-                            <div className="space-y-2 border-t pt-2">
-                              {treatments.map((rawT, tIdx) => {
-                                const t: Record<string, unknown> = {
-                                  treatmentId: String(rawT.treatmentId || ""),
-                                  treatmentName: String(rawT.treatmentName || ""),
-                                  role: rawT.role,
-                                  description: String(rawT.description || ""),
-                                  duration: String(rawT.duration || ""),
-                                  downtime: String(rawT.downtime || ""),
-                                  reason: String(rawT.reason || ""),
-                                  units: rawT.units ?? null,
-                                  syringes: rawT.syringes ?? null,
-                                  sessions: rawT.sessions ?? null,
-                                  fillerType: rawT.fillerType ?? null,
-                                  cost: rawT.cost,
-                                }
-                                const parsed = getTreatmentTags(t)
-                                const displayCost = resolveDisplayCost(t)
-                                return (
-                                  <div key={`${String(t.treatmentId || t.treatmentName || tIdx)}-${tIdx}`} className="text-xs">
-                                    <div className="flex items-start justify-between gap-1">
-                                      <p className="font-medium leading-snug">{treatmentLabelFromUnknown(t)}</p>
-                                      {displayCost != null && (
-                                        <p className="shrink-0 font-medium ml-1">${displayCost.toLocaleString()}</p>
-                                      )}
-                                    </div>
-                                    {parsed.description && (
-                                      <p className="text-muted-foreground mt-0.5 leading-snug">{parsed.description}</p>
-                                    )}
-                                    <div className="flex flex-wrap gap-1 mt-0.5">
-                                      {parsed.effectDuration && (
-                                        <span className="inline-flex items-center rounded px-1 py-0.5 bg-blue-50 text-blue-700">Lasts {parsed.effectDuration}</span>
-                                      )}
-                                      {parsed.downtime && (
-                                        <span className="inline-flex items-center rounded px-1 py-0.5 bg-orange-50 text-orange-700">↓ {parsed.downtime}</span>
-                                      )}
-                                    </div>
-                                    <p className="text-muted-foreground mt-0.5">
-                                      {t.units ? `${t.units} units ` : ""}
-                                      {t.syringes ? `${t.syringes} syringe${Number(t.syringes) > 1 ? "s" : ""} ${String(t.fillerType || "")} ` : ""}
-                                      {t.sessions ? `${t.sessions} session${Number(t.sessions) > 1 ? "s" : ""}` : ""}
-                                    </p>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Best Alternatives */}
-              {additionalRecommendations.length > 0 ? (
-                <Card className="gap-2">
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Best Alternatives</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {additionalRecommendations.map((r, i) => {
-                      const parsedR = getTreatmentTags(r)
-                      return (
-                        <div key={i} className="rounded-md border bg-muted/20 p-3">
+              {/* Category-based recommendations */}
+              {categoryRecommendations.length > 0 ? (
+                categoryRecommendations.map((cat) => (
+                  <Card key={cat.name} className="gap-2">
+                    <CardHeader className="pb-0">
+                      <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cat.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {cat.treatments.map((t, i) => (
+                        <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium">{r.name}</p>
+                            <p className="text-sm font-medium">{t.treatmentName}</p>
                             <div className="flex items-center gap-1 shrink-0">
-                              {parsedR.effectDuration && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700">Lasts {parsedR.effectDuration}</span>
+                              {t.duration && (
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700">Lasts {t.duration}</span>
                               )}
-                              {parsedR.downtime && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700">Recovery: {parsedR.downtime}</span>
+                              {t.downtime && t.downtime !== "None" && (
+                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-50 text-orange-700">↓ {t.downtime}</span>
                               )}
-                              <p className="text-sm font-semibold ml-1">${r.price.toLocaleString()}</p>
+                              {t.cost > 0 && (
+                                <p className="text-sm font-semibold ml-1">${t.cost.toLocaleString()}</p>
+                              )}
                             </div>
                           </div>
-                          {parsedR.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{parsedR.description}</p>
+                          {t.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                          )}
+                          {(t.units || t.syringes || t.sessions) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {t.units ? `${t.units} units ` : ""}
+                              {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""} ${t.fillerType || ""} ` : ""}
+                              {t.sessions ? `${t.sessions} session${t.sessions > 1 ? "s" : ""}` : ""}
+                            </p>
                           )}
                         </div>
-                      )
-                    })}
-                  </CardContent>
-                </Card>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))
               ) : !isEnriched ? (
+                // Loading skeleton while enrichment runs
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Best Alternatives</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 animate-pulse">
-                    {[1, 2].map((i) => (
+                    {[1, 2, 3].map((i) => (
                       <div key={i} className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3">
                         <div className="flex-1 space-y-1.5">
                           <div className="h-3 w-36 rounded bg-muted" />
@@ -969,21 +768,18 @@ export function ClientReportPanel({
                 </Card>
               ) : null}
 
-              {/* 0 Cost Add-ons */}
-              {beforeYouStepOut.length > 0 && (
+              {/* 0 Cost to Ask */}
+              {zeroCostAddOns.length > 0 && (
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">0 Cost Add-ons</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">0 Cost to Ask</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {beforeYouStepOut.map((r, i) => (
-                      <div key={i} className="rounded-md border bg-muted/20 p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium">{r.name}</p>
-                          <p className="text-sm font-semibold ml-1 shrink-0">${r.price.toLocaleString()}</p>
-                        </div>
-                        {r.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{r.description}</p>
+                    {zeroCostAddOns.map((t, i) => (
+                      <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
+                        <p className="text-sm font-medium">{t.treatmentName}</p>
+                        {t.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
                         )}
                       </div>
                     ))}

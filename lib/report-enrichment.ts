@@ -12,7 +12,7 @@ import { getServiceSupabase } from '@/lib/supabase/admin'
 import { resolveClinicMenu } from '@/lib/menu-store'
 import type { ClinicMenuTreatment } from '@/lib/clinic-menu'
 
-// ─── Schemas (mirrors consultant-brief + sales-methodology routes) ─────────────
+// ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const briefSectionSchema = z.object({
   score: z.number().int().min(1).max(5),
@@ -32,43 +32,47 @@ const briefSchema = z.object({
     is_returning: z.boolean(),
     has_prior_treatments: z.boolean(),
     summary: z.string().describe(
-      'Max 50 words. Direct conclusions only. No "given your goal", no process explanation. ' +
-      'Style: "Moderate spending power. Returning local client. Likely open to bundled upgrades."',
+      'Max 50 words. Direct conclusions only. No "given your goal", no process explanation.',
     ),
   }),
 })
-
-// ─── Minimal fast-path schemas ─────────────────────────────────────────────────
 
 const patientSummaryOnlySchema = z.object({
   patientSummaryStructured: briefSchema.shape.patientSummaryStructured,
 })
 
-const additionalRecsReasonSchema = z.object({
-  additionalRecommendations: z
+// ─── Category recommendation schema (replaces additionalRecommendations + beforeYouStepOut) ──
+
+const categoryTreatmentSchema = z.object({
+  treatmentId: z.string(),
+  treatmentName: z.string(),
+  description: z.string().describe('One direct sentence on clinical effect. No filler.'),
+  cost: z.number(),
+  duration: z.string().describe('How long results last, e.g. "3–6 months". REQUIRED.'),
+  downtime: z.string().describe('Recovery time, e.g. "None", "1–2 days". REQUIRED.'),
+  units: z.number().nullable().optional(),
+  syringes: z.number().nullable().optional(),
+  sessions: z.number().nullable().optional(),
+  fillerType: z.string().nullable().optional(),
+})
+
+const categoryRecsSchema = z.object({
+  categoryRecommendations: z
     .array(z.object({
-      name: z.string(),
-      price: z.number(),
-      description: z.string().describe('One direct sentence on clinical effect. No filler.'),
-      duration: z.string().describe('How long results last, e.g. "3–6 months". REQUIRED — never empty.'),
-      downtime: z.string().describe('Recovery time, e.g. "None", "1–2 days". REQUIRED — never empty.'),
+      name: z.string().describe('Category label e.g. "Filler", "Neurotoxin (Botox)", "Energy-based", "Skin Booster"'),
+      treatments: z.array(categoryTreatmentSchema).min(2).max(3),
     }))
     .min(1)
+    .max(5),
+  zeroCostAddOns: z
+    .array(z.object({
+      treatmentId: z.string(),
+      treatmentName: z.string(),
+      description: z.string(),
+      cost: z.number(),
+    }))
+    .min(0)
     .max(3),
-})
-
-const additionalRecsOnlySchema = z.object({
-  additionalRecommendations: additionalRecsReasonSchema.shape.additionalRecommendations,
-})
-
-const beforeYouStepOutItemSchema = z.object({
-  name: z.string(),
-  price: z.number(),
-  description: z.string().describe('One sentence on benefit. No filler.'),
-})
-
-const beforeYouStepOutSchema = z.object({
-  beforeYouStepOut: z.array(beforeYouStepOutItemSchema).min(1).max(2),
 })
 
 const salesSchema = z.object({
@@ -81,7 +85,6 @@ const salesSchema = z.object({
     patient_insight: z.array(z.string()).describe('2-3 sharp insights about this patient.'),
     sales_angles: z.array(z.string()).describe('2-3 actionable talking points for the consultant.'),
   }),
-  additionalRecommendations: additionalRecsReasonSchema.shape.additionalRecommendations,
 })
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -132,21 +135,43 @@ User info:
 - Referral: ${String(userInput.referral || '—')}`
 }
 
-function buildMenuContext(
-  treatments: ClinicMenuTreatment[],
-  excludedIds: Set<string>,
-): string {
+function buildMenuContext(treatments: ClinicMenuTreatment[], excludedIds: Set<string>): string {
   return treatments
-    .slice(0, 30)
+    .slice(0, 40)
     .filter((t) => !excludedIds.has(t.id))
     .map((t) => {
       const price = priceSummary(t)
-      return `- ${t.name} (id:${t.id})${price ? `: ${price}` : ''}${t.description ? ` (${t.description})` : ''}`
+      return `- id:${t.id} | ${t.name} | category:${t.category}${price ? ` | ${price}` : ''}${t.description ? ` | ${t.description.slice(0, 80)}` : ''}`
     })
     .join('\n')
 }
 
-// ─── Exported types for frontend polling ──────────────────────────────────────
+// ─── Exported types ────────────────────────────────────────────────────────────
+
+export type CategoryTreatment = {
+  treatmentId: string
+  treatmentName: string
+  description: string
+  cost: number
+  duration: string
+  downtime: string
+  units?: number | null
+  syringes?: number | null
+  sessions?: number | null
+  fillerType?: string | null
+}
+
+export type CategoryRecommendation = {
+  name: string
+  treatments: CategoryTreatment[]
+}
+
+export type ZeroCostAddOn = {
+  treatmentId: string
+  treatmentName: string
+  description: string
+  cost: number
+}
 
 export type EnrichmentFields = {
   consultantBrief?: unknown
@@ -155,8 +180,8 @@ export type EnrichmentFields = {
   salesMethodology?: unknown
   salesSentences?: unknown[]
   salesMethodologyNew?: unknown
-  additionalRecommendations?: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
-  beforeYouStepOut?: Array<{ name: string; price: number; description: string }>
+  categoryRecommendations?: CategoryRecommendation[]
+  zeroCostAddOns?: ZeroCostAddOn[]
   enriched_at?: string
 }
 
@@ -165,17 +190,17 @@ export type EnrichmentFields = {
 export async function generateFastEnrichment(
   clinicId: string,
   userInput: Record<string, unknown>,
-  excludedTreatmentIds: Set<string>,
+  recommendation: Record<string, unknown>,
 ): Promise<{
   patientSummaryStructured: z.infer<typeof briefSchema>['patientSummaryStructured'] | null
-  additionalRecommendations: Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
-  beforeYouStepOut: Array<{ name: string; price: number; description: string }>
+  categoryRecommendations: CategoryRecommendation[]
+  zeroCostAddOns: ZeroCostAddOn[]
 }> {
   const briefPrompt = buildBriefPrompt(userInput)
 
-  // Fetch menu in parallel with patient summary generation
   const menuPromise = resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
 
+  // ── Patient summary (unchanged) ────────────────────────────────────────────
   const patientSummaryPromise = generateText({
     model: getLlunaAnthropicModel(),
     output: Output.object({ schema: patientSummaryOnlySchema }),
@@ -185,61 +210,68 @@ export async function generateFastEnrichment(
       '- is_local: true if isNYC === true.\n' +
       '- is_returning: true if clinicHistory === "returning".\n' +
       '- has_prior_treatments: true if experience is "few" or "regular".\n' +
-      '- summary: max 50 words. Direct conclusions only. No "given your goal", no explanatory language.',
+      '- summary: max 50 words. Direct conclusions only.',
     messages: [{ role: 'user', content: briefPrompt }],
   }).then((r) => r.output.patientSummaryStructured).catch(() => null)
 
-  const additionalRecsPromise = menuPromise.then(({ menu }) => {
-    const menuCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
-    if (!menuCtx) return [] as Array<{ name: string; price: number; description: string; duration: string; downtime: string }>
-    const userPrompt = `Patient data:
-- Goals: ${String(userInput.goals || '—')}
-- Budget: ${String(userInput.budget ?? '—')}
-- Experience: ${String(userInput.experience || '—')}
-- Recovery preference: ${String(userInput.recovery || '—')}
+  // ── Category recommendations — inferred from existing combo plans ─────────
+  const categoryRecsPromise = menuPromise.then(({ menu }) => {
+    // Extract unique treatment names from plans for category inference
+    const plans = Array.isArray(recommendation.plans)
+      ? (recommendation.plans as Record<string, unknown>[])
+      : []
+    const comboNames: string[] = []
+    for (const plan of plans) {
+      const treatments = Array.isArray(plan.treatments)
+        ? (plan.treatments as Record<string, unknown>[])
+        : []
+      for (const t of treatments) {
+        const name = String(t.treatmentName || '').trim()
+        if (name && !comboNames.includes(name)) comboNames.push(name)
+      }
+    }
 
-Available treatments (pick only from this list — do NOT recommend treatments already in their Essential/Optimal/Premium plans):
+    const menuCtx = buildMenuContext(menu.treatments, new Set())
+    if (!menuCtx) return { categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }
+
+    const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
+
+    const prompt = `Internal combo treatments (use ONLY to infer categories — do NOT show to consultant):
+${comboText}
+
+Patient goals: ${String(userInput.goals || '—')}
+Patient budget: $${String(userInput.budget ?? '—')}
+
+CLINIC MENU (select STRICTLY from this list — copy id and name verbatim):
 ${menuCtx}
 
-Return 2-3 additional treatment recommendations from the list above that complement their goals and budget. Pick items not already in their core plan.`
+Return categoryRecommendations and zeroCostAddOns.`
+
     return generateText({
       model: getLlunaAnthropicModel(),
-      output: Output.object({ schema: additionalRecsOnlySchema }),
+      output: Output.object({ schema: categoryRecsSchema }),
       system:
-        'You are a medspa sales advisor. Return additionalRecommendations only. ' +
-        'Use exact treatment names and prices from the provided list. No markdown, no emojis. ' +
-        'Every item MUST include non-empty description, duration, and downtime fields.',
-      messages: [{ role: 'user', content: userPrompt }],
-    }).then((r) => r.output.additionalRecommendations).catch(() => [] as Array<{ name: string; price: number; description: string; duration: string; downtime: string }>)
+        'You are an aesthetic medicine specialist selecting treatment options for consultant review.\n\n' +
+        'RULES — CRITICAL:\n' +
+        '1. Every treatmentId and treatmentName MUST exactly match an entry in the clinic menu. Copy verbatim — no paraphrasing.\n' +
+        '2. Cost MUST come from menu pricing. No invented prices. Use 0 if price is unavailable.\n' +
+        '3. Infer 2–4 treatment CATEGORIES from the internal combo (e.g. "Filler", "Neurotoxin (Botox)", "Energy-based", "Skin Booster").\n' +
+        '4. For each category, select 2–3 treatments from the menu that fit this patient\'s goals and budget.\n' +
+        '5. zeroCostAddOns: 1–2 simple, easy-to-mention treatments (hydrafacial, cleansing facial, skin consultation add-on). Must be from menu.\n' +
+        '6. duration and downtime: concise and non-empty (e.g. "3–6 months", "None", "1–2 days").',
+      messages: [{ role: 'user', content: prompt }],
+    }).then((r) => r.output).catch(() => ({ categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }))
   })
 
-  const beforeYouStepOutPromise = menuPromise.then(({ menu }) => {
-    const skincareCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
-    if (!skincareCtx) return [] as Array<{ name: string; price: number; description: string }>
-    const userPrompt = `Available clinic treatments:\n${skincareCtx}\n\nPatient goals: ${String(userInput.goals || '—')}`
-    return generateText({
-      model: getLlunaAnthropicModel(),
-      output: Output.object({ schema: beforeYouStepOutSchema }),
-      system:
-        'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare or cleansing add-ons from the menu above. ' +
-        'RULES: Only pick items related to skincare, cleansing, facials, peels, or skin boosters. ' +
-        'Price MUST be between $30 and $200 per session. ' +
-        'Use exact names and prices from the provided list. No markdown, no emojis. ' +
-        'If fewer than 2 suitable items exist in the menu, return what is available (minimum 1).',
-      messages: [{ role: 'user', content: userPrompt }],
-    }).then((r) => r.output.beforeYouStepOut).catch(() => [] as Array<{ name: string; price: number; description: string }>)
-  })
-
-  const [patientSummaryStructured, additionalRecommendations, beforeYouStepOut] = await Promise.all([
+  const [patientSummaryStructured, categoryRecs] = await Promise.all([
     patientSummaryPromise,
-    additionalRecsPromise,
-    beforeYouStepOutPromise,
+    categoryRecsPromise,
   ])
 
   return {
     patientSummaryStructured: patientSummaryStructured ?? null,
-    additionalRecommendations: additionalRecommendations ?? [],
-    beforeYouStepOut: beforeYouStepOut ?? [],
+    categoryRecommendations: categoryRecs.categoryRecommendations ?? [],
+    zeroCostAddOns: categoryRecs.zeroCostAddOns ?? [],
   }
 }
 
@@ -278,7 +310,7 @@ export async function enrichReportAsync(
         '- is_local: true if isNYC === true.\n' +
         '- is_returning: true if clinicHistory === "returning".\n' +
         '- has_prior_treatments: true if experience is "few" or "regular".\n' +
-        '- summary: max 50 words. Direct conclusions only. No "given your goal", no explanatory language.',
+        '- summary: max 50 words. Direct conclusions only.',
       messages: [{ role: 'user', content: briefPrompt }],
     })
     enrichmentFields.consultantBrief = output.consultantBrief
@@ -286,7 +318,6 @@ export async function enrichReportAsync(
     enrichmentFields.consultantProfileSummary = toSummaryText(output.consultantBrief)
   } catch (e) {
     console.error('[enrichment] consultant-brief failed:', e instanceof Error ? e.message : e)
-    // Continue — sales methodology may still succeed
   }
 
   // ── 2. Fetch context for sales methodology ─────────────────────────────────
@@ -348,8 +379,6 @@ Lead data:
 - Referral discount (USD): ${referBonusUsd == null ? 'not configured' : `$${referBonusUsd}`}
 ${publicActivities ? `- Clinic activities/promotions: ${publicActivities}` : ''}
 
-${menuContext ? `Available treatments (pick additionalRecommendations only from this list — exclude treatments already in their Essential/Optimal/Premium plans):\n${menuContext}` : ''}
-
 Constraints:
 - English only. salesMethodology each field 20-45 words. salesMethodologyNew items max 20-25 words each.
 - No markdown, no emojis, no fake claims.`
@@ -359,15 +388,12 @@ Constraints:
       model: getLlunaAnthropicModel(),
       output: Output.object({ schema: salesSchema }),
       system:
-        'You are a medspa CRM sales coach. Return salesMethodology, salesMethodologyNew, and additionalRecommendations. ' +
-        'salesMethodologyNew must be sharp and patient-specific. ' +
-        'additionalRecommendations must use exact treatment names and prices from the provided menu. ' +
-        'Every additionalRecommendations item MUST include non-empty description, duration, and downtime fields.',
+        'You are a medspa CRM sales coach. Return salesMethodology and salesMethodologyNew. ' +
+        'salesMethodologyNew must be sharp and patient-specific.',
       messages: [{ role: 'user', content: salesPrompt }],
     })
     enrichmentFields.salesMethodology = output.salesMethodology
     enrichmentFields.salesMethodologyNew = output.salesMethodologyNew
-    enrichmentFields.additionalRecommendations = output.additionalRecommendations
     enrichmentFields.salesSentences = [
       { type: 'Combo synergy', text: output.salesMethodology.comboSynergy },
       { type: 'Treatment effectiveness', text: output.salesMethodology.treatmentEffectiveness },
@@ -375,35 +401,9 @@ Constraints:
     ]
   } catch (e) {
     console.error('[enrichment] sales-methodology failed:', e instanceof Error ? e.message : e)
-    // Continue — still write whatever brief data we got
   }
 
-  // ── 4. Before You Step Out ────────────────────────────────────────────────
-  try {
-    const { menu } = await resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
-    const skincareCtx = buildMenuContext(menu.treatments, excludedTreatmentIds)
-    if (skincareCtx) {
-      const { output } = await generateText({
-        model: getLlunaAnthropicModel(),
-        output: Output.object({ schema: beforeYouStepOutSchema }),
-        system:
-          'You are a medspa retail advisor. Return beforeYouStepOut — exactly 2 skincare add-ons from the menu above. ' +
-          'STRICT RULES:\n' +
-          '1. Only pick treatments explicitly related to cleaning, hydrating, or skin (e.g. cleanser, hydrafacial, skin booster, hydration, facial, exfoliation). ' +
-          'DO NOT pick injectables, laser, body contouring, or anything unrelated to skin cleansing/hydration.\n' +
-          '2. Price MUST be between $35 and $200 per session — exclude anything outside this range.\n' +
-          '3. Use exact names and prices from the provided list. No markdown, no emojis.\n' +
-          '4. If fewer than 2 suitable items exist, return only what qualifies (minimum 1).',
-        messages: [{ role: 'user', content: `Available clinic treatments:\n${skincareCtx}` }],
-      })
-      enrichmentFields.beforeYouStepOut = output.beforeYouStepOut
-    }
-  } catch (e) {
-    console.error('[enrichment] before-you-step-out failed:', e instanceof Error ? e.message : e)
-  }
-
-  // ── 5. Write enrichment to DB ──────────────────────────────────────────────
-  // Nothing generated at all — no point writing
+  // ── 4. Write enrichment to DB ──────────────────────────────────────────────
   if (!enrichmentFields.consultantBrief && !enrichmentFields.salesMethodology) {
     console.warn('[enrichment] both AI calls failed for report', pendingReportId)
     return
@@ -411,7 +411,6 @@ Constraints:
 
   enrichmentFields.enriched_at = new Date().toISOString()
 
-  // Fetch current row to merge (don't clobber non-enrichment fields)
   const { data: row } = await supabase
     .from('pending_reports')
     .select('report_data, session_id')
@@ -438,11 +437,6 @@ Constraints:
       salesSentences: enrichmentFields.salesSentences,
     } : {}),
     ...(enrichmentFields.salesMethodologyNew ? { salesMethodologyNew: enrichmentFields.salesMethodologyNew } : {}),
-    // Only write additionalRecommendations if the fast path didn't already populate them
-    ...(enrichmentFields.additionalRecommendations?.length &&
-        !(Array.isArray(rec.additionalRecommendations) && (rec.additionalRecommendations as unknown[]).length > 0)
-      ? { additionalRecommendations: enrichmentFields.additionalRecommendations } : {}),
-    ...(enrichmentFields.beforeYouStepOut?.length ? { beforeYouStepOut: enrichmentFields.beforeYouStepOut } : {}),
     enriched_at: enrichmentFields.enriched_at,
   }
 
