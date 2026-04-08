@@ -184,14 +184,14 @@ export default function DashboardPage() {
           <TabsList className="h-11 bg-transparent p-0 gap-0 w-full">
             <TabsTrigger
               value="report"
-              className="rounded-none px-0 pr-5 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="w-auto flex-none rounded-none px-0 mr-6 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <FileText className="h-4 w-4" />
               Plan
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-none px-0 pr-5 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="w-auto flex-none rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <Database className="h-4 w-4" />
               Data
@@ -199,7 +199,7 @@ export default function DashboardPage() {
             <div className="flex-1" />
             <TabsTrigger
               value="activities"
-              className="rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
+              className="w-auto flex-none rounded-none px-0 pb-3 pt-2 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 gap-1.5"
             >
               <Settings className="h-4 w-4" />
               Settings
