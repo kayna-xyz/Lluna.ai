@@ -1709,6 +1709,7 @@ function ClinicMenuScreen({
   clinicMenu: ClinicMenu | null
 }) {
   const [treatmentSearch, setTreatmentSearch] = useState("")
+  const [showSearch, setShowSearch] = useState(false)
   const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
 
@@ -1791,29 +1792,19 @@ function ClinicMenuScreen({
         />
       )}
 
-      {/* All Treatments with Filter */}
+      {/* Treatments with Filter */}
       <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 12 
+          marginBottom: 12
         }}>
-          <p style={{ 
-            fontSize: 11, 
-            fontWeight: 500, 
-            letterSpacing: '0.1em', 
-            color: COLORS.muted,
-            margin: 0
-          }}>
-            ALL TREATMENTS
-          </p>
-          
           <select
             value={treatmentFilter}
             onChange={(e) => setTreatmentFilter(e.target.value as typeof treatmentFilter)}
             style={{
-              fontSize: 12,
+              fontSize: 13,
               color: COLORS.text,
               background: COLORS.bg,
               border: `1px solid ${COLORS.border}`,
@@ -1828,25 +1819,50 @@ function ClinicMenuScreen({
             <option value="price-high">Price: High to Low</option>
             <option value="comprehensive">Comprehensive</option>
           </select>
+
+          <button
+            onClick={() => { setShowSearch(s => !s); if (showSearch) setTreatmentSearch('') }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 6,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: showSearch ? COLORS.accent : COLORS.muted,
+            }}
+            aria-label="Search treatments"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <input
-            value={treatmentSearch}
-            onChange={(e) => setTreatmentSearch(e.target.value)}
-            placeholder="Search treatments"
-            style={{
-              width: '100%',
-              fontSize: 12,
-              color: COLORS.text,
-              background: COLORS.bg,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 10,
-              padding: '10px 12px',
-              outline: 'none',
-            }}
-          />
-        </div>
+        {showSearch && (
+          <div style={{ marginBottom: 12 }}>
+            <input
+              autoFocus
+              value={treatmentSearch}
+              onChange={(e) => setTreatmentSearch(e.target.value)}
+              placeholder="Search treatments…"
+              style={{
+                width: '100%',
+                fontSize: 15,
+                color: COLORS.text,
+                background: COLORS.bg,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: 10,
+                padding: '10px 14px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        )}
 
         {/* Category filter pills — only shown when categories exist */}
         {categories.length > 0 && (
@@ -1882,7 +1898,7 @@ function ClinicMenuScreen({
         )}
 
         {visibleTreatments.length === 0 ? (
-          <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 13 }}>
+          <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 15 }}>
             No treatments match your search.
           </div>
         ) : (
@@ -1898,22 +1914,22 @@ function ClinicMenuScreen({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, display: 'block' }}>
+                <span style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, display: 'block' }}>
                   {treatment.name}
                 </span>
-                <span style={{ fontSize: 12, color: COLORS.muted, display: 'block', marginTop: 2 }}>
+                <span style={{ fontSize: 13, color: COLORS.muted, display: 'block', marginTop: 2 }}>
                   {treatment.category}
                 </span>
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: 'block' }}>
+                <span style={{ fontSize: 15, fontWeight: 500, color: COLORS.text, display: 'block' }}>
                   {getPrimaryPriceLabel(treatment)}
                 </span>
-                <span style={{ fontSize: 10, color: COLORS.muted }}>
+                <span style={{ fontSize: 11, color: COLORS.muted }}>
                   {treatment.units}
                 </span>
                 {(treatment.posterUrl || treatment.beforeAfterUrl) && (
-                  <span style={{ fontSize: 9, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
+                  <span style={{ fontSize: 10, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
                 )}
               </div>
             </div>
@@ -2066,7 +2082,7 @@ function WelcomeScreen({
           textAlign: 'left',
         }}
       >
-        3 minutes, to know what should do, what shouldn&apos;t, and get prepared before meeting the consultant.
+        1 minute to see what works best for you.
       </p>
       
       <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, paddingRight: 28 }}>
