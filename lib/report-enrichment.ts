@@ -146,6 +146,35 @@ function buildMenuContext(treatments: ClinicMenuTreatment[], excludedIds: Set<st
     .join('\n')
 }
 
+// ─── Category recs shared prompt (used in both fast and background paths) ─────
+
+const CATEGORY_RECS_SYSTEM =
+  'You are an aesthetic medicine specialist selecting treatment options for consultant review.\n\n' +
+  'RULES — CRITICAL:\n' +
+  '1. Every treatmentId and treatmentName MUST exactly match an entry in the clinic menu. Copy verbatim — no paraphrasing.\n' +
+  '2. Cost MUST come from menu pricing. No invented prices. Use 0 if price is unavailable.\n' +
+  '3. Infer 2–4 treatment CATEGORIES from the internal combo (e.g. "Filler", "Neurotoxin (Botox)", "Energy-based", "Skin Booster").\n' +
+  '4. For each category, select 2–3 treatments from the menu that fit this patient\'s goals and budget.\n' +
+  '5. zeroCostAddOns: 1–2 simple, easy-to-mention treatments (hydrafacial, cleansing facial, skin consultation add-on). Must be from menu.\n' +
+  '6. duration and downtime: concise and non-empty (e.g. "3–6 months", "None", "1–2 days").'
+
+function buildCategoryRecsPrompt(
+  comboText: string,
+  userInput: Record<string, unknown>,
+  menuCtx: string,
+): string {
+  return `Internal combo treatments (use ONLY to infer categories — do NOT show to consultant):
+${comboText}
+
+Patient goals: ${String(userInput.goals || '—')}
+Patient budget: $${String(userInput.budget ?? '—')}
+
+CLINIC MENU (select STRICTLY from this list — copy id and name verbatim):
+${menuCtx}
+
+Return categoryRecommendations and zeroCostAddOns.`
+}
+
 // ─── Exported types ────────────────────────────────────────────────────────────
 
 export type CategoryTreatment = {
@@ -236,30 +265,11 @@ export async function generateFastEnrichment(
 
     const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
 
-    const prompt = `Internal combo treatments (use ONLY to infer categories — do NOT show to consultant):
-${comboText}
-
-Patient goals: ${String(userInput.goals || '—')}
-Patient budget: $${String(userInput.budget ?? '—')}
-
-CLINIC MENU (select STRICTLY from this list — copy id and name verbatim):
-${menuCtx}
-
-Return categoryRecommendations and zeroCostAddOns.`
-
     return generateText({
       model: getLlunaAnthropicModel(),
       output: Output.object({ schema: categoryRecsSchema }),
-      system:
-        'You are an aesthetic medicine specialist selecting treatment options for consultant review.\n\n' +
-        'RULES — CRITICAL:\n' +
-        '1. Every treatmentId and treatmentName MUST exactly match an entry in the clinic menu. Copy verbatim — no paraphrasing.\n' +
-        '2. Cost MUST come from menu pricing. No invented prices. Use 0 if price is unavailable.\n' +
-        '3. Infer 2–4 treatment CATEGORIES from the internal combo (e.g. "Filler", "Neurotoxin (Botox)", "Energy-based", "Skin Booster").\n' +
-        '4. For each category, select 2–3 treatments from the menu that fit this patient\'s goals and budget.\n' +
-        '5. zeroCostAddOns: 1–2 simple, easy-to-mention treatments (hydrafacial, cleansing facial, skin consultation add-on). Must be from menu.\n' +
-        '6. duration and downtime: concise and non-empty (e.g. "3–6 months", "None", "1–2 days").',
-      messages: [{ role: 'user', content: prompt }],
+      system: CATEGORY_RECS_SYSTEM,
+      messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, menuCtx) }],
     }).then((r) => r.output).catch(() => ({ categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }))
   })
 
@@ -403,12 +413,7 @@ Constraints:
     console.error('[enrichment] sales-methodology failed:', e instanceof Error ? e.message : e)
   }
 
-  // ── 4. Write enrichment to DB ──────────────────────────────────────────────
-  if (!enrichmentFields.consultantBrief && !enrichmentFields.salesMethodology) {
-    console.warn('[enrichment] both AI calls failed for report', pendingReportId)
-    return
-  }
-
+  // ── 4. Fetch current row (needed for merge + category recs check) ────────────
   enrichmentFields.enriched_at = new Date().toISOString()
 
   const { data: row } = await supabase
@@ -425,6 +430,43 @@ Constraints:
   const rd = asRec(row.report_data)
   const rec = asRec(rd.recommendation)
 
+  // ── 5. Category recommendations — generate if fast path timed out ──────────
+  const alreadyHasCategoryRecs =
+    Array.isArray(rec.categoryRecommendations) &&
+    (rec.categoryRecommendations as unknown[]).length > 0
+
+  if (!alreadyHasCategoryRecs) {
+    try {
+      const { menu: catMenu } = await resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
+      const catMenuCtx = buildMenuContext(catMenu.treatments, new Set())
+      if (catMenuCtx) {
+        const plans = Array.isArray(rec.plans) ? (rec.plans as Record<string, unknown>[]) : []
+        const comboNames: string[] = []
+        for (const plan of plans) {
+          const treatments = Array.isArray(plan.treatments) ? (plan.treatments as Record<string, unknown>[]) : []
+          for (const t of treatments) {
+            const name = String(t.treatmentName || '').trim()
+            if (name && !comboNames.includes(name)) comboNames.push(name)
+          }
+        }
+        const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
+        const { output: catOut } = await generateText({
+          model: getLlunaAnthropicModel(),
+          output: Output.object({ schema: categoryRecsSchema }),
+          system: CATEGORY_RECS_SYSTEM,
+          messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, catMenuCtx) }],
+        })
+        enrichmentFields.categoryRecommendations = catOut.categoryRecommendations
+        enrichmentFields.zeroCostAddOns = catOut.zeroCostAddOns
+        console.log('[enrichment] category-recs generated in background:', catOut.categoryRecommendations.length, 'categories')
+      }
+    } catch (e) {
+      console.error('[enrichment] category-recs background failed:', e instanceof Error ? e.message : e)
+    }
+  }
+
+  // ── 6. Write enrichment to DB ──────────────────────────────────────────────
+
   const mergedRec: Record<string, unknown> = {
     ...rec,
     ...(enrichmentFields.consultantBrief ? {
@@ -437,6 +479,8 @@ Constraints:
       salesSentences: enrichmentFields.salesSentences,
     } : {}),
     ...(enrichmentFields.salesMethodologyNew ? { salesMethodologyNew: enrichmentFields.salesMethodologyNew } : {}),
+    ...(enrichmentFields.categoryRecommendations?.length ? { categoryRecommendations: enrichmentFields.categoryRecommendations } : {}),
+    ...(enrichmentFields.zeroCostAddOns?.length ? { zeroCostAddOns: enrichmentFields.zeroCostAddOns } : {}),
     enriched_at: enrichmentFields.enriched_at,
   }
 

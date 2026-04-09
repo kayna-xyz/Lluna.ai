@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   }
 
   // ── 3. Fast enrichment: patientSummaryStructured + categoryRecommendations ──
-  const FAST_TIMEOUT_MS = 6000
+  const FAST_TIMEOUT_MS = 10000
   const fastFallback = {
     patientSummaryStructured: null,
     categoryRecommendations: [] as import('@/lib/report-enrichment').CategoryRecommendation[],

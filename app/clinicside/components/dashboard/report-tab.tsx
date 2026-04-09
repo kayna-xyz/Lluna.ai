@@ -766,7 +766,9 @@ export function ClientReportPanel({
                     ))}
                   </CardContent>
                 </Card>
-              ) : null}
+              ) : (
+                <p className="text-xs text-muted-foreground">No recommendations available.</p>
+              )}
 
               {/* 0 Cost to Ask */}
               {zeroCostAddOns.length > 0 && (
