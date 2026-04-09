@@ -18,7 +18,7 @@ const clinicFeatures = [
   {
     number: "03",
     label: "CONSULTANT PANEL",
-    title: "30 minutes to 5. Every consultant, every session.",
+    title: "30 minutes to 5. Less consultation time, but close more.",
     description: "Every consultant — junior, senior, or just the doctor on shift — sees the same high-quality briefing: full patient context, treatment combinations, and upsell opportunities. No experience gaps. No revenue left on the table.",
   },
 ];
