@@ -25,6 +25,8 @@ function extractPlanTreatmentIds(reportData: StoredReportData): Set<string> {
   return ids
 }
 
+export const maxDuration = 60
+
 export async function POST(req: Request) {
   const supabase = getServiceSupabase()
   if (!supabase) {
@@ -125,6 +127,7 @@ export async function POST(req: Request) {
     categoryRecommendations: [] as import('@/lib/report-enrichment').CategoryRecommendation[],
     zeroCostAddOns: [] as import('@/lib/report-enrichment').ZeroCostAddOn[],
   }
+  const fastStart = Date.now()
   const fast = await Promise.race([
     generateFastEnrichment(clinicId, userInput, recommendation),
     new Promise<typeof fastFallback>((resolve) => setTimeout(() => resolve(fastFallback), FAST_TIMEOUT_MS)),
@@ -132,6 +135,8 @@ export async function POST(req: Request) {
     console.error('[new-report] fast enrichment failed:', e instanceof Error ? e.message : e)
     return fastFallback
   })
+  const fastMs = Date.now() - fastStart
+  console.log(`[new-report] fast enrichment done in ${fastMs}ms — categoryRecs:${fast.categoryRecommendations.length} zeroCost:${fast.zeroCostAddOns.length} patientSummary:${!!fast.patientSummaryStructured} timedOut:${fastMs >= FAST_TIMEOUT_MS - 100}`)
 
   // Write fast results to DB so consultant sees them immediately
   if (pendingReportId && (fast.patientSummaryStructured || fast.categoryRecommendations.length || fast.zeroCostAddOns.length)) {

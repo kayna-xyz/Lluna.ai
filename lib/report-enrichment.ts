@@ -244,7 +244,7 @@ export async function generateFastEnrichment(
   }).then((r) => r.output.patientSummaryStructured).catch(() => null)
 
   // ── Category recommendations — inferred from existing combo plans ─────────
-  const categoryRecsPromise = menuPromise.then(({ menu }) => {
+  const categoryRecsPromise = menuPromise.then(({ menu, source }) => {
     // Extract unique treatment names from plans for category inference
     const plans = Array.isArray(recommendation.plans)
       ? (recommendation.plans as Record<string, unknown>[])
@@ -261,16 +261,24 @@ export async function generateFastEnrichment(
     }
 
     const menuCtx = buildMenuContext(menu.treatments, new Set())
+    console.log(`[fast-enrich] menu source:${source} treatments:${menu.treatments.length} menuCtx:${menuCtx ? 'ok' : 'EMPTY'} comboNames:${comboNames.length} [${comboNames.slice(0, 3).join(', ')}]`)
     if (!menuCtx) return { categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }
 
     const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
 
+    const aiStart = Date.now()
     return generateText({
       model: getLlunaAnthropicModel(),
       output: Output.object({ schema: categoryRecsSchema }),
       system: CATEGORY_RECS_SYSTEM,
       messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, menuCtx) }],
-    }).then((r) => r.output).catch(() => ({ categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }))
+    }).then((r) => {
+      console.log(`[fast-enrich] category AI done in ${Date.now() - aiStart}ms — cats:${r.output.categoryRecommendations.length} zeroCost:${r.output.zeroCostAddOns.length}`)
+      return r.output
+    }).catch((e) => {
+      console.error(`[fast-enrich] category AI failed after ${Date.now() - aiStart}ms:`, e instanceof Error ? e.message : e)
+      return { categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }
+    })
   })
 
   const [patientSummaryStructured, categoryRecs] = await Promise.all([
@@ -301,8 +309,64 @@ export async function enrichReportAsync(
 
   const enrichmentFields: EnrichmentFields = {}
   const briefPrompt = buildBriefPrompt(userInput)
+  const bgStart = Date.now()
+  console.log(`[enrichment] start reportId:${pendingReportId} clinicId:${clinicId}`)
 
-  // ── 1. Consultant Brief + Patient Summary ──────────────────────────────────
+  // ── 1. Fetch current row FIRST — check if fast path already wrote categoryRecs ──
+  const { data: row } = await supabase
+    .from('pending_reports')
+    .select('report_data, session_id')
+    .eq('id', pendingReportId)
+    .maybeSingle()
+
+  if (!row) {
+    console.error('[enrichment] pending report not found:', pendingReportId)
+    return
+  }
+
+  const rd = asRec(row.report_data)
+  const rec = asRec(rd.recommendation)
+
+  // ── 2. Category recommendations — generate FIRST before other AI calls ────────
+  const alreadyHasCategoryRecs =
+    Array.isArray(rec.categoryRecommendations) &&
+    (rec.categoryRecommendations as unknown[]).length > 0
+  console.log(`[enrichment] alreadyHasCategoryRecs:${alreadyHasCategoryRecs} (existing count: ${Array.isArray(rec.categoryRecommendations) ? (rec.categoryRecommendations as unknown[]).length : 'none'})`)
+
+  if (!alreadyHasCategoryRecs) {
+    try {
+      const { menu: catMenu, source: catMenuSource } = await resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] }, source: 'default' as const }))
+      const catMenuCtx = buildMenuContext(catMenu.treatments, new Set())
+      console.log(`[enrichment] catMenu source:${catMenuSource} treatments:${catMenu.treatments.length} ctx:${catMenuCtx ? 'ok' : 'EMPTY'}`)
+      if (catMenuCtx) {
+        const plans = Array.isArray(rec.plans) ? (rec.plans as Record<string, unknown>[]) : []
+        const comboNames: string[] = []
+        for (const plan of plans) {
+          const treatments = Array.isArray(plan.treatments) ? (plan.treatments as Record<string, unknown>[]) : []
+          for (const t of treatments) {
+            const name = String(t.treatmentName || '').trim()
+            if (name && !comboNames.includes(name)) comboNames.push(name)
+          }
+        }
+        const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
+        console.log(`[enrichment] category-recs: comboNames:${comboNames.length} [${comboNames.slice(0, 3).join(', ')}]`)
+        const catAiStart = Date.now()
+        const { output: catOut } = await generateText({
+          model: getLlunaAnthropicModel(),
+          output: Output.object({ schema: categoryRecsSchema }),
+          system: CATEGORY_RECS_SYSTEM,
+          messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, catMenuCtx) }],
+        })
+        enrichmentFields.categoryRecommendations = catOut.categoryRecommendations
+        enrichmentFields.zeroCostAddOns = catOut.zeroCostAddOns
+        console.log(`[enrichment] category-recs done in ${Date.now() - catAiStart}ms — cats:${catOut.categoryRecommendations.length} zeroCost:${catOut.zeroCostAddOns.length}`)
+      }
+    } catch (e) {
+      console.error('[enrichment] category-recs background failed:', e instanceof Error ? e.message : e)
+    }
+  }
+
+  // ── 3. Consultant Brief + Patient Summary ──────────────────────────────────
   try {
     const { output } = await generateText({
       model: getLlunaAnthropicModel(),
@@ -330,7 +394,7 @@ export async function enrichReportAsync(
     console.error('[enrichment] consultant-brief failed:', e instanceof Error ? e.message : e)
   }
 
-  // ── 2. Fetch context for sales methodology ─────────────────────────────────
+  // ── 4. Fetch context for sales methodology ─────────────────────────────────
   let referBonusUsd: number | null = null
   let currentCampaign = 'No active campaign data available'
   let publicActivities = ''
@@ -372,7 +436,7 @@ export async function enrichReportAsync(
     console.warn('[enrichment] context fetch partial failure:', e instanceof Error ? e.message : e)
   }
 
-  // ── 3. Sales Methodology ───────────────────────────────────────────────────
+  // ── 5. Sales Methodology ───────────────────────────────────────────────────
   const salesPrompt = `Create sales methodology content for consultant use, based only on this lead data.
 Lead data:
 - Name: ${String(userInput.name || '—')}
@@ -413,57 +477,8 @@ Constraints:
     console.error('[enrichment] sales-methodology failed:', e instanceof Error ? e.message : e)
   }
 
-  // ── 4. Fetch current row (needed for merge + category recs check) ────────────
   enrichmentFields.enriched_at = new Date().toISOString()
-
-  const { data: row } = await supabase
-    .from('pending_reports')
-    .select('report_data, session_id')
-    .eq('id', pendingReportId)
-    .maybeSingle()
-
-  if (!row) {
-    console.error('[enrichment] pending report not found:', pendingReportId)
-    return
-  }
-
-  const rd = asRec(row.report_data)
-  const rec = asRec(rd.recommendation)
-
-  // ── 5. Category recommendations — generate if fast path timed out ──────────
-  const alreadyHasCategoryRecs =
-    Array.isArray(rec.categoryRecommendations) &&
-    (rec.categoryRecommendations as unknown[]).length > 0
-
-  if (!alreadyHasCategoryRecs) {
-    try {
-      const { menu: catMenu } = await resolveClinicMenu(clinicId).catch(() => ({ menu: { treatments: [] as ClinicMenuTreatment[] } }))
-      const catMenuCtx = buildMenuContext(catMenu.treatments, new Set())
-      if (catMenuCtx) {
-        const plans = Array.isArray(rec.plans) ? (rec.plans as Record<string, unknown>[]) : []
-        const comboNames: string[] = []
-        for (const plan of plans) {
-          const treatments = Array.isArray(plan.treatments) ? (plan.treatments as Record<string, unknown>[]) : []
-          for (const t of treatments) {
-            const name = String(t.treatmentName || '').trim()
-            if (name && !comboNames.includes(name)) comboNames.push(name)
-          }
-        }
-        const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
-        const { output: catOut } = await generateText({
-          model: getLlunaAnthropicModel(),
-          output: Output.object({ schema: categoryRecsSchema }),
-          system: CATEGORY_RECS_SYSTEM,
-          messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, catMenuCtx) }],
-        })
-        enrichmentFields.categoryRecommendations = catOut.categoryRecommendations
-        enrichmentFields.zeroCostAddOns = catOut.zeroCostAddOns
-        console.log('[enrichment] category-recs generated in background:', catOut.categoryRecommendations.length, 'categories')
-      }
-    } catch (e) {
-      console.error('[enrichment] category-recs background failed:', e instanceof Error ? e.message : e)
-    }
-  }
+  console.log(`[enrichment] all steps done in ${Date.now() - bgStart}ms — categoryRecs:${enrichmentFields.categoryRecommendations?.length ?? 'skipped(fast-wrote)'}`)
 
   // ── 6. Write enrichment to DB ──────────────────────────────────────────────
 
