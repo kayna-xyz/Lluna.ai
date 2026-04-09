@@ -183,7 +183,7 @@ export function MyPageScreen({
               {clinicName}
             </h1>
             {tagline ? (
-              <p style={{ fontSize: 12, color: COLORS.accent, margin: 0 }}>{tagline}</p>
+              <p style={{ fontSize: 14, color: COLORS.accent, margin: 0 }}>{tagline}</p>
             ) : null}
           </div>
         </div>
@@ -192,7 +192,7 @@ export function MyPageScreen({
       {/* ── Current Activities ─────────────────────────────────────────── */}
       {activities.length > 0 && (
         <div style={{ marginBottom: 28 }}>
-          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
             CURRENT ACTIVITIES
           </p>
           <div
@@ -229,11 +229,11 @@ export function MyPageScreen({
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: COLORS.text, margin: 0 }}>{activity.title}</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: COLORS.text, margin: 0 }}>{activity.title}</h3>
                     {activity.badge && (
                       <span
                         style={{
-                          fontSize: 11,
+                          fontSize: 14,
                           fontWeight: 600,
                           background: activity.type === "loyalty" ? "rgba(107, 126, 107, 0.15)" : "rgba(198, 125, 59, 0.15)",
                           color: activity.type === "loyalty" ? COLORS.accent : "#C67D3B",
@@ -245,7 +245,7 @@ export function MyPageScreen({
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 15, color: COLORS.muted, margin: 0, lineHeight: 1.55 }}>{activity.description}</p>
+                  <p style={{ fontSize: 16, color: COLORS.muted, margin: 0, lineHeight: 1.55 }}>{activity.description}</p>
                 </div>
               ))}
             </div>
@@ -274,7 +274,7 @@ export function MyPageScreen({
       {/* ── MD Team ───────────────────────────────────────────────────── */}
       {mdTeam.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
             OUR TEAM
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -315,7 +315,7 @@ export function MyPageScreen({
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: 600,
                       color: COLORS.accent,
                     }}
@@ -324,12 +324,12 @@ export function MyPageScreen({
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, margin: 0 }}>{member.name}</p>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: COLORS.text, margin: 0 }}>{member.name}</p>
                   {member.experience && (
-                    <p style={{ fontSize: 12, color: COLORS.accent, margin: "2px 0 0" }}>{member.experience}</p>
+                    <p style={{ fontSize: 14, color: COLORS.accent, margin: "2px 0 0" }}>{member.experience}</p>
                   )}
                   {member.about && (
-                    <p style={{ fontSize: 13, color: COLORS.muted, margin: "8px 0 0", lineHeight: 1.55 }}>{member.about}</p>
+                    <p style={{ fontSize: 14, color: COLORS.muted, margin: "8px 0 0", lineHeight: 1.55 }}>{member.about}</p>
                   )}
                 </div>
               </div>

@@ -73,15 +73,15 @@ function ReportHistoryScreen({
 }) {
   return (
     <div style={{ paddingTop: 20, paddingBottom: 60 }}>
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: COLORS.text }}>Report history</p>
-      <p style={{ margin: 0, marginTop: 6, fontSize: 12, color: COLORS.muted }}>
+      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: COLORS.text }}>Report history</p>
+      <p style={{ margin: 0, marginTop: 6, fontSize: 14, color: COLORS.muted }}>
         Your past reports. Tap one to open.
       </p>
 
       <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
         {reports.length === 0 ? (
           <div style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 14 }}>
-            <p style={{ margin: 0, fontSize: 13, color: COLORS.muted }}>No reports yet.</p>
+            <p style={{ margin: 0, fontSize: 14, color: COLORS.muted }}>No reports yet.</p>
           </div>
         ) : (
           reports.slice(0, 12).map((r) => (
@@ -97,10 +97,10 @@ function ReportHistoryScreen({
                 cursor: 'pointer',
               }}
             >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: COLORS.text }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: COLORS.text }}>
                 {formatShortDate(r.dateISO)}
               </p>
-              <p style={{ margin: 0, marginTop: 8, fontSize: 12, lineHeight: 1.5, color: COLORS.muted }}>
+              <p style={{ margin: 0, marginTop: 8, fontSize: 14, lineHeight: 1.5, color: COLORS.muted }}>
                 {r.recommendation.summary}
               </p>
             </button>
@@ -484,7 +484,7 @@ function NavPill({
                 flex: 1,
                 textAlign: 'center',
                 padding: '8px 4px',
-                fontSize: 13,
+                fontSize: 16,
                 fontWeight: isActive ? 500 : 400,
                 color: isDisabled ? '#C8C2BB' : isActive ? COLORS.text : COLORS.muted,
                 background: 'transparent',
@@ -523,7 +523,7 @@ function NavPill({
             style={{
               padding: '7px 14px',
               borderRadius: 999,
-              fontSize: 13,
+              fontSize: 16,
               fontWeight: isActive ? 500 : 400,
               color: isDisabled ? '#C8C2BB' : isActive ? COLORS.text : COLORS.muted,
               background: isActive ? COLORS.bg : 'transparent',
@@ -567,7 +567,7 @@ function GoogleReviewModal({ onClose }: { onClose: () => void }) {
         <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
         <h2 style={{
           fontFamily: "'IBM Plex Serif', serif",
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 400,
           color: '#1C1C1E',
           margin: 0,
@@ -583,7 +583,7 @@ function GoogleReviewModal({ onClose }: { onClose: () => void }) {
           }}
           style={{
             background: '#7D716A', color: 'white', width: '100%',
-            padding: 14, borderRadius: 10, fontSize: 15,
+            padding: 14, borderRadius: 10, fontSize: 16,
             fontWeight: 500, border: 'none', cursor: 'pointer',
           }}
         >
@@ -592,7 +592,7 @@ function GoogleReviewModal({ onClose }: { onClose: () => void }) {
 
         <span
           onClick={onClose}
-          style={{ fontSize: 13, color: '#9E9A94', marginTop: 14, cursor: 'pointer', display: 'block' }}
+          style={{ fontSize: 14, color: '#9E9A94', marginTop: 14, cursor: 'pointer', display: 'block' }}
         >
           Maybe later
         </span>
@@ -664,7 +664,7 @@ function PhotoLightbox({ src, label, onClose }: { src: string; label: string; on
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <img src={src} alt="" style={{ maxWidth: '85vw', maxHeight: '80vh', borderRadius: 16, objectFit: 'contain' }} />
-      <p style={{ color: 'white', fontSize: 13, textAlign: 'center', marginTop: 12 }}>{label}</p>
+      <p style={{ color: 'white', fontSize: 14, textAlign: 'center', marginTop: 12 }}>{label}</p>
     </div>
   )
 }
@@ -683,12 +683,12 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
       }}>
         <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#1C1C1E' }}>Log a visit</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1C1C1E' }}>Log a visit</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
             <X size={18} color="#9E9A94" />
           </button>
         </div>
-        <p style={{ margin: 0, marginTop: 6, fontSize: 13, color: '#9E9A94', marginBottom: 16 }}>
+        <p style={{ margin: 0, marginTop: 6, fontSize: 14, color: '#9E9A94', marginBottom: 16 }}>
           Just type what you had — like a text to a friend.
         </p>
         <textarea
@@ -696,13 +696,13 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           onChange={(e) => setText(e.target.value)}
           placeholder='e.g. "Got Botox at Glow Studio on Monday, about 20 units in my forehead"'
           style={{
-            minHeight: 100, fontSize: 15, lineHeight: 1.6,
+            minHeight: 100, fontSize: 16, lineHeight: 1.6,
             border: 'none', borderBottom: '1px solid #E8E4DF',
             background: 'transparent', width: '100%', outline: 'none',
             resize: 'none', fontFamily: 'inherit',
           }}
         />
-        <p style={{ margin: 0, marginTop: 8, fontSize: 11, color: '#C8C2BB', lineHeight: 1.5 }}>
+        <p style={{ margin: 0, marginTop: 8, fontSize: 14, color: '#C8C2BB', lineHeight: 1.5 }}>
           Lluna will detect the treatment, clinic, and date and add it to your timeline automatically.
         </p>
         <button
@@ -712,7 +712,7 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
             width: '100%', marginTop: 20, padding: 14,
             background: text.trim() ? '#C9A96E' : '#E8E4DF',
             color: 'white', border: 'none', borderRadius: 10,
-            fontSize: 15, fontWeight: 500, cursor: text.trim() ? 'pointer' : 'default',
+            fontSize: 16, fontWeight: 500, cursor: text.trim() ? 'pointer' : 'default',
           }}
         >
           Add to my journey →
@@ -777,29 +777,29 @@ function _oldHistoryPlaceholder() {
     <div style={{ paddingTop: 20, paddingBottom: 60 }}>
       <div style={{ display: 'grid', gap: 14 }}>
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             AI NOTES
           </p>
-          <p style={{ margin: 0, marginTop: 10, fontSize: 13, lineHeight: 1.6, color: COLORS.text }}>
+          <p style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
             {lastReportSummary || 'Your AI notes will appear here after a report is generated.'}
           </p>
         </div>
 
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             LONG-TERM GOAL / LAST REPORT
           </p>
-          <p style={{ margin: 0, marginTop: 10, fontSize: 13, lineHeight: 1.6, color: COLORS.text }}>
+          <p style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
             {lastReportSummary || 'Generate your first report to start tracking your long-term plan.'}
           </p>
         </div>
 
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             TODAY’S MAINTENANCE TIMELINE
           </p>
           {history.length === 0 ? (
-            <p style={{ margin: 0, marginTop: 10, fontSize: 13, color: COLORS.muted }}>
+            <p style={{ margin: 0, marginTop: 10, fontSize: 14, color: COLORS.muted }}>
               Add a treatment to see your maintenance schedule.
             </p>
           ) : (
@@ -810,13 +810,13 @@ function _oldHistoryPlaceholder() {
                 return (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                     <div>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLORS.text }}>{t.treatmentName}</p>
-                      <p style={{ margin: 0, marginTop: 3, fontSize: 12, color: COLORS.muted }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>{t.treatmentName}</p>
+                      <p style={{ margin: 0, marginTop: 3, fontSize: 14, color: COLORS.muted }}>
                         Typical maintenance: every {m} month{m > 1 ? 's' : ''}
                       </p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: COLORS.text }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>
                         Next: {due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>
                     </div>
@@ -828,11 +828,11 @@ function _oldHistoryPlaceholder() {
         </div>
 
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             VISIT HISTORY
           </p>
           {history.length === 0 ? (
-            <p style={{ margin: 0, marginTop: 10, fontSize: 13, color: COLORS.muted }}>
+            <p style={{ margin: 0, marginTop: 10, fontSize: 14, color: COLORS.muted }}>
               No history yet.
             </p>
           ) : (
@@ -840,17 +840,17 @@ function _oldHistoryPlaceholder() {
               {history.slice(0, 8).map((h) => (
                 <div key={h.id} style={{ paddingBottom: 12, borderBottom: `1px solid ${COLORS.border}` }}>
                   <div style={{ background: COLORS.navBg, borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
-                    <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLORS.text }}>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>
                       {h.clinicName === partnerClinicName ? 'Partner clinic campaign' : 'Previous clinic campaign'}
                     </p>
-                    <p style={{ margin: 0, marginTop: 4, fontSize: 11, color: COLORS.muted }}>
+                    <p style={{ margin: 0, marginTop: 4, fontSize: 14, color: COLORS.muted }}>
                       {lifecycleText(h.clinicName)}
                     </p>
                   </div>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: COLORS.text }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>
                     {formatShortDate(h.dateISO)} · {h.clinicName}
                   </p>
-                  <p style={{ margin: 0, marginTop: 6, fontSize: 12, color: COLORS.muted }}>
+                  <p style={{ margin: 0, marginTop: 6, fontSize: 14, color: COLORS.muted }}>
                     {h.treatments.map((t) => t.treatmentName).join(' · ')}
                   </p>
                 </div>
@@ -917,7 +917,7 @@ function _oldHistoryPlaceholder() {
                 <X size={18} color={COLORS.muted} />
               </button>
             </div>
-            <p style={{ margin: 0, marginTop: 8, fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>
+            <p style={{ margin: 0, marginTop: 8, fontSize: 14, color: COLORS.muted, lineHeight: 1.5 }}>
               For a non-partner clinic, add it manually. Partner clinics will auto-fill from reports.
             </p>
 
@@ -931,7 +931,7 @@ function _oldHistoryPlaceholder() {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 10,
                 padding: 10,
-                fontSize: 13,
+                fontSize: 14,
                 outline: 'none',
               }}
             />
@@ -945,7 +945,7 @@ function _oldHistoryPlaceholder() {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 10,
                 padding: 10,
-                fontSize: 13,
+                fontSize: 14,
                 outline: 'none',
               }}
             />
@@ -960,7 +960,7 @@ function _oldHistoryPlaceholder() {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 10,
                 padding: 10,
-                fontSize: 13,
+                fontSize: 14,
                 resize: 'none',
                 outline: 'none',
               }}
@@ -976,7 +976,7 @@ function _oldHistoryPlaceholder() {
                   color: COLORS.text,
                   border: `1px solid ${COLORS.border}`,
                   borderRadius: 10,
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
@@ -993,7 +993,7 @@ function _oldHistoryPlaceholder() {
                   color: COLORS.white,
                   border: 'none',
                   borderRadius: 10,
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 700,
                   cursor: manualClinicName.trim() && manualTreatments.trim() ? 'pointer' : 'default',
                   opacity: manualClinicName.trim() && manualTreatments.trim() ? 1 : 0.7,
@@ -1038,24 +1038,24 @@ function MyJourneyPage({
     <div style={{ paddingTop: 24, paddingBottom: 100 }}>
       {todayEntry && (
         <>
-          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>
             TODAY&apos;S VISIT
           </p>
           <div style={{ background: '#FFFFFF', borderRadius: 16, padding: 20, border: '1px solid #E8E4DF', marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#1C1C1E' }}>{todayEntry.clinicName}</span>
-              <span style={{ fontSize: 12, color: '#9E9A94', marginLeft: 'auto' }}>{todayStr}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#1C1C1E' }}>{todayEntry.clinicName}</span>
+              <span style={{ fontSize: 14, color: '#9E9A94', marginLeft: 'auto' }}>{todayStr}</span>
             </div>
             <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {todayEntry.treatments.map((t, i) => (
-                <span key={i} style={{ background: '#FAF5EE', color: '#A8845A', padding: '5px 12px', borderRadius: 999, fontSize: 13, fontWeight: 500 }}>
+                <span key={i} style={{ background: '#FAF5EE', color: '#A8845A', padding: '5px 12px', borderRadius: 999, fontSize: 14, fontWeight: 500 }}>
                   {t.treatmentName}
                 </span>
               ))}
             </div>
             {llunaNote && (
               <div style={{ marginTop: 16, background: '#F8F6F3', borderRadius: 10, padding: 14 }}>
-                <p style={{ margin: 0, fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', marginBottom: 6 }}>LLUNA NOTES</p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', marginBottom: 6 }}>LLUNA NOTES</p>
                 <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#2C2C2C' }}>{llunaNote}</p>
               </div>
             )}
@@ -1065,7 +1065,7 @@ function MyJourneyPage({
 
       {todayEntry && todayEntry.treatments.length > 0 && (
         <>
-          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>YOUR MAINTENANCE WINDOW</p>
+          <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>YOUR MAINTENANCE WINDOW</p>
           <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '4px 16px', border: '1px solid #E8E4DF', marginBottom: 8 }}>
             {todayEntry.treatments.map((t, i) => {
               const m = getMaintenanceMonths(t)
@@ -1074,29 +1074,29 @@ function MyJourneyPage({
               return (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < todayEntry.treatments.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
                   <div>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: '#1C1C1E' }}>{t.treatmentName}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginTop: 2 }}>Typical: every {m} months · individual results vary</p>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#1C1C1E' }}>{t.treatmentName}</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>Typical: every {m} months · individual results vary</p>
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 500, color: '#C9A96E', whiteSpace: 'nowrap' }}>Next: {nextLabel}</span>
                 </div>
               )
             })}
           </div>
-          <p style={{ margin: 0, fontSize: 11, color: '#9E9A94', marginTop: 10, lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 10, lineHeight: 1.5 }}>
             ⚠ Maintenance windows are estimates. Your results depend on your metabolism, lifestyle, and individual response.
           </p>
         </>
       )}
 
-      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 28, marginBottom: 12 }}>FROM YOUR CLINICS</p>
+      <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 28, marginBottom: 12 }}>FROM YOUR CLINICS</p>
       {CLINIC_CAMPAIGNS.map((camp) => (
         <div key={camp.id} style={{ background: camp.color, borderRadius: 14, padding: 18, marginBottom: 10, border: '1px solid #E8E4DF' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor }}>{camp.clinicName.toUpperCase()}</span>
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor, opacity: 0.7 }}>{camp.type === 'loyalty' ? 'LOYALTY PROGRAM' : 'LIMITED TIME'}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor }}>{camp.clinicName.toUpperCase()}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor, opacity: 0.7 }}>{camp.type === 'loyalty' ? 'LOYALTY PROGRAM' : 'LIMITED TIME'}</span>
           </div>
-          <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1C1C1E', marginTop: 6, marginBottom: 4 }}>{camp.headline}</h4>
-          <p style={{ margin: 0, fontSize: 13, color: '#6E6E73', lineHeight: 1.5 }}>{camp.body}</p>
+          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1C1C1E', marginTop: 6, marginBottom: 4 }}>{camp.headline}</h4>
+          <p style={{ margin: 0, fontSize: 14, color: '#6E6E73', lineHeight: 1.5 }}>{camp.body}</p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             {camp.visitsRemaining !== null ? (
               <div style={{ display: 'flex', gap: 4 }}>
@@ -1105,14 +1105,14 @@ function MyJourneyPage({
                 ))}
               </div>
             ) : <div />}
-            {camp.expiryDate && <span style={{ fontSize: 11, color: '#9E9A94' }}>Ends {camp.expiryDate}</span>}
+            {camp.expiryDate && <span style={{ fontSize: 14, color: '#9E9A94' }}>Ends {camp.expiryDate}</span>}
           </div>
         </div>
       ))}
 
-      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 32, marginBottom: 8 }}>MY BEAUTY JOURNEY</p>
-      <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginBottom: 12 }}>Your visits, your progress. Tap any photo to expand.</p>
-      <p style={{ margin: 0, fontSize: 11, color: '#C8C2BB', marginBottom: 20 }}>🔒 Your photos are private and never shared with third parties.</p>
+      <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 32, marginBottom: 8 }}>MY BEAUTY JOURNEY</p>
+      <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginBottom: 12 }}>Your visits, your progress. Tap any photo to expand.</p>
+      <p style={{ margin: 0, fontSize: 14, color: '#C8C2BB', marginBottom: 20 }}>🔒 Your photos are private and never shared with third parties.</p>
 
       <div style={{ position: 'relative', paddingLeft: 32 }}>
         <div style={{ position: 'absolute', left: 5, top: 6, bottom: 0, width: 1.5, background: '#E8E4DF' }} />
@@ -1133,15 +1133,15 @@ function MyJourneyPage({
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#C9A96E', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
               )}
               <div style={{ marginLeft: v.photo ? 24 : 0 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: '#9E9A94' }}>{v.date}</p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: '#9E9A94' }}>{v.date}</p>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1C1C1E', marginTop: 2 }}>{v.clinicName}</p>
-                <p style={{ margin: 0, fontSize: 13, color: '#6E6E73', marginTop: 2 }}>{v.treatments.join(' · ')}</p>
+                <p style={{ margin: 0, fontSize: 14, color: '#6E6E73', marginTop: 2 }}>{v.treatments.join(' · ')}</p>
               </div>
             </div>
           ))
         )}
         {visits.length > 4 && !showAllTimeline && (
-          <button onClick={() => setShowAllTimeline(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#C9A96E', fontWeight: 500, padding: '4px 0', marginBottom: 20 }}>
+          <button onClick={() => setShowAllTimeline(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#C9A96E', fontWeight: 500, padding: '4px 0', marginBottom: 20 }}>
             Show more →
           </button>
         )}
@@ -1149,7 +1149,7 @@ function MyJourneyPage({
           <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px dashed #C8C2BB', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
           <div>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>Log a visit</p>
-            <p style={{ margin: 0, fontSize: 12, color: '#C8C2BB', marginTop: 2 }}>No QR? Type what you had — Lluna will organize it.</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#C8C2BB', marginTop: 2 }}>No QR? Type what you had — Lluna will organize it.</p>
           </div>
         </div>
       </div>
@@ -1198,11 +1198,11 @@ function MyProfilePage({ state }: { state: AppState }) {
             <span style={{ fontSize: 28, fontWeight: 600, color: '#A8845A' }}>{initials}</span>
           )}
         </div>
-        <p style={{ margin: 0, fontSize: 12, color: '#9E9A94' }}>📷</p>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#1C1C1E', marginTop: 8, marginBottom: 4 }}>
+        <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>📷</p>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#1C1C1E', marginTop: 8, marginBottom: 4 }}>
           {state.name || 'Lluna Member'}
         </h2>
-        <p style={{ margin: 0, fontSize: 13, color: '#9E9A94' }}>Lluna member since {memberSince}</p>
+        <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>Lluna member since {memberSince}</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 28 }}>
@@ -1212,56 +1212,56 @@ function MyProfilePage({ state }: { state: AppState }) {
           { num: `${daysSinceJoin} days`, label: 'With Lluna' },
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: 'center', padding: '12px 0', borderRight: i < 2 ? '1px solid #E8E4DF' : 'none' }}>
-            <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1C1C1E' }}>{s.num}</p>
-            <p style={{ margin: 0, fontSize: 11, color: '#9E9A94', marginTop: 3 }}>{s.label}</p>
+            <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1C1C1E' }}>{s.num}</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 3 }}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>MY CLINICS</p>
+      <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>MY CLINICS</p>
       {clinicStats.map((c) => (
         <div key={c.name} style={{ background: '#FFFFFF', borderRadius: 14, padding: 16, border: '1px solid #E8E4DF', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FAF5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏥</div>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FAF5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏥</div>
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: '#1C1C1E' }}>{c.name}</p>
-            <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginTop: 2 }}>{c.visits} visit{c.visits > 1 ? 's' : ''} · First visit {c.firstVisit}</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#1C1C1E' }}>{c.name}</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>{c.visits} visit{c.visits > 1 ? 's' : ''} · First visit {c.firstVisit}</p>
           </div>
           <span style={{ fontSize: 16, color: '#C8C2BB' }}>→</span>
         </div>
       ))}
 
-      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY PREFERENCES</p>
+      <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY PREFERENCES</p>
       {prefs.map((p, i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < prefs.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
           <div>
             <p style={{ margin: 0, fontSize: 14, color: '#1C1C1E' }}>{p.label}</p>
-            <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginTop: 2 }}>{p.value}</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>{p.value}</p>
           </div>
-          <span style={{ fontSize: 12, color: '#C9A96E', cursor: 'pointer' }}>Edit →</span>
+          <span style={{ fontSize: 14, color: '#C9A96E', cursor: 'pointer' }}>Edit →</span>
         </div>
       ))}
 
-      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY FOOTPRINT</p>
-      <p style={{ margin: 0, fontSize: 12, color: '#9E9A94', marginBottom: 16 }}>Clinics you&apos;ve visited through Lluna</p>
+      <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY FOOTPRINT</p>
+      <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginBottom: 16 }}>Clinics you&apos;ve visited through Lluna</p>
       <div style={{ background: '#EDE9E4', borderRadius: 14, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E8E4DF', marginBottom: 12 }}>
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: 32 }}>🗺️</span>
-          <p style={{ margin: 0, fontSize: 13, color: '#9E9A94', marginTop: 8 }}>NYC · LA · Miami</p>
-          <p style={{ margin: 0, fontSize: 11, color: '#C8C2BB', marginTop: 4 }}>(Map view coming soon)</p>
+          <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 8 }}>NYC · LA · Miami</p>
+          <p style={{ margin: 0, fontSize: 14, color: '#C8C2BB', marginTop: 4 }}>(Map view coming soon)</p>
         </div>
 
       </div>
       {[...allVisits].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((v) => (
         <div key={v.id} style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid #F0EDE8' }}>
-          <span style={{ fontSize: 13 }}>📍</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#1C1C1E' }}>{v.clinicName}</span>
-          <span style={{ fontSize: 12, color: '#9E9A94', marginLeft: 'auto' }}>{v.date}</span>
+          <span style={{ fontSize: 14 }}>📍</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#1C1C1E' }}>{v.clinicName}</span>
+          <span style={{ fontSize: 14, color: '#9E9A94', marginLeft: 'auto' }}>{v.date}</span>
         </div>
       ))}
 
       <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 40 }}>
         <span style={{ fontSize: 14, color: '#9E9A94', cursor: 'pointer', display: 'block', marginBottom: 8 }}>Sign out</span>
-        <span style={{ fontSize: 12, color: '#C8C2BB', cursor: 'pointer', display: 'block' }}>Delete my account</span>
+        <span style={{ fontSize: 14, color: '#C8C2BB', cursor: 'pointer', display: 'block' }}>Delete my account</span>
       </div>
     </div>
   )
@@ -1271,7 +1271,7 @@ function MyProfilePage({ state }: { state: AppState }) {
 function ClinicHeader() {
   const { clinicName } = useContext(ConsumerClinicUiContext)
   return (
-    <span style={{ fontSize: 12, fontWeight: 500, color: COLORS.text }}>
+    <span style={{ fontSize: 14, fontWeight: 500, color: COLORS.text }}>
       {clinicName}
     </span>
   )
@@ -1324,10 +1324,10 @@ function ProcessingBar({ value }: { value: number }) {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
           PROCESSING
         </p>
-        <p style={{ margin: 0, fontSize: 12, color: COLORS.text, fontWeight: 600 }}>{v}%</p>
+        <p style={{ margin: 0, fontSize: 14, color: COLORS.text, fontWeight: 600 }}>{v}%</p>
       </div>
       <div style={{ height: 10, borderRadius: 999, background: COLORS.border, overflow: 'hidden' }}>
         <div
@@ -1398,7 +1398,7 @@ function RadioOption({
           transition: 'all 0.2s ease'
         }}
       />
-      <span style={{ fontSize: 15, marginLeft: 12, color: COLORS.text }}>
+      <span style={{ fontSize: 16, marginLeft: 12, color: COLORS.text }}>
         {label}
       </span>
     </div>
@@ -1419,7 +1419,7 @@ function ContinueButton({
     <button
       onClick={() => !disabled && onClick()}
       style={{
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: 500,
         color: COLORS.text,
         background: 'none',
@@ -1548,7 +1548,7 @@ function HelpPopup({
             }}>
               <Check size={24} color={COLORS.success} />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: COLORS.text, marginBottom: 8 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: COLORS.text, marginBottom: 8 }}>
               Request Received
             </h3>
             <p style={{ fontSize: 14, color: COLORS.muted }}>
@@ -1557,7 +1557,7 @@ function HelpPopup({
           </div>
         ) : (
           <>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: COLORS.text, marginBottom: 8, paddingRight: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: COLORS.text, marginBottom: 8, paddingRight: 20 }}>
               {"Didn't see what you want?"}
             </h3>
             <p style={{ fontSize: 14, color: COLORS.muted, marginBottom: 20 }}>
@@ -1622,15 +1622,15 @@ function TreatmentDetailScreen({
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} label="" onClose={() => setLightboxSrc(null)} />}
       <BackButton onClick={onBack} />
 
-      <h1 style={{ fontSize: 22, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, marginTop: 24, marginBottom: 4 }}>
+      <h1 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, marginTop: 24, marginBottom: 4 }}>
         {treatment.name}
       </h1>
       {treatment.category && (
-        <p style={{ fontSize: 12, color: COLORS.accent, margin: '0 0 4px' }}>{treatment.category}</p>
+        <p style={{ fontSize: 14, color: COLORS.accent, margin: '0 0 4px' }}>{treatment.category}</p>
       )}
       {treatment.pricing_model === 'table' && treatment.pricing_table ? (
         <div style={{ overflowX: 'auto', marginBottom: 20 }}>
-          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12, minWidth: 320 }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 14, minWidth: 320 }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: `1px solid ${COLORS.border}`, color: COLORS.muted, fontWeight: 500 }}></th>
@@ -1676,7 +1676,7 @@ function TreatmentDetailScreen({
         />
       ) : null}
       {!treatment.posterUrl && !treatment.beforeAfterUrl && (
-        <p style={{ fontSize: 13, color: COLORS.muted, marginBottom: 20 }}>No photos uploaded yet.</p>
+        <p style={{ fontSize: 14, color: COLORS.muted, marginBottom: 20 }}>No photos uploaded yet.</p>
       )}
 
       {treatment.description && (
@@ -1804,7 +1804,7 @@ function ClinicMenuScreen({
             value={treatmentFilter}
             onChange={(e) => setTreatmentFilter(e.target.value as typeof treatmentFilter)}
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: COLORS.text,
               background: COLORS.bg,
               border: `1px solid ${COLORS.border}`,
@@ -1851,7 +1851,7 @@ function ClinicMenuScreen({
               placeholder="Search treatments…"
               style={{
                 width: '100%',
-                fontSize: 15,
+                fontSize: 16,
                 color: COLORS.text,
                 background: COLORS.bg,
                 border: `1px solid ${COLORS.border}`,
@@ -1878,7 +1878,7 @@ function ClinicMenuScreen({
                   onClick={() => setSelectedCategoryId(cat.id)}
                   style={{
                     flexShrink: 0,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: active ? 600 : 400,
                     color: active ? COLORS.white : COLORS.text,
                     background: active ? COLORS.accent : COLORS.bg,
@@ -1898,7 +1898,7 @@ function ClinicMenuScreen({
         )}
 
         {visibleTreatments.length === 0 ? (
-          <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 15 }}>
+          <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 16 }}>
             No treatments match your search.
           </div>
         ) : (
@@ -1917,19 +1917,19 @@ function ClinicMenuScreen({
                 <span style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, display: 'block' }}>
                   {treatment.name}
                 </span>
-                <span style={{ fontSize: 13, color: COLORS.muted, display: 'block', marginTop: 2 }}>
+                <span style={{ fontSize: 14, color: COLORS.muted, display: 'block', marginTop: 2 }}>
                   {treatment.category}
                 </span>
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <span style={{ fontSize: 15, fontWeight: 500, color: COLORS.text, display: 'block' }}>
+                <span style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, display: 'block' }}>
                   {getPrimaryPriceLabel(treatment)}
                 </span>
-                <span style={{ fontSize: 11, color: COLORS.muted }}>
+                <span style={{ fontSize: 14, color: COLORS.muted }}>
                   {treatment.units}
                 </span>
                 {(treatment.posterUrl || treatment.beforeAfterUrl) && (
-                  <span style={{ fontSize: 10, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
+                  <span style={{ fontSize: 14, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
                 )}
               </div>
             </div>
@@ -2009,7 +2009,7 @@ function PrivacyPolicyScreen({ onBack }: { onBack: () => void }) {
           If you have questions about this Privacy Policy, please contact us at privacy@lluna.ai
         </p>
         
-        <p style={{ fontSize: 12, color: COLORS.muted, marginTop: 32 }}>
+        <p style={{ fontSize: 14, color: COLORS.muted, marginTop: 32 }}>
           @ 2026 Lluna AI Inc.
         </p>
       </div>
@@ -2074,7 +2074,7 @@ function WelcomeScreen({
       </h1>
       <p
         style={{
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: 400,
           lineHeight: 1.7,
           color: COLORS.text,
@@ -2089,7 +2089,7 @@ function WelcomeScreen({
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
           <ContinueButton onClick={() => go(2)} />
         </div>
-        <p style={{ fontSize: 11, color: COLORS.muted, textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: COLORS.muted, textAlign: 'center' }}>
           Continue to agree with our{" "}
           <span
             onClick={onPrivacyClick}
@@ -2098,7 +2098,7 @@ function WelcomeScreen({
             privacy policy
           </span>
         </p>
-        <p style={{ fontSize: 11, color: COLORS.muted, textAlign: 'center', marginTop: 8 }}>
+        <p style={{ fontSize: 14, color: COLORS.muted, textAlign: 'center', marginTop: 8 }}>
           @ 2026 Lluna AI Inc.
         </p>
       </div>
@@ -2137,7 +2137,7 @@ function PhotoScreen({
         Show us your starting point
       </h1>
       
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 40, color: COLORS.text }}>
+      <p style={{ fontSize: 16, fontWeight: 400, lineHeight: 1.6, marginBottom: 40, color: COLORS.text }}>
         A photo helps us give specific, honest advice - including how many units, which areas, and what to hold off on for now.
       </p>
       
@@ -2167,7 +2167,7 @@ function PhotoScreen({
         ) : (
           <>
             <Camera size={28} color={COLORS.muted} />
-            <span style={{ fontSize: 12, color: COLORS.muted, marginTop: 8 }}>
+            <span style={{ fontSize: 14, color: COLORS.muted, marginTop: 8 }}>
               Tap to add photo
             </span>
           </>
@@ -2184,7 +2184,7 @@ function PhotoScreen({
       
       <p
         style={{
-          fontSize: 12,
+          fontSize: 14,
           color: COLORS.muted,
           textAlign: 'center',
           marginTop: 16,
@@ -2405,7 +2405,7 @@ function GoalsScreen({
         >
           <Mic size={18} color={isRecording ? COLORS.success : COLORS.text} />
         </button>
-        <span style={{ fontSize: 11, color: isRecording ? COLORS.success : COLORS.muted, marginTop: 8 }}>
+        <span style={{ fontSize: 14, color: isRecording ? COLORS.success : COLORS.muted, marginTop: 8 }}>
           {isRecording ? "Release to stop" : "Hold to speak"}
         </span>
       </div>
@@ -2512,7 +2512,7 @@ function BudgetScreen({
       </div>
       
       <div style={{ marginTop: 24 }}>
-        <label style={{ fontSize: 13, color: COLORS.muted, display: 'block', marginBottom: 8 }}>
+        <label style={{ fontSize: 14, color: COLORS.muted, display: 'block', marginBottom: 8 }}>
           Or enter your own amount
         </label>
         <div style={{ position: 'relative' }}>
@@ -2910,7 +2910,7 @@ function GeneratingScreen({
       </div>
       
       <p style={{ 
-        fontSize: 11, 
+        fontSize: 14, 
         color: COLORS.muted, 
         position: 'fixed',
         bottom: 24,
@@ -2968,7 +2968,7 @@ function ProfileScreen({
       </h1>
       <ProcessingBar value={reportProgress} />
 
-      <p style={{ fontSize: 15, color: COLORS.muted, marginBottom: 40, marginTop: 8 }}>
+      <p style={{ fontSize: 16, color: COLORS.muted, marginBottom: 40, marginTop: 8 }}>
         Save your personalized recommendations.
       </p>
 
@@ -3038,7 +3038,7 @@ function ProfileScreen({
             cursor: 'pointer',
           }}
         />
-        <span style={{ fontSize: 13, color: COLORS.muted, lineHeight: 1.5 }}>
+        <span style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.5 }}>
           I consent to this clinic and its technology partners processing my information to generate treatment recommendations.
         </span>
       </label>
@@ -3339,7 +3339,7 @@ function CaseStudyCard({
               background: 'rgba(255,255,255,0.9)',
               padding: '4px 8px',
               borderRadius: 4,
-              fontSize: 9,
+              fontSize: 14,
               color: COLORS.muted
             }}>
               Pending
@@ -3350,7 +3350,7 @@ function CaseStudyCard({
             position: 'absolute',
             bottom: 6,
             left: 6,
-            fontSize: 9,
+            fontSize: 14,
             background: 'rgba(0,0,0,0.5)',
             color: 'white',
             padding: '2px 5px',
@@ -3392,7 +3392,7 @@ function CaseStudyCard({
               background: 'rgba(255,255,255,0.9)',
               padding: '4px 8px',
               borderRadius: 4,
-              fontSize: 9,
+              fontSize: 14,
               color: COLORS.muted
             }}>
               Pending
@@ -3403,7 +3403,7 @@ function CaseStudyCard({
             position: 'absolute',
             bottom: 6,
             right: 6,
-            fontSize: 9,
+            fontSize: 14,
             background: 'rgba(0,0,0,0.5)',
             color: 'white',
             padding: '2px 5px',
@@ -3412,10 +3412,10 @@ function CaseStudyCard({
         </div>
       </div>
       <div style={{ padding: '8px 10px' }}>
-        <p style={{ fontSize: 11, fontWeight: 500, color: COLORS.text, margin: 0 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>
           {treatment?.name || 'Treatment'} Result
         </p>
-        <p style={{ fontSize: 10, color: COLORS.muted, margin: 0 }}>
+        <p style={{ fontSize: 14, color: COLORS.muted, margin: 0 }}>
           {beforeAfter || poster ? 'Clinic-provided imagery' : 'Case photos pending clinic upload'}
         </p>
       </div>
@@ -3454,7 +3454,7 @@ function ConsultantFinalPlanSection({
     <div style={{ marginBottom: 24, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
       <p
         style={{
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: 500,
           letterSpacing: '0.1em',
           color: COLORS.muted,
@@ -3477,7 +3477,7 @@ function ConsultantFinalPlanSection({
         }}
       >
         {plan.submitted_at ? (
-          <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginBottom: 12 }}>
+          <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginBottom: 12 }}>
             Updated {fmtDate(plan.submitted_at)}
           </p>
         ) : null}
@@ -3491,11 +3491,11 @@ function ConsultantFinalPlanSection({
             marginBottom: plan.final_plan_text ? 14 : 0,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.success, letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.success, letterSpacing: '0.04em' }}>
             CONFIRMED WITH YOUR CLINIC
           </span>
           {Number.isFinite(plan.total_price) && plan.total_price > 0 ? (
-            <span style={{ fontSize: 22, fontWeight: 700, color: COLORS.text }}>${Math.round(plan.total_price)}</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: COLORS.text }}>${Math.round(plan.total_price)}</span>
           ) : null}
         </div>
         {plan.final_plan_text ? (
@@ -3507,7 +3507,7 @@ function ConsultantFinalPlanSection({
           <div style={{ marginTop: 16, borderTop: `1px solid ${COLORS.border}`, paddingTop: 14 }}>
             <p
               style={{
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 600,
                 color: COLORS.muted,
                 margin: 0,
@@ -3543,7 +3543,7 @@ function ConsultantFinalPlanSection({
                     <div style={{ flex: '1 1 min(100%, 220px)', minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>{name}</p>
                       {note ? (
-                        <p style={{ margin: 0, marginTop: 4, fontSize: 12, color: COLORS.accent, lineHeight: 1.5 }}>
+                        <p style={{ margin: 0, marginTop: 4, fontSize: 14, color: COLORS.accent, lineHeight: 1.5 }}>
                           {note}
                         </p>
                       ) : null}
@@ -3559,7 +3559,7 @@ function ConsultantFinalPlanSection({
             </ul>
           </div>
         ) : null}
-        <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 14, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginTop: 14, lineHeight: 1.5 }}>
           This plan was prepared by your consultant after your visit. Ask them if you have any questions.
         </p>
       </div>
@@ -3672,7 +3672,7 @@ function ReportScreen({
       {state.goals && (
         <div style={{ marginBottom: 24 }}>
           <p style={{
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: '0.1em',
             color: COLORS.muted,
@@ -3700,7 +3700,7 @@ function ReportScreen({
       {/* AI-Powered Recommendations - Always shows (uses aiRec or fallback) */}
       <div style={{ marginBottom: 24 }}>
         <p style={{ 
-          fontSize: 11, 
+          fontSize: 14, 
           fontWeight: 500, 
           letterSpacing: '0.1em', 
           color: COLORS.muted,
@@ -3753,7 +3753,7 @@ function ReportScreen({
                     right: 16,
                     background: COLORS.success,
                     color: COLORS.white,
-                    fontSize: 10,
+                    fontSize: 14,
                     fontWeight: 600,
                     padding: '4px 10px',
                     borderRadius: 999,
@@ -3766,19 +3766,19 @@ function ReportScreen({
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, color: COLORS.text, margin: 0 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: COLORS.text, margin: 0 }}>
                       {plan.name}
                     </h3>
-                    <p style={{ fontSize: 12, color: COLORS.accent, margin: 0, marginTop: 2 }}>
+                    <p style={{ fontSize: 14, color: COLORS.accent, margin: 0, marginTop: 2 }}>
                       {plan.tagline}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 22, fontWeight: 600, color: COLORS.text }}>
+                    <span style={{ fontSize: 20, fontWeight: 600, color: COLORS.text }}>
                       ${plan.totalCost}
                     </span>
                     {plan.savings > 0 && (
-                      <p style={{ fontSize: 11, color: COLORS.success, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: COLORS.success, margin: 0 }}>
                         Save ${plan.savings}
                       </p>
                     )}
@@ -3795,7 +3795,7 @@ function ReportScreen({
                         key={i}
                         onClick={() => openTreatmentDetail(t.treatmentName || '', t.treatmentId)}
                         style={{
-                          fontSize: 11,
+                          fontSize: 14,
                           background: COLORS.navBg,
                           padding: '4px 10px',
                           borderRadius: 999,
@@ -3826,17 +3826,17 @@ function ReportScreen({
                       borderRadius: 8, 
                       marginTop: 12 
                     }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: COLORS.success, margin: 0, marginBottom: 4 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.success, margin: 0, marginBottom: 4 }}>
                         SYNERGY BENEFIT
                       </p>
-                      <p style={{ fontSize: 12, color: COLORS.success, margin: 0 }}>
+                      <p style={{ fontSize: 14, color: COLORS.success, margin: 0 }}>
                         {plan.synergyNote}
                       </p>
                     </div>
                     
                     {/* Treatment details */}
                     <div style={{ marginTop: 16 }}>
-                      <p style={{ fontSize: 11, fontWeight: 500, color: COLORS.muted, marginBottom: 8 }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.muted, marginBottom: 8 }}>
                         INCLUDED TREATMENTS
                       </p>
                       {plan.treatments.map((t, i) => {
@@ -3852,7 +3852,7 @@ function ReportScreen({
                                 ${t.cost}
                               </span>
                             </div>
-                            <p style={{ fontSize: 12, color: COLORS.accent, margin: 0, marginTop: 2 }}>
+                            <p style={{ fontSize: 14, color: COLORS.accent, margin: 0, marginTop: 2 }}>
                               {t.units ? `${t.units} units` : ''}
                               {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? 's' : ''} ${t.fillerType || ''}` : ''}
                               {t.sessions ? `${t.sessions} session${t.sessions > 1 ? 's' : ''}` : ''}
@@ -3873,7 +3873,7 @@ function ReportScreen({
       {aiRec?.additionalRecommendations && aiRec.additionalRecommendations.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <p style={{
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: '0.1em',
             color: COLORS.muted,
@@ -3900,10 +3900,10 @@ function ReportScreen({
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
-                  <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description || rec.reason}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
+                  <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description || rec.reason}</p>
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
                   ${Number(rec.price).toLocaleString()}
                 </p>
               </div>
@@ -3916,7 +3916,7 @@ function ReportScreen({
       {aiRec?.beforeYouStepOut && aiRec.beforeYouStepOut.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <p style={{
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: '0.1em',
             color: COLORS.muted,
@@ -3943,12 +3943,12 @@ function ReportScreen({
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
                   {rec.description && (
-                    <p style={{ fontSize: 12, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description}</p>
+                    <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description}</p>
                   )}
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
                   ${Number(rec.price).toLocaleString()}
                 </p>
               </div>
@@ -3969,7 +3969,7 @@ function ReportScreen({
         if (withPhotos.length === 0) return null
         return (
           <div style={{ marginBottom: 32 }}>
-            <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', color: COLORS.muted, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.1em', color: COLORS.muted, marginBottom: 12 }}>
               TREATMENT PHOTOS
             </p>
             {withPhotos.map(treatment => (
@@ -3991,7 +3991,7 @@ function ReportScreen({
                   />
                 )}
                 <div style={{ padding: '8px 12px' }}>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: COLORS.text, margin: 0 }}>{treatment.name}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>{treatment.name}</p>
                 </div>
               </div>
             ))}
