@@ -11,7 +11,7 @@ import { useState, useEffect, useRef, useCallback, createContext, useContext, us
 import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
 import { normalizeMdTeam } from "@/lib/clinic-public-page"
 import { Camera, Mic, Check, ChevronRight, ChevronLeft, Pencil, HelpCircle, X, ChevronDown, ChevronUp, Plus } from "lucide-react"
-import { I18nProvider, useI18n } from "@/lib/i18n"
+import { I18nProvider, useI18n, DynT } from "@/lib/i18n"
 import { LanguageSwitcher } from "@/components/consumer/language-switcher"
 
 type PricingTableRow = { label: string; values: Record<string, number | null> }
@@ -102,9 +102,9 @@ function ReportHistoryScreen({
               <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: COLORS.text }}>
                 {formatShortDate(r.dateISO)}
               </p>
-              <p style={{ margin: 0, marginTop: 8, fontSize: 14, lineHeight: 1.5, color: COLORS.muted }}>
+              <DynT as="p" style={{ margin: 0, marginTop: 8, fontSize: 14, lineHeight: 1.5, color: COLORS.muted }}>
                 {r.recommendation.summary}
-              </p>
+              </DynT>
             </button>
           ))
         )}
@@ -783,18 +783,18 @@ function _oldHistoryPlaceholder() {
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             AI NOTES
           </p>
-          <p style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
+          <DynT as="p" style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
             {lastReportSummary || 'Your AI notes will appear here after a report is generated.'}
-          </p>
+          </DynT>
         </div>
 
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: COLORS.muted }}>
             LONG-TERM GOAL / LAST REPORT
           </p>
-          <p style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
+          <DynT as="p" style={{ margin: 0, marginTop: 10, fontSize: 14, lineHeight: 1.6, color: COLORS.text }}>
             {lastReportSummary || 'Generate your first report to start tracking your long-term plan.'}
-          </p>
+          </DynT>
         </div>
 
         <div style={{ background: COLORS.bg, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: 14 }}>
@@ -1427,7 +1427,7 @@ function ContinueButton({
         color: '#FFFFFF',
         background: '#0A0A0A',
         border: 'none',
-        borderRadius: 6,
+        borderRadius: 999,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.25 : 1,
         padding: '10px 20px',
@@ -1685,9 +1685,9 @@ function TreatmentDetailScreen({
       )}
 
       {treatment.description && (
-        <p style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, marginTop: 16 }}>
+        <DynT as="p" style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.65, marginTop: 16 }}>
           {treatment.description}
-        </p>
+        </DynT>
       )}
     </div>
   )
@@ -3835,9 +3835,9 @@ function ReportScreen({
                       <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.success, margin: 0, marginBottom: 4 }}>
                         SYNERGY BENEFIT
                       </p>
-                      <p style={{ fontSize: 14, color: COLORS.success, margin: 0 }}>
+                      <DynT as="p" style={{ fontSize: 14, color: COLORS.success, margin: 0 }}>
                         {plan.synergyNote}
-                      </p>
+                      </DynT>
                     </div>
                     
                     {/* Treatment details */}
@@ -3906,8 +3906,8 @@ function ReportScreen({
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</p>
-                  <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description || rec.reason}</p>
+                  <DynT as="p" style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, margin: 0 }}>{rec.name}</DynT>
+                  <DynT as="p" style={{ fontSize: 14, color: COLORS.muted, margin: 0, marginTop: 3, lineHeight: 1.5 }}>{rec.description || rec.reason}</DynT>
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: 0, whiteSpace: 'nowrap' }}>
                   ${Number(rec.price).toLocaleString()}

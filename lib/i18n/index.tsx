@@ -45,3 +45,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 }
 
 export const useI18n = () => useContext(I18nContext)
+
+// Re-export dynamic translation utilities
+export { useTranslated, useTranslatedObject, DynT } from "./use-translated"
+export { translateText, translateBatch } from "./dynamic"
