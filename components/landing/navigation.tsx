@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -8,34 +8,26 @@ const navLinks = [
   { name: "How It Works", href: "/#how-it-works" },
   { name: "Pricing", href: "/#pricing" },
   { name: "Partner", href: "/#partner" },
+  { name: "Blog", href: "/blog" },
   { name: "FAQ", href: "/#faq" },
 ];
 
 export function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const handleEnterprise = () => {
     router.push("/clinicside/auth");
   };
 
   return (
-    <header className="fixed z-50 top-0 left-0 right-0 lg:right-1/2">
+    <header className="fixed z-50 top-0 left-0 right-0">
       <nav
-        className={`transition-all duration-300 ${
-          isScrolled || isMobileMenuOpen
-            ? "bg-[#F2EFE9]"
-            : "bg-transparent"
-        }`}
+        style={{
+          background: "rgba(245, 242, 235, 0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
       >
         <div className="flex items-center justify-between px-8 lg:px-16 xl:px-24 h-20">
           {/* Logo */}

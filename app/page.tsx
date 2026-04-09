@@ -6,6 +6,7 @@ import { ProblemSection } from "@/components/landing/problem-section";
 import { HowLumeWorksSection } from "@/components/landing/how-lume-works-section";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { PartnerSection } from "@/components/landing/partner-section";
+import { BlogSection } from "@/components/landing/blog-section";
 import { FaqSection } from "@/components/landing/faq-section";
 import { FooterSection } from "@/components/landing/footer-section";
 import { CursorRipple } from "@/components/landing/cursor-ripple";
@@ -26,6 +27,7 @@ export default function Home() {
       <HowLumeWorksSection />
       <PricingSection />
       <PartnerSection />
+      <BlogSection />
       <FaqSection />
       <FooterSection />
     </main>

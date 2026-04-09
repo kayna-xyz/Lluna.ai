@@ -37,12 +37,8 @@ export function ProblemSection() {
           You&apos;re losing revenue before the consultation even starts.
         </h2>
 
-        <p className="text-[15px] leading-[1.8] text-muted-foreground max-w-[520px] mb-6">
-          Most aesthetic clinics lose 30–60% of potential revenue because patients walk in unprepared, unsure, and unconvinced.
-        </p>
-
-        <p className="text-[15px] leading-[1.8] text-foreground font-medium">
-          Lluna fixes that before they even sit down.
+        <p className="text-[15px] leading-[1.8] text-muted-foreground max-w-[520px]">
+          Every consultant has a different level of experience. But with Lluna — trained on senior aesthetic consultant logic and optimized for treatment synergies — every member of your team performs at the same level. No missed combinations. No lost $500+ upsell windows. Patients get better recommendations. Consultants close more. Everyone wins.
         </p>
       </div>
     </div>
