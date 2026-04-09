@@ -674,15 +674,35 @@ export function ClientReportPanel({
 
               {/* helper — inline so it closes over menuTreatments */}
               {(() => {
-                const getMenuTags = (treatmentId: string): string[] => {
+                const TreatmentMeta = ({ treatmentId }: { treatmentId: string }) => {
                   const mt = menuTreatments.find((m) => m.id === treatmentId)
-                  return Array.isArray(mt?.tags) ? (mt!.tags as string[]) : []
-                }
-                const TagPills = ({ treatmentId }: { treatmentId: string }) => {
-                  const tags = getMenuTags(treatmentId)
-                  if (!tags.length) return null
+                  const durationMonths = mt?.effect_duration_months ?? null
+                  const recoveryDays = mt?.recovery_period_days ?? null
+                  const tags: string[] = Array.isArray(mt?.tags) ? (mt!.tags as string[]) : []
+
+                  const durationLabel = durationMonths != null
+                    ? durationMonths >= 12
+                      ? `Lasts ~${Math.round(durationMonths / 12)}yr`
+                      : `Lasts ~${durationMonths}mo`
+                    : null
+
+                  const recoveryLabel = recoveryDays != null
+                    ? recoveryDays === 0 ? "No downtime" : `${recoveryDays}d recovery`
+                    : null
+
+                  if (!durationLabel && !recoveryLabel && !tags.length) return null
                   return (
                     <div className="flex flex-wrap gap-1 mt-1.5">
+                      {durationLabel && (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">
+                          {durationLabel}
+                        </span>
+                      )}
+                      {recoveryLabel && (
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${recoveryDays === 0 ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}>
+                          {recoveryLabel}
+                        </span>
+                      )}
                       {tags.map((tag) => (
                         <span key={tag} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
                           {tag}
@@ -706,17 +726,9 @@ export function ClientReportPanel({
                           <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-sm font-medium">{t.treatmentName}</p>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {t.duration && (
-                                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700">Lasts {t.duration}</span>
-                                )}
-                                {t.downtime && t.downtime !== "None" && (
-                                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-50 text-orange-700">↓ {t.downtime}</span>
-                                )}
-                                {t.cost > 0 && (
-                                  <p className="text-sm font-semibold ml-1">${t.cost.toLocaleString()}</p>
-                                )}
-                              </div>
+                              {t.cost > 0 && (
+                                <p className="text-sm font-semibold shrink-0">${t.cost.toLocaleString()}</p>
+                              )}
                             </div>
                             {t.description && (
                               <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
@@ -728,7 +740,7 @@ export function ClientReportPanel({
                                 {t.sessions ? `${t.sessions} session${t.sessions > 1 ? "s" : ""}` : ""}
                               </p>
                             )}
-                            <TagPills treatmentId={t.treatmentId} />
+                            <TreatmentMeta treatmentId={t.treatmentId} />
                           </div>
                         ))}
                       </CardContent>
@@ -764,7 +776,7 @@ export function ClientReportPanel({
                                 {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""}` : ""}
                               </p>
                             )}
-                            <TagPills treatmentId={t.treatmentId} />
+                            <TreatmentMeta treatmentId={t.treatmentId} />
                           </div>
                         ))}
                       </CardContent>
@@ -805,7 +817,7 @@ export function ClientReportPanel({
                         {t.description && (
                           <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
                         )}
-                        <TagPills treatmentId={t.treatmentId} />
+                        <TreatmentMeta treatmentId={t.treatmentId} />
                       </div>
                     ))}
                   </CardContent>
