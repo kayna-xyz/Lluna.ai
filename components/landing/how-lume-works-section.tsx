@@ -5,18 +5,21 @@ import { useEffect, useRef, useState } from "react";
 const clinicFeatures = [
   {
     number: "01",
-    title: "AI Pre-Consult Briefing",
-    description: "Before every session, Lluna generates a briefing for your consultant — patient history, treatment gaps, upsell windows. Walk in prepared, not guessing.",
+    label: "IN-CLINIC EXPERIENCE",
+    title: "2x deeper patient engagement, before they sit down.",
+    description: "Patients scan a QR code and land on your white-labeled treatment menu — with active promotions, treatment details, and clinic info. First impressions that convert.",
   },
   {
     number: "02",
-    title: "Smart Menu Chatbot",
-    description: "While patients wait, Lluna chats with them on their phone — recommending combos, answering questions, surfacing promotions. They arrive at the chair already interested in more.",
+    label: "PATIENT RECOMMENDATION",
+    title: "1.6x higher basket value, per visit.",
+    description: "A senior-consultant-trained algorithm walks each patient through a personalised treatment recommendation flow. They arrive at the chair knowing what they want — and ready to commit.",
   },
   {
     number: "03",
-    title: "Patient Lifecycle Tracking",
-    description: "Lluna tracks every treatment and follow-up. Automated nudges bring patients back before they drift. You keep the relationship — Lluna does the work.",
+    label: "CONSULTANT PANEL",
+    title: "30 minutes to 5. Every consultant, every session.",
+    description: "Every consultant — junior, senior, or just the doctor on shift — sees the same high-quality briefing: full patient context, treatment combinations, and upsell opportunities. No experience gaps. No revenue left on the table.",
   },
 ];
 
@@ -82,6 +85,9 @@ export function HowLumeWorksSection() {
               </span>
 
               <div className="relative" style={{ zIndex: 1 }}>
+                <span className="text-[11px] tracking-[0.12em] uppercase text-muted-foreground block mb-4">
+                  {feature.label}
+                </span>
                 <h3 className="text-[32px] font-display font-normal leading-[1.15] mb-4">
                   {feature.title}
                 </h3>
