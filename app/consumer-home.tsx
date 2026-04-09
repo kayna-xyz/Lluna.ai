@@ -456,13 +456,12 @@ function NavPill({
         style={{
           width: '100%',
           display: 'flex',
-          justifyContent: 'space-evenly',
           alignItems: 'center',
-          gap: 0,
+          gap: 4,
           background: 'transparent',
-          borderRadius: 0,
-          padding: '2px 0',
+          padding: '4px 0',
           boxSizing: 'border-box',
+          overflowX: 'auto',
         }}
       >
         {tabs.map((tab) => {
@@ -481,18 +480,17 @@ function NavPill({
                 }
               }}
               style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '8px 4px',
+                flexShrink: 0,
+                padding: '6px 16px',
                 fontSize: 14,
-                fontWeight: isActive ? 600 : 400,
-                color: isDisabled ? '#D1D5DB' : isActive ? '#0A0A0A' : '#6B7280',
-                background: 'transparent',
+                fontWeight: isActive ? 500 : 400,
+                color: isDisabled ? '#D1D5DB' : isActive ? '#FFFFFF' : '#6B7280',
+                background: isActive ? '#0A0A0A' : 'transparent',
+                borderRadius: 999,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                transition: 'color 0.15s ease',
+                transition: 'background 0.15s ease, color 0.15s ease',
                 opacity: isDisabled ? 0.5 : 1,
                 whiteSpace: 'nowrap',
-                borderBottom: isActive ? '2px solid #0A0A0A' : '2px solid transparent',
               }}
             >
               {tab}
@@ -1873,7 +1871,7 @@ function ClinicMenuScreen({
         {categories.length > 0 && (
           <div
             className="hide-scrollbar"
-            style={{ display: 'flex', gap: 0, overflowX: 'auto', marginBottom: 12, borderBottom: '1px solid #E5E5E5' }}
+            style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}
           >
             {[{ id: 'all', name: 'All' }, ...categories].map((cat) => {
               const active = selectedCategoryId === cat.id
@@ -1883,18 +1881,16 @@ function ClinicMenuScreen({
                   onClick={() => setSelectedCategoryId(cat.id)}
                   style={{
                     flexShrink: 0,
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? '#0A0A0A' : '#6B7280',
-                    background: 'transparent',
+                    fontSize: 14,
+                    fontWeight: active ? 500 : 400,
+                    color: active ? '#FFFFFF' : '#374151',
+                    background: active ? '#0A0A0A' : '#F3F4F6',
                     border: 'none',
-                    borderBottom: active ? '2px solid #0A0A0A' : '2px solid transparent',
-                    borderRadius: 0,
-                    padding: '6px 14px',
+                    borderRadius: 999,
+                    padding: '6px 16px',
                     cursor: 'pointer',
                     outline: 'none',
-                    transition: 'color 0.15s',
-                    marginBottom: -1,
+                    transition: 'background 0.15s, color 0.15s',
                   }}
                 >
                   {cat.name}

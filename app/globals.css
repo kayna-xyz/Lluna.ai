@@ -6,18 +6,18 @@
 
 :root {
   /* Consumer app colours — used by /app and clinicside */
-  --lluna-bg: #F5F2EE;
-  --lluna-outer-bg: #EEEBE6;
-  --lluna-text: #2C2C2C;
-  --lluna-muted: #9E9A94;
-  --lluna-accent: #8B8070;
-  --lluna-nav-bg: #EDE9E4;
+  --lluna-bg: #FFFFFF;
+  --lluna-outer-bg: #FFFFFF;
+  --lluna-text: #0A0A0A;
+  --lluna-muted: #6B7280;
+  --lluna-accent: #374151;
+  --lluna-nav-bg: #F3F4F6;
   --lluna-white: #FFFFFF;
-  --lluna-border: #E2DDD8;
-  --lluna-success: #6B7E6B;
+  --lluna-border: #E5E5E5;
+  --lluna-success: #16A34A;
 
   /* Design system — clinic aesthetic palette */
-  --background: #F2EFE9;
+  --background: #FFFFFF;
   --foreground: #0D0D0D;
   --card: #FFFFFF;
   --card-foreground: #0D0D0D;
