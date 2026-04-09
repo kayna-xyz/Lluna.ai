@@ -58,10 +58,16 @@ export function Navigation() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-4">
+            <a
+              href="/demo"
+              className="bg-foreground text-background px-6 h-10 inline-flex items-center text-[13px] hover:bg-gold transition-colors duration-300"
+            >
+              Book a Demo
+            </a>
             <button
               onClick={handleEnterprise}
-              className="bg-foreground text-background px-6 h-10 text-[13px] hover:bg-gold transition-colors duration-300"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-300"
             >
               Enterprise sign in
             </button>
@@ -113,9 +119,16 @@ export function Navigation() {
             }`}
             style={{ transitionDelay: isMobileMenuOpen ? "300ms" : "0ms" }}
           >
+            <a
+              href="/demo"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block w-full bg-foreground text-background h-12 text-[15px] flex items-center justify-center mb-3"
+            >
+              Book a Demo
+            </a>
             <button
               onClick={() => { setIsMobileMenuOpen(false); handleEnterprise(); }}
-              className="w-full bg-foreground text-background h-12 text-[15px]"
+              className="w-full text-[14px] text-muted-foreground text-center"
             >
               Enterprise sign in
             </button>

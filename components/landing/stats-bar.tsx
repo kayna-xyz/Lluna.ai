@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 
 const stats = [
-  { value: "60%+", label: "overall revenue boost from day one" },
-  { value: "$70→$5", label: "patient acquisition cost via referrals" },
   { value: "1.6x", label: "higher basket value per visit" },
-  { value: "80%+", label: "reduction in consultation time but 2x more efficient" },
+  { value: "80%+", label: "of patients arrive consult-ready" },
+  { value: "<1hr", label: "to go live — no IT required" },
+  { value: "60%+", label: "revenue uplift reported by clinic partners" },
 ];
 
 export function StatsBar() {

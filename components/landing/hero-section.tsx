@@ -53,7 +53,7 @@ export function HeroSection() {
               }`}
             >
               <span className="text-[11px] tracking-[0.15em] uppercase text-muted-foreground">
-                For aesthetic clinics
+                FOR AESTHETIC CLINICS
               </span>
             </div>
 
@@ -63,9 +63,9 @@ export function HeroSection() {
                 isVisible ? "opacity-100" : "opacity-0"
               }`}
             >
-              Aesthetics,<br />
-              meet<br />
-              intelligence.
+              Your consultants&apos;<br />
+              AI sales<br />
+              copilot.
             </h1>
 
             {/* Description */}
@@ -74,7 +74,7 @@ export function HeroSection() {
                 isVisible ? "opacity-100" : "opacity-0"
               }`}
             >
-              AI Copilot for Facial Aesthetic Consultants — Close more deals in 80% less time.
+              Lluna briefs your team before every consultation, guides patients to the right treatments, and lifts basket value — live in under an hour.
             </p>
 
             {/* CTAs */}
@@ -83,12 +83,18 @@ export function HeroSection() {
                 isVisible ? "opacity-100" : "opacity-0"
               }`}
             >
-              <button
-                onClick={handleEnterprise}
-                className="bg-foreground text-background px-6 sm:px-8 h-12 text-[14px] sm:text-[15px] hover:bg-gold transition-colors duration-300 whitespace-nowrap"
+              <a
+                href="/demo"
+                className="bg-foreground text-background px-6 sm:px-8 h-12 inline-flex items-center text-[14px] sm:text-[15px] hover:bg-gold transition-colors duration-300 whitespace-nowrap"
               >
-                Enterprise sign in
-              </button>
+                Book a Demo
+              </a>
+              <a
+                href="#how-it-works"
+                className="text-[14px] sm:text-[15px] text-muted-foreground hover:text-foreground transition-colors duration-300 whitespace-nowrap"
+              >
+                See How It Works →
+              </a>
             </div>
           </div>
         </div>

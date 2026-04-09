@@ -4,16 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 const partnerBenefits = [
   {
-    title: "In-clinic AI that stays with your patients for life",
-    description: "Not a tool they use once. A consultant they return to.",
+    title: "Your consultants sell more, every session",
+    description: "Lluna surfaces upsell windows and treatment gaps before the patient sits down. No extra training. No awkward pitches.",
   },
   {
-    title: "Built for teams, not just practitioners",
-    description: "Collaborate across your clinic, your staff, your network.",
+    title: "Go live in under an hour",
+    description: "No IT team needed. No lengthy onboarding. Upload your menu, connect your team, and Lluna is ready for the next patient.",
   },
   {
-    title: "Scale Lluna across your entire ecosystem",
-    description: "Every client you bring in becomes a long-term relationship — for them, and for you.",
+    title: "Patients come back — and bring friends",
+    description: "Automated follow-ups, personalised re-engagement, and a referral engine that turns happy patients into your best marketing channel.",
   },
 ];
 
@@ -67,13 +67,13 @@ export function PartnerSection() {
             Partner with Lluna
           </h2>
           <p className="text-[15px] leading-[1.75] text-muted-foreground mb-10 max-w-lg">
-            Bring your clients closer — and keep them longer. Lluna&apos;s 24/7 AI consultant becomes an extension of your practice.
+            Lluna plugs into your existing clinic workflow and starts lifting revenue from day one — no CRM migration, no new software to learn.
           </p>
           <a
-            href="/clinicside/auth"
+            href="/demo"
             className="inline-block bg-foreground text-background px-8 h-12 leading-[48px] text-[15px] hover:bg-gold transition-colors duration-300"
           >
-            Become a Partner
+            Book a Demo
           </a>
         </div>
 

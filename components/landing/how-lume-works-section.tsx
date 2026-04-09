@@ -1,45 +1,26 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-
-const userFeatures = [
-  {
-    number: "01",
-    title: "Make the best decision",
-    description: "Get fully prepared before stepping into the treatment room. Lluna gives you personalised insights, risk profiles, and clear expectations — so you walk in confident.",
-  },
-  {
-    number: "02",
-    title: "24/7 support from your clinic",
-    description: "Questions at midnight? Reservations on a Sunday? Lluna answers instantly — Q&A, booking, follow-up care, around the clock.",
-  },
-  {
-    number: "03",
-    title: "Your lifelong aesthetic consultant",
-    description: "Lluna remembers every treatment, wherever you are. A single intelligent partner that knows your history and grows with you over time.",
-  },
-];
+import { useEffect, useRef, useState } from "react";
 
 const clinicFeatures = [
   {
     number: "01",
-    title: "AI Sales Support",
-    description: "Lluna generates a full pre-consult briefing before every session — surfacing each patient's spend history, treatment preferences, and upsell opportunities. Your consultants walk in prepared, not guessing.",
+    title: "AI Pre-Consult Briefing",
+    description: "Before every session, Lluna generates a briefing for your consultant — patient history, treatment gaps, upsell windows. Walk in prepared, not guessing.",
   },
   {
     number: "02",
-    title: "Menu Intelligence",
-    description: "While patients wait, Lluna's AI chatbot on their phone recommends treatment combos, answers questions, and surfaces active promotions — so they arrive at the consultation already interested in more.",
+    title: "Smart Menu Chatbot",
+    description: "While patients wait, Lluna chats with them on their phone — recommending combos, answering questions, surfacing promotions. They arrive at the chair already interested in more.",
   },
   {
     number: "03",
-    title: "Patient Lifecycle",
-    description: "Lluna tracks every treatment, date, and outcome across each patient's journey. Even after they travel or pause, automated follow-ups and personalized recommendations bring them back to your clinic first.",
+    title: "Patient Lifecycle Tracking",
+    description: "Lluna tracks every treatment and follow-up. Automated nudges bring patients back before they drift. You keep the relationship — Lluna does the work.",
   },
 ];
 
 export function HowLumeWorksSection() {
-  const [activeTab, setActiveTab] = useState<"users" | "clinics">("users");
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -59,8 +40,6 @@ export function HowLumeWorksSection() {
 
     return () => observer.disconnect();
   }, []);
-
-  const features = activeTab === "users" ? userFeatures : clinicFeatures;
 
   return (
     <section
@@ -84,35 +63,12 @@ export function HowLumeWorksSection() {
           <h2 className="text-[48px] lg:text-[56px] font-display font-normal leading-[1.1] tracking-[-0.01em] mb-12">
             How Lluna Works
           </h2>
-
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`text-[13px] pb-2 border-b transition-all duration-300 ${
-                activeTab === "users"
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              For Users
-            </button>
-            <button
-              onClick={() => setActiveTab("clinics")}
-              className={`text-[13px] pb-2 border-b transition-all duration-300 ${
-                activeTab === "clinics"
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              For Clinics
-            </button>
-          </div>
         </div>
 
         <div className="space-y-20">
-          {features.map((feature, index) => (
+          {clinicFeatures.map((feature, index) => (
             <div
-              key={`${activeTab}-${feature.number}`}
+              key={feature.number}
               className="relative"
               style={{
                 transitionDelay: isVisible ? `${index * 150}ms` : "0ms",

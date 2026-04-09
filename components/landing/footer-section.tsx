@@ -22,7 +22,7 @@ export function FooterSection() {
               <span className="text-white font-semibold text-lg tracking-tight">Lluna</span>
             </a>
             <p className="text-[13px] text-white/40 max-w-xs leading-relaxed">
-              The AI layer between great clinics and the patients who trust them.
+              The AI layer that makes every consultation count.
             </p>
           </div>
 
