@@ -510,6 +510,7 @@ function NavPill({
         padding: '5px 6px',
         display: 'flex',
         gap: 4,
+        border: 'none',
       }}
     >
       {tabs.map((tab) => {
@@ -521,12 +522,12 @@ function NavPill({
             key={tab}
             onClick={() => !isDisabled && onTabClick(tab)}
             style={{
-              padding: '7px 14px',
+              padding: '6px 16px',
               borderRadius: 999,
               fontSize: 16,
               fontWeight: isActive ? 500 : 400,
-              color: isDisabled ? '#C8C2BB' : isActive ? COLORS.text : COLORS.muted,
-              background: isActive ? COLORS.bg : 'transparent',
+              color: isDisabled ? '#C8C2BB' : isActive ? '#FFFFFF' : '#6B7280',
+              background: isActive ? '#000000' : 'transparent',
               cursor: isDisabled ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
               opacity: isDisabled ? 0.6 : 1,
@@ -1406,11 +1407,11 @@ function RadioOption({
 }
 
 // Continue Button Component
-function ContinueButton({ 
-  onClick, 
-  disabled = false, 
-  label = "Continue" 
-}: { 
+function ContinueButton({
+  onClick,
+  disabled = false,
+  label = "Continue"
+}: {
   onClick: () => void
   disabled?: boolean
   label?: string
@@ -1421,15 +1422,17 @@ function ContinueButton({
       style={{
         fontSize: 16,
         fontWeight: 500,
-        color: COLORS.text,
-        background: 'none',
+        color: '#FFFFFF',
+        background: '#000000',
         border: 'none',
+        borderRadius: 999,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.25 : 1,
-        padding: 0,
+        padding: '14px 28px',
         display: 'flex',
         alignItems: 'center',
-        gap: 4
+        gap: 4,
+        boxShadow: 'none',
       }}
     >
       {label}
@@ -1879,10 +1882,10 @@ function ClinicMenuScreen({
                   style={{
                     flexShrink: 0,
                     fontSize: 14,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? COLORS.white : COLORS.text,
-                    background: active ? COLORS.accent : COLORS.bg,
-                    border: `1px solid ${active ? COLORS.accent : COLORS.border}`,
+                    fontWeight: active ? 500 : 400,
+                    color: active ? '#FFFFFF' : '#111111',
+                    background: active ? '#000000' : 'transparent',
+                    border: active ? 'none' : '1px solid #D1CEC7',
                     borderRadius: 999,
                     padding: '5px 14px',
                     cursor: 'pointer',
@@ -1907,25 +1910,28 @@ function ClinicMenuScreen({
             key={treatment.id}
             onClick={() => setSelectedTreatment(treatment)}
             style={{
-              padding: '14px 0',
-              borderBottom: `1px solid ${COLORS.border}`,
+              background: '#FFFFFF',
+              border: '1px solid #E5E5E5',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 8,
               cursor: 'pointer',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, display: 'block' }}>
+                <span style={{ fontSize: 16, fontWeight: 500, color: '#111111', display: 'block' }}>
                   {treatment.name}
                 </span>
-                <span style={{ fontSize: 14, color: COLORS.muted, display: 'block', marginTop: 2 }}>
+                <span style={{ fontSize: 14, color: '#6B7280', display: 'block', marginTop: 2 }}>
                   {treatment.category}
                 </span>
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <span style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, display: 'block' }}>
+                <span style={{ fontSize: 16, fontWeight: 600, color: '#111111', display: 'block' }}>
                   {getPrimaryPriceLabel(treatment)}
                 </span>
-                <span style={{ fontSize: 14, color: COLORS.muted }}>
+                <span style={{ fontSize: 14, color: '#6B7280' }}>
                   {treatment.units}
                 </span>
                 {(treatment.posterUrl || treatment.beforeAfterUrl) && (
@@ -2367,9 +2373,9 @@ function GoalsScreen({
         style={{
           width: '100%',
           minHeight: 120,
-          border: '0.8px solid #B1A299',
-          borderRadius: 20,
-          background: 'transparent',
+          border: '1px solid #D1CEC7',
+          borderRadius: 12,
+          background: '#FFFFFF',
           padding: '14px 16px',
           fontSize: 14,
           lineHeight: 1.6,
@@ -2391,8 +2397,8 @@ function GoalsScreen({
             width: 48,
             height: 48,
             borderRadius: '50%',
-            border: isRecording ? `2px solid ${COLORS.success}` : `1.5px solid ${COLORS.border}`,
-            background: isRecording ? '#E8F0E8' : COLORS.white,
+            border: isRecording ? `2px solid ${COLORS.success}` : `1px solid #D1CEC7`,
+            background: isRecording ? '#E8F0E8' : '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2647,15 +2653,14 @@ function DemographicsScreen({
 }) {
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    borderBottom: `1px solid ${COLORS.border}`,
-    borderTop: 'none',
-    borderLeft: 'none',
-    borderRight: 'none',
-    padding: '8px 0',
+    border: '1px solid #D1CEC7',
+    borderRadius: 8,
+    padding: '10px 14px',
     fontSize: 16,
-    background: 'transparent',
+    background: '#FFFFFF',
     outline: 'none',
-    color: COLORS.text
+    color: COLORS.text,
+    boxSizing: 'border-box',
   }
 
   return (
@@ -2950,15 +2955,14 @@ function ProfileScreen({
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    borderBottom: `1px solid ${COLORS.border}`,
-    borderTop: 'none',
-    borderLeft: 'none',
-    borderRight: 'none',
-    padding: '8px 0',
+    border: '1px solid #D1CEC7',
+    borderRadius: 8,
+    padding: '10px 14px',
     fontSize: 16,
-    background: 'transparent',
+    background: '#FFFFFF',
     outline: 'none',
-    color: COLORS.text
+    color: COLORS.text,
+    boxSizing: 'border-box',
   }
 
   return (
@@ -3465,11 +3469,11 @@ function ConsultantFinalPlanSection({
       </p>
       <div
         style={{
-          background: `linear-gradient(145deg, ${COLORS.white} 0%, ${COLORS.bg} 100%)`,
+          background: '#FFFFFF',
           borderRadius: 12,
           padding: 'clamp(14px, 4vw, 18px)',
           border: `1px solid ${COLORS.success}`,
-          boxShadow: '0 4px 24px rgba(107, 126, 107, 0.12)',
+          boxShadow: 'none',
           maxWidth: '100%',
           boxSizing: 'border-box',
           wordBreak: 'break-word',
@@ -3662,7 +3666,7 @@ function ReportScreen({
               objectFit: 'cover',
               borderRadius: '50%',
               border: `3px solid ${COLORS.white}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              boxShadow: 'none'
             }}
           />
         </div>
@@ -4802,7 +4806,7 @@ export default function LlunaApp({
                 WebkitBackdropFilter: 'blur(12px) saturate(180%)',
                 borderRadius: 16,
                 border: '1px solid rgba(226,221,216,0.6)',
-                boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+                boxShadow: 'none',
                 transition: 'background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
               }}
             >

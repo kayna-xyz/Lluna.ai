@@ -154,7 +154,7 @@ export function ClinicAuthForm() {
 
   if (!unlocked) {
     return (
-      <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12">
+      <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center px-6 py-12" style={{ background: '#FFFFFF', fontFamily: 'Inter, system-ui, sans-serif' }}>
         <Link
           href="/"
           className="absolute top-6 left-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -194,7 +194,7 @@ export function ClinicAuthForm() {
                 <p className="text-xs text-destructive">Incorrect code. Please try again.</p>
               )}
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" style={{ background: '#000000', color: '#FFFFFF', borderRadius: 6 }}>
               Unlock
             </Button>
           </form>
@@ -204,7 +204,7 @@ export function ClinicAuthForm() {
   }
 
   return (
-    <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background px-6 py-12">
+    <div lang="en" className="relative flex min-h-dvh w-full flex-col items-center justify-center px-6 py-12" style={{ background: '#FFFFFF', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* Back — top-left */}
       <Link
@@ -277,7 +277,7 @@ export function ClinicAuthForm() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full mt-2" disabled={loading}>
+            <Button type="submit" className="w-full mt-2" disabled={loading} style={{ background: '#000000', color: '#FFFFFF', borderRadius: 6 }}>
               {loading ? "Please wait…" : "Sign in"}
             </Button>
           </form>
@@ -346,7 +346,7 @@ export function ClinicAuthForm() {
                 className="resize-y min-h-[80px]"
               />
             </div>
-            <Button type="submit" className="w-full mt-2" disabled={loading}>
+            <Button type="submit" className="w-full mt-2" disabled={loading} style={{ background: '#000000', color: '#FFFFFF', borderRadius: 6 }}>
               {loading ? "Please wait…" : "Sign up"}
             </Button>
           </form>

@@ -720,7 +720,8 @@ export function ActivitiesTab() {
           : "Auto-save ready"
 
   return (
-    <div className="p-6">
+    <div className="p-6" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <h1 className="font-medium mb-6" style={{ fontSize: 20, color: '#111111' }}>Settings</h1>
       <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as ActivitySubTab)}>
         <TabsList className="mb-6 h-9 bg-secondary/50 flex-wrap">
           <TabsTrigger value="menuAdmin" className="text-xs gap-1.5 focus:outline-none focus-visible:outline-none outline-none ring-0 focus:ring-0 focus-visible:ring-0">
@@ -920,7 +921,7 @@ export function ActivitiesTab() {
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>
                     Visits completed before reward
                   </label>
                   <Input
@@ -935,7 +936,7 @@ export function ActivitiesTab() {
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>
                     Discount applies on visit #
                   </label>
                   <Input
@@ -950,7 +951,7 @@ export function ActivitiesTab() {
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>
                     Discount (%)
                   </label>
                   <Input
@@ -963,7 +964,7 @@ export function ActivitiesTab() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>
                     Max discount ($)
                   </label>
                   <Input
@@ -1009,7 +1010,7 @@ export function ActivitiesTab() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Title</label>
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Title</label>
                   <Input
                     placeholder="e.g. Spring Glow Welcome"
                     value={campaignTitle}
@@ -1018,7 +1019,7 @@ export function ActivitiesTab() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Context</label>
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Context</label>
                   <Textarea
                     placeholder="What clients see and terms—e.g. 20% off first treatment for new clients"
                     value={campaignContext}
@@ -1028,7 +1029,7 @@ export function ActivitiesTab() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Start date</label>
+                    <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Start date</label>
                     <Input
                       type="date"
                       value={campaignStartDate}
@@ -1037,7 +1038,7 @@ export function ActivitiesTab() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">End date</label>
+                    <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>End date</label>
                     <Input
                       type="date"
                       value={campaignEndDate}
@@ -1195,7 +1196,7 @@ export function ActivitiesTab() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Subtitle (under clinic name)</label>
+                  <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Subtitle (under clinic name)</label>
                   <Input
                     placeholder="e.g. Competitive pricing vs. other clinics in the area"
                     value={publicTagline}
@@ -1205,12 +1206,12 @@ export function ActivitiesTab() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Current activities (carousel)</span>
+                    <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6B7280', fontWeight: 500 }}>Current activities (carousel)</span>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      className="h-8 text-xs"
+                      className="h-8 text-xs border-black text-black hover:bg-black hover:text-white"
                       onClick={() =>
                         setPublicActivities((rows) => [
                           ...rows,
@@ -1281,12 +1282,12 @@ export function ActivitiesTab() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Trusted by (testimonials)</span>
+                    <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6B7280', fontWeight: 500 }}>Trusted by (testimonials)</span>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      className="h-8 text-xs"
+                      className="h-8 text-xs border-black text-black hover:bg-black hover:text-white"
                       onClick={() =>
                         setPublicTestimonials((rows) => [...rows, { name: "", role: "", testimonial: "" }])
                       }
@@ -1351,35 +1352,35 @@ export function ActivitiesTab() {
                   )}
                 </div>
                 <div className="pt-3 border-t space-y-3">
-                  <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                  <span className="flex items-center justify-between" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6B7280', fontWeight: 500 }}>
                     Clinic info
-                    <span className="font-normal">{autoSaveText}</span>
+                    <span className="font-normal" style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: 11 }}>{autoSaveText}</span>
                   </span>
                   {loadingInfo && <p className="text-xs text-muted-foreground">Loading…</p>}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">Clinic name</label>
+                      <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Clinic name</label>
                       <Input className="h-9 text-sm" value={clinicName} onChange={(e) => setClinicName(e.target.value)} placeholder="Your clinic name" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">Telephone</label>
+                      <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Telephone</label>
                       <Input className="h-9 text-sm" value={clinicPhone} onChange={(e) => setClinicPhone(e.target.value)} placeholder="Clinic phone" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">Email</label>
+                      <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Email</label>
                       <Input className="h-9 text-sm" value={clinicEmail} onChange={(e) => setClinicEmail(e.target.value)} placeholder="Clinic email" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">Work time</label>
+                      <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Work time</label>
                       <Input className="h-9 text-sm" value={clinicWorkTime} onChange={(e) => setClinicWorkTime(e.target.value)} placeholder="e.g. Mon-Fri 9:00-18:00" />
                     </div>
                     <div className="space-y-1.5 sm:col-span-2">
-                      <label className="text-xs font-medium text-muted-foreground">Google review link</label>
+                      <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Google review link</label>
                       <Input className="h-9 text-sm" value={googleReviewLink} onChange={(e) => setGoogleReviewLink(e.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Clinic logo (PNG/JPEG)</label>
+                    <label className="mb-1 font-normal" style={{ fontSize: 13, color: '#6B7280', display: 'block' }}>Clinic logo (PNG/JPEG)</label>
                     <Input type="file" accept="image/png,image/jpeg" onChange={(e) => void handleLogoSelect(e.target.files?.[0] || null)} />
                     {logoDataUrl && (
                       <img src={logoDataUrl} alt="Clinic logo" className="h-12 w-12 rounded border object-cover" />
@@ -1389,12 +1390,12 @@ export function ActivitiesTab() {
 
                 <div className="pt-3 border-t space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">MD team</span>
+                    <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6B7280', fontWeight: 500 }}>MD team</span>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      className="h-8 text-xs"
+                      className="h-8 text-xs border-black text-black hover:bg-black hover:text-white"
                       onClick={() =>
                         setMdTeam((rows) => [
                           ...rows,

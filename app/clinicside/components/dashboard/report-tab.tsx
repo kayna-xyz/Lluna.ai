@@ -305,7 +305,7 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-1 text-xs text-success">
+            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: '#22C55E' }}>
               <ArrowUpRight className="h-3 w-3" />
               +{basketLift}% basket lift
             </div>
@@ -323,7 +323,7 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
                 <Target className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <div className={`mt-2 flex items-center gap-1 text-xs ${budgetVsActualIncreaseRate >= 0 ? "text-success" : "text-warning"}`}>
+            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: budgetVsActualIncreaseRate >= 0 ? '#22C55E' : '#F59E0B' }}>
               {budgetVsActualIncreaseRate >= 0 ? (
                 <ArrowUpRight className="h-3 w-3" />
               ) : (

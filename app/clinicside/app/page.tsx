@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Database, Settings, FileText, BarChart2, Gift, Bell, LogOut, Clock } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import {
@@ -174,31 +173,37 @@ export default function DashboardPage() {
     cn(
       "flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left",
       activeTab === tab
-        ? "bg-accent text-accent-foreground font-medium"
-        : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+        ? "font-medium"
+        : "",
     )
 
+  const navItemStyle = (tab: string): React.CSSProperties =>
+    activeTab === tab
+      ? { background: '#000000', color: '#FFFFFF', borderRadius: 6 }
+      : { color: '#6B7280' }
+
   return (
-    <div className="flex h-screen bg-background">
-      {/* ── Left sidebar ── */}
-      <aside className="w-48 shrink-0 border-r flex flex-col bg-card">
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-4 h-14 border-b shrink-0">
-          <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Brand%20%287%29-fG9OZuGtqNEmM06j1pjaJfkF3ukRfr.png"
-            alt="Lluna"
-            width={24}
-            height={24}
-            className="rounded"
-          />
-          <span className="font-semibold text-sm">Lluna</span>
+    <div className="flex flex-col h-screen" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
+      {/* ── Topbar ── */}
+      <div className="flex items-center justify-between px-4 shrink-0" style={{ background: '#000000', height: 48 }}>
+        <span style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 15 }}>Lluna</span>
+        <div className="flex items-center gap-3">
+          <Bell className="h-4 w-4" style={{ color: '#FFFFFF' }} />
+          <div className="flex items-center justify-center rounded-full" style={{ width: 28, height: 28, background: '#FFFFFF', color: '#000000', fontSize: 11, fontWeight: 600 }}>
+            M
+          </div>
         </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+      {/* ── Left sidebar ── */}
+      <aside className="w-48 shrink-0 flex flex-col" style={{ background: '#FAFAFA', borderRight: '1px solid #E5E5E5' }}>
 
         {/* Primary nav */}
         <nav className="flex flex-col gap-0.5 p-3 flex-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={cn("flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left text-muted-foreground hover:text-foreground hover:bg-accent/50")}>
+              <button className={cn("flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left")} style={{ color: '#6B7280' }}>
                 <Bell className="h-4 w-4 shrink-0" />
                 Notifications
                 {newCount > 0 && (
@@ -238,7 +243,7 @@ export default function DashboardPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button className={navItemClass("report")} onClick={() => setActiveTab("report")}>
+          <button className={navItemClass("report")} style={navItemStyle("report")} onClick={() => setActiveTab("report")}>
             <FileText className="h-4 w-4 shrink-0" />
             Plan
             {newCount > 0 && (
@@ -247,21 +252,22 @@ export default function DashboardPage() {
               </span>
             )}
           </button>
-          <button className={navItemClass("dashboard")} onClick={() => setActiveTab("dashboard")}>
+          <button className={navItemClass("dashboard")} style={navItemStyle("dashboard")} onClick={() => setActiveTab("dashboard")}>
             <Database className="h-4 w-4 shrink-0" />
             Data
           </button>
         </nav>
 
         {/* Bottom: settings + logout */}
-        <div className="p-3 border-t space-y-0.5">
-          <button className={navItemClass("activities")} onClick={() => setActiveTab("activities")}>
+        <div className="p-3 space-y-0.5" style={{ borderTop: '1px solid #E5E5E5' }}>
+          <button className={navItemClass("activities")} style={navItemStyle("activities")} onClick={() => setActiveTab("activities")}>
             <Settings className="h-4 w-4 shrink-0" />
             Settings
           </button>
 
           <button
-            className="flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left text-muted-foreground hover:text-foreground hover:bg-accent/50"
+            className="flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm transition-colors text-left"
+            style={{ color: '#6B7280' }}
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 shrink-0" />
@@ -269,13 +275,13 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <div className="px-4 py-2 border-t">
-          <p className="text-[10px] text-muted-foreground">@ 2026 Lluna AI Inc.</p>
+        <div className="px-4 py-2" style={{ borderTop: '1px solid #E5E5E5' }}>
+          <p className="text-[10px]" style={{ color: '#6B7280' }}>@ 2026 Lluna AI Inc.</p>
         </div>
       </aside>
 
       {/* ── Main content ── */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
         <div className="flex-1 overflow-hidden">
           {/* Data tab */}
           <TabsContent value="dashboard" className="m-0 h-full overflow-auto data-[state=inactive]:hidden">
@@ -285,10 +291,10 @@ export default function DashboardPage() {
                   <DashboardAnalyticsSection clients={dbClients} />
                   <div>
                     <div className="mb-3">
-                      <h2 className="text-sm font-medium">Clients</h2>
-                      <p className="text-xs text-muted-foreground">{dbClients.length} total</p>
+                      <h2 className="text-sm font-medium" style={{ color: '#111111' }}>Clients</h2>
+                      <p className="text-xs" style={{ color: '#6B7280' }}>{dbClients.length} total</p>
                     </div>
-                    <div className="rounded-lg border bg-card">
+                    <div className="rounded-lg" style={{ border: '1px solid #E5E5E5', background: '#FFFFFF' }}>
                       <ClientTable
                         clients={dbClients}
                         selectedClientId={selectedClientReport?.id ?? null}
@@ -325,6 +331,7 @@ export default function DashboardPage() {
           </TabsContent>
         </div>
       </Tabs>
+      </div>
     </div>
   )
 }
