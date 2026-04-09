@@ -113,15 +113,15 @@ function ReportHistoryScreen({
 
 // Design System Colors
 const COLORS = {
-  bg: '#F5F2EE',
-  outerBg: '#EEEBE6',
-  text: '#2C2C2C',
-  muted: '#9E9A94',
-  accent: '#8B8070',
-  navBg: '#EDE9E4',
+  bg: '#FFFFFF',
+  outerBg: '#FFFFFF',
+  text: '#0A0A0A',
+  muted: '#6B7280',
+  accent: '#374151',
+  navBg: '#F3F4F6',
   white: '#FFFFFF',
-  border: '#E2DDD8',
-  success: '#6B7E6B',
+  border: '#E5E5E5',
+  success: '#16A34A',
 }
 
 // Enhanced Mock Data - Clinic Menu with detailed pricing, FDA dates, and filler types
@@ -484,14 +484,15 @@ function NavPill({
                 flex: 1,
                 textAlign: 'center',
                 padding: '8px 4px',
-                fontSize: 16,
-                fontWeight: isActive ? 500 : 400,
-                color: isDisabled ? '#C8C2BB' : isActive ? COLORS.text : COLORS.muted,
+                fontSize: 14,
+                fontWeight: isActive ? 600 : 400,
+                color: isDisabled ? '#D1D5DB' : isActive ? '#0A0A0A' : '#6B7280',
                 background: 'transparent',
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                transition: 'color 0.2s ease',
-                opacity: isDisabled ? 0.6 : 1,
+                transition: 'color 0.15s ease',
+                opacity: isDisabled ? 0.5 : 1,
                 whiteSpace: 'nowrap',
+                borderBottom: isActive ? '2px solid #0A0A0A' : '2px solid transparent',
               }}
             >
               {tab}
@@ -505,12 +506,11 @@ function NavPill({
   return (
     <div
       style={{
-        background: COLORS.navBg,
-        borderRadius: 999,
-        padding: '5px 6px',
+        background: 'transparent',
         display: 'flex',
-        gap: 4,
+        gap: 0,
         border: 'none',
+        borderBottom: '1px solid #E5E5E5',
       }}
     >
       {tabs.map((tab) => {
@@ -522,15 +522,17 @@ function NavPill({
             key={tab}
             onClick={() => !isDisabled && onTabClick(tab)}
             style={{
-              padding: '6px 16px',
-              borderRadius: 999,
-              fontSize: 16,
-              fontWeight: isActive ? 500 : 400,
-              color: isDisabled ? '#C8C2BB' : isActive ? '#FFFFFF' : '#6B7280',
-              background: isActive ? '#000000' : 'transparent',
+              padding: '8px 16px',
+              borderRadius: 0,
+              fontSize: 14,
+              fontWeight: isActive ? 600 : 400,
+              color: isDisabled ? '#D1D5DB' : isActive ? '#0A0A0A' : '#6B7280',
+              background: 'transparent',
               cursor: isDisabled ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              opacity: isDisabled ? 0.6 : 1,
+              transition: 'color 0.15s ease',
+              opacity: isDisabled ? 0.5 : 1,
+              borderBottom: isActive ? '2px solid #0A0A0A' : '2px solid transparent',
+              marginBottom: -1,
             }}
           >
             {tab}
@@ -567,10 +569,10 @@ function GoogleReviewModal({ onClose }: { onClose: () => void }) {
       }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
         <h2 style={{
-          fontFamily: "'IBM Plex Serif', serif",
+          fontFamily: "Inter, system-ui, sans-serif",
           fontSize: 16,
-          fontWeight: 400,
-          color: '#1C1C1E',
+          fontWeight: 600,
+          color: '#0A0A0A',
           margin: 0,
           marginBottom: 24,
         }}>
@@ -583,8 +585,8 @@ function GoogleReviewModal({ onClose }: { onClose: () => void }) {
             onClose()
           }}
           style={{
-            background: '#7D716A', color: 'white', width: '100%',
-            padding: 14, borderRadius: 10, fontSize: 16,
+            background: '#0A0A0A', color: 'white', width: '100%',
+            padding: 12, borderRadius: 6, fontSize: 14,
             fontWeight: 500, border: 'none', cursor: 'pointer',
           }}
         >
@@ -698,7 +700,7 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           placeholder='e.g. "Got Botox at Glow Studio on Monday, about 20 units in my forehead"'
           style={{
             minHeight: 100, fontSize: 16, lineHeight: 1.6,
-            border: 'none', borderBottom: '1px solid #E8E4DF',
+            border: 'none', borderBottom: '1px solid #E5E5E5',
             background: 'transparent', width: '100%', outline: 'none',
             resize: 'none', fontFamily: 'inherit',
           }}
@@ -710,10 +712,10 @@ function ManualEntryModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           onClick={() => { onSubmit(text); onClose() }}
           disabled={!text.trim()}
           style={{
-            width: '100%', marginTop: 20, padding: 14,
-            background: text.trim() ? '#C9A96E' : '#E8E4DF',
-            color: 'white', border: 'none', borderRadius: 10,
-            fontSize: 16, fontWeight: 500, cursor: text.trim() ? 'pointer' : 'default',
+            width: '100%', marginTop: 20, padding: 12,
+            background: text.trim() ? '#0A0A0A' : '#E5E5E5',
+            color: 'white', border: 'none', borderRadius: 6,
+            fontSize: 14, fontWeight: 500, cursor: text.trim() ? 'pointer' : 'default',
           }}
         >
           Add to my journey →
@@ -1042,22 +1044,22 @@ function MyJourneyPage({
           <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>
             TODAY&apos;S VISIT
           </p>
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: 20, border: '1px solid #E8E4DF', marginBottom: 24 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, padding: 16, border: '1px solid #E5E5E5', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#1C1C1E' }}>{todayEntry.clinicName}</span>
-              <span style={{ fontSize: 14, color: '#9E9A94', marginLeft: 'auto' }}>{todayStr}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#0A0A0A' }}>{todayEntry.clinicName}</span>
+              <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 'auto' }}>{todayStr}</span>
             </div>
-            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {todayEntry.treatments.map((t, i) => (
-                <span key={i} style={{ background: '#FAF5EE', color: '#A8845A', padding: '5px 12px', borderRadius: 999, fontSize: 14, fontWeight: 500 }}>
+                <span key={i} style={{ background: '#F3F4F6', color: '#374151', padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 500 }}>
                   {t.treatmentName}
                 </span>
               ))}
             </div>
             {llunaNote && (
-              <div style={{ marginTop: 16, background: '#F8F6F3', borderRadius: 10, padding: 14 }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', marginBottom: 6 }}>LLUNA NOTES</p>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#2C2C2C' }}>{llunaNote}</p>
+              <div style={{ marginTop: 14, background: '#F9FAFB', borderRadius: 6, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', color: '#9CA3AF', marginBottom: 6 }}>LLUNA NOTES</p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#374151' }}>{llunaNote}</p>
               </div>
             )}
           </div>
@@ -1067,18 +1069,18 @@ function MyJourneyPage({
       {todayEntry && todayEntry.treatments.length > 0 && (
         <>
           <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>YOUR MAINTENANCE WINDOW</p>
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '4px 16px', border: '1px solid #E8E4DF', marginBottom: 8 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, padding: '4px 16px', border: '1px solid #E5E5E5', marginBottom: 8 }}>
             {todayEntry.treatments.map((t, i) => {
               const m = getMaintenanceMonths(t)
               const nextDate = addMonths(new Date(), m)
               const nextLabel = nextDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
               return (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < todayEntry.treatments.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < todayEntry.treatments.length - 1 ? '1px solid #E5E5E5' : 'none' }}>
                   <div>
-                    <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#1C1C1E' }}>{t.treatmentName}</p>
-                    <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>Typical: every {m} months · individual results vary</p>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: '#0A0A0A' }}>{t.treatmentName}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#6B7280', marginTop: 2 }}>Typical: every {m} months · individual results vary</p>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#C9A96E', whiteSpace: 'nowrap' }}>Next: {nextLabel}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', whiteSpace: 'nowrap' }}>Next: {nextLabel}</span>
                 </div>
               )
             })}
@@ -1091,22 +1093,22 @@ function MyJourneyPage({
 
       <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 28, marginBottom: 12 }}>FROM YOUR CLINICS</p>
       {CLINIC_CAMPAIGNS.map((camp) => (
-        <div key={camp.id} style={{ background: camp.color, borderRadius: 14, padding: 18, marginBottom: 10, border: '1px solid #E8E4DF' }}>
+        <div key={camp.id} style={{ background: '#FFFFFF', borderRadius: 8, padding: 16, marginBottom: 8, border: '1px solid #E5E5E5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor }}>{camp.clinicName.toUpperCase()}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', color: camp.accentColor, opacity: 0.7 }}>{camp.type === 'loyalty' ? 'LOYALTY PROGRAM' : 'LIMITED TIME'}</span>
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', color: '#9CA3AF' }}>{camp.clinicName.toUpperCase()}</span>
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', color: '#9CA3AF' }}>{camp.type === 'loyalty' ? 'LOYALTY PROGRAM' : 'LIMITED TIME'}</span>
           </div>
-          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1C1C1E', marginTop: 6, marginBottom: 4 }}>{camp.headline}</h4>
-          <p style={{ margin: 0, fontSize: 14, color: '#6E6E73', lineHeight: 1.5 }}>{camp.body}</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#0A0A0A', marginTop: 6, marginBottom: 4 }}>{camp.headline}</h4>
+          <p style={{ margin: 0, fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}>{camp.body}</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
             {camp.visitsRemaining !== null ? (
               <div style={{ display: 'flex', gap: 4 }}>
                 {Array.from({ length: (camp.visitsRemaining ?? 0) + 1 }).map((_, i) => (
-                  <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i === 0 ? camp.accentColor : 'transparent', border: `1px solid ${camp.accentColor}` }} />
+                  <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: i === 0 ? '#0A0A0A' : 'transparent', border: '1px solid #0A0A0A' }} />
                 ))}
               </div>
             ) : <div />}
-            {camp.expiryDate && <span style={{ fontSize: 14, color: '#9E9A94' }}>Ends {camp.expiryDate}</span>}
+            {camp.expiryDate && <span style={{ fontSize: 13, color: '#6B7280' }}>Ends {camp.expiryDate}</span>}
           </div>
         </div>
       ))}
@@ -1116,7 +1118,7 @@ function MyJourneyPage({
       <p style={{ margin: 0, fontSize: 14, color: '#C8C2BB', marginBottom: 20 }}>🔒 Your photos are private and never shared with third parties.</p>
 
       <div style={{ position: 'relative', paddingLeft: 32 }}>
-        <div style={{ position: 'absolute', left: 5, top: 6, bottom: 0, width: 1.5, background: '#E8E4DF' }} />
+        <div style={{ position: 'absolute', left: 5, top: 6, bottom: 0, width: 1.5, background: '#E5E5E5' }} />
         {visits.length === 0 ? (
           <div style={{ padding: '16px 0' }}>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>Your journey starts today. Your first visit has been logged. ✨</p>
@@ -1128,10 +1130,10 @@ function MyJourneyPage({
                 <img
                   src={v.photo} alt=""
                   onClick={() => { setLightboxSrc(v.photo!); setLightboxLabel(`${v.date} · ${v.clinicName}`) }}
-                  style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #C9A96E', cursor: 'pointer', flexShrink: 0, position: 'absolute', left: -32, top: 0 }}
+                  style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E5E5E5', cursor: 'pointer', flexShrink: 0, position: 'absolute', left: -32, top: 0 }}
                 />
               ) : (
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#C9A96E', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#0A0A0A', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
               )}
               <div style={{ marginLeft: v.photo ? 24 : 0 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: '#9E9A94' }}>{v.date}</p>
@@ -1142,12 +1144,12 @@ function MyJourneyPage({
           ))
         )}
         {visits.length > 4 && !showAllTimeline && (
-          <button onClick={() => setShowAllTimeline(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#C9A96E', fontWeight: 500, padding: '4px 0', marginBottom: 20 }}>
+          <button onClick={() => setShowAllTimeline(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#374151', fontWeight: 500, padding: '4px 0', marginBottom: 20 }}>
             Show more →
           </button>
         )}
         <div onClick={() => setShowManualModal(true)} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16, position: 'relative', cursor: 'pointer' }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px dashed #C8C2BB', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px dashed #9CA3AF', flexShrink: 0, position: 'absolute', left: -32, top: 6 }} />
           <div>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>Log a visit</p>
             <p style={{ margin: 0, fontSize: 14, color: '#C8C2BB', marginTop: 2 }}>No QR? Type what you had — Lluna will organize it.</p>
@@ -1155,7 +1157,7 @@ function MyJourneyPage({
         </div>
       </div>
 
-      <button onClick={() => setShowManualModal(true)} style={{ position: 'fixed', right: 24, bottom: 28, width: 54, height: 54, borderRadius: 999, background: '#C9A96E', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 30px rgba(0,0,0,0.2)', cursor: 'pointer', zIndex: 900 }} aria-label="Log a visit">
+      <button onClick={() => setShowManualModal(true)} style={{ position: 'fixed', right: 24, bottom: 28, width: 54, height: 54, borderRadius: 999, background: '#0A0A0A', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', cursor: 'pointer', zIndex: 900 }} aria-label="Log a visit">
         <Plus size={20} />
       </button>
       {showManualModal && <ManualEntryModal onClose={() => setShowManualModal(false)} onSubmit={(t) => parseManualEntry(t)} />}
@@ -1192,11 +1194,11 @@ function MyProfilePage({ state }: { state: AppState }) {
   return (
     <div style={{ paddingTop: 20, paddingBottom: 80 }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#EDE9E4', margin: '0 auto 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#F3F4F6', margin: '0 auto 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #E5E5E5' }}>
           {state.photo ? (
             <img src={state.photo} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%' }} />
           ) : (
-            <span style={{ fontSize: 28, fontWeight: 600, color: '#A8845A' }}>{initials}</span>
+            <span style={{ fontSize: 28, fontWeight: 600, color: '#374151' }}>{initials}</span>
           )}
         </div>
         <p style={{ margin: 0, fontSize: 14, color: '#9E9A94' }}>📷</p>
@@ -1212,7 +1214,7 @@ function MyProfilePage({ state }: { state: AppState }) {
           { num: String(uniqueClinics.length), label: 'Clinics visited' },
           { num: `${daysSinceJoin} days`, label: 'With Lluna' },
         ].map((s, i) => (
-          <div key={i} style={{ flex: 1, textAlign: 'center', padding: '12px 0', borderRight: i < 2 ? '1px solid #E8E4DF' : 'none' }}>
+          <div key={i} style={{ flex: 1, textAlign: 'center', padding: '12px 0', borderRight: i < 2 ? '1px solid #E5E5E5' : 'none' }}>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1C1C1E' }}>{s.num}</p>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 3 }}>{s.label}</p>
           </div>
@@ -1221,30 +1223,30 @@ function MyProfilePage({ state }: { state: AppState }) {
 
       <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginBottom: 12 }}>MY CLINICS</p>
       {clinicStats.map((c) => (
-        <div key={c.name} style={{ background: '#FFFFFF', borderRadius: 14, padding: 16, border: '1px solid #E8E4DF', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FAF5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏥</div>
+        <div key={c.name} style={{ background: '#FFFFFF', borderRadius: 8, padding: 14, border: '1px solid #E5E5E5', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏥</div>
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 500, color: '#1C1C1E' }}>{c.name}</p>
-            <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>{c.visits} visit{c.visits > 1 ? 's' : ''} · First visit {c.firstVisit}</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: '#0A0A0A' }}>{c.name}</p>
+            <p style={{ margin: 0, fontSize: 13, color: '#6B7280', marginTop: 2 }}>{c.visits} visit{c.visits > 1 ? 's' : ''} · First visit {c.firstVisit}</p>
           </div>
-          <span style={{ fontSize: 16, color: '#C8C2BB' }}>→</span>
+          <span style={{ fontSize: 14, color: '#9CA3AF' }}>→</span>
         </div>
       ))}
 
       <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY PREFERENCES</p>
       {prefs.map((p, i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < prefs.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: i < prefs.length - 1 ? '1px solid #E5E5E5' : 'none' }}>
           <div>
             <p style={{ margin: 0, fontSize: 14, color: '#1C1C1E' }}>{p.label}</p>
             <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 2 }}>{p.value}</p>
           </div>
-          <span style={{ fontSize: 14, color: '#C9A96E', cursor: 'pointer' }}>Edit →</span>
+          <span style={{ fontSize: 13, color: '#374151', cursor: 'pointer' }}>Edit →</span>
         </div>
       ))}
 
       <p style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.1em', color: '#9E9A94', margin: 0, marginTop: 24, marginBottom: 12 }}>MY FOOTPRINT</p>
       <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginBottom: 16 }}>Clinics you&apos;ve visited through Lluna</p>
-      <div style={{ background: '#EDE9E4', borderRadius: 14, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E8E4DF', marginBottom: 12 }}>
+      <div style={{ background: '#F9FAFB', borderRadius: 8, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E5E5E5', marginBottom: 12 }}>
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: 32 }}>🗺️</span>
           <p style={{ margin: 0, fontSize: 14, color: '#9E9A94', marginTop: 8 }}>NYC · LA · Miami</p>
@@ -1253,7 +1255,7 @@ function MyProfilePage({ state }: { state: AppState }) {
 
       </div>
       {[...allVisits].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((v) => (
-        <div key={v.id} style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid #F0EDE8' }}>
+        <div key={v.id} style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid #E5E5E5' }}>
           <span style={{ fontSize: 14 }}>📍</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#1C1C1E' }}>{v.clinicName}</span>
           <span style={{ fontSize: 14, color: '#9E9A94', marginLeft: 'auto' }}>{v.date}</span>
@@ -1311,8 +1313,8 @@ function ProgressBar({ filled, total = 5 }: { filled: number; total?: number }) 
           style={{
             flex: 1,
             height: 2,
-            borderRadius: 999,
-            background: i < filled ? COLORS.accent : COLORS.border
+            borderRadius: 0,
+            background: i < filled ? '#0A0A0A' : '#E5E5E5'
           }}
         />
       ))}
@@ -1330,12 +1332,12 @@ function ProcessingBar({ value }: { value: number }) {
         </p>
         <p style={{ margin: 0, fontSize: 14, color: COLORS.text, fontWeight: 600 }}>{v}%</p>
       </div>
-      <div style={{ height: 10, borderRadius: 999, background: COLORS.border, overflow: 'hidden' }}>
+      <div style={{ height: 2, borderRadius: 0, background: '#E5E5E5', overflow: 'hidden' }}>
         <div
           style={{
             width: `${v}%`,
             height: '100%',
-            background: COLORS.accent,
+            background: '#0A0A0A',
             transition: 'width 200ms ease',
           }}
         />
@@ -1420,15 +1422,15 @@ function ContinueButton({
     <button
       onClick={() => !disabled && onClick()}
       style={{
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 500,
         color: '#FFFFFF',
-        background: '#000000',
+        background: '#0A0A0A',
         border: 'none',
-        borderRadius: 999,
+        borderRadius: 6,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.25 : 1,
-        padding: '14px 28px',
+        padding: '10px 20px',
         display: 'flex',
         alignItems: 'center',
         gap: 4,
@@ -1625,7 +1627,7 @@ function TreatmentDetailScreen({
       {lightboxSrc && <PhotoLightbox src={lightboxSrc} label="" onClose={() => setLightboxSrc(null)} />}
       <BackButton onClick={onBack} />
 
-      <h1 style={{ fontSize: 20, fontWeight: 400, fontFamily: "'IBM Plex Serif', serif", color: COLORS.text, marginTop: 24, marginBottom: 4 }}>
+      <h1 style={{ fontSize: 20, fontWeight: 600, fontFamily: "Inter, system-ui, sans-serif", color: COLORS.text, marginTop: 24, marginBottom: 4 }}>
         {treatment.name}
       </h1>
       {treatment.category && (
@@ -1807,10 +1809,10 @@ function ClinicMenuScreen({
             value={treatmentFilter}
             onChange={(e) => setTreatmentFilter(e.target.value as typeof treatmentFilter)}
             style={{
-              fontSize: 14,
-              color: COLORS.text,
-              background: COLORS.bg,
-              border: `1px solid ${COLORS.border}`,
+              fontSize: 13,
+              color: '#0A0A0A',
+              background: '#FFFFFF',
+              border: '1px solid #E5E5E5',
               borderRadius: 6,
               padding: '4px 8px',
               outline: 'none',
@@ -1854,12 +1856,12 @@ function ClinicMenuScreen({
               placeholder="Search treatments…"
               style={{
                 width: '100%',
-                fontSize: 16,
-                color: COLORS.text,
-                background: COLORS.bg,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: 10,
-                padding: '10px 14px',
+                fontSize: 14,
+                color: '#0A0A0A',
+                background: '#FFFFFF',
+                border: '1px solid #E5E5E5',
+                borderRadius: 6,
+                padding: '8px 12px',
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
@@ -1867,11 +1869,11 @@ function ClinicMenuScreen({
           </div>
         )}
 
-        {/* Category filter pills — only shown when categories exist */}
+        {/* Category filter tabs — only shown when categories exist */}
         {categories.length > 0 && (
           <div
             className="hide-scrollbar"
-            style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}
+            style={{ display: 'flex', gap: 0, overflowX: 'auto', marginBottom: 12, borderBottom: '1px solid #E5E5E5' }}
           >
             {[{ id: 'all', name: 'All' }, ...categories].map((cat) => {
               const active = selectedCategoryId === cat.id
@@ -1881,16 +1883,18 @@ function ClinicMenuScreen({
                   onClick={() => setSelectedCategoryId(cat.id)}
                   style={{
                     flexShrink: 0,
-                    fontSize: 14,
-                    fontWeight: active ? 500 : 400,
-                    color: active ? '#FFFFFF' : '#111111',
-                    background: active ? '#000000' : 'transparent',
-                    border: active ? 'none' : '1px solid #D1CEC7',
-                    borderRadius: 999,
-                    padding: '5px 14px',
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? '#0A0A0A' : '#6B7280',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: active ? '2px solid #0A0A0A' : '2px solid transparent',
+                    borderRadius: 0,
+                    padding: '6px 14px',
                     cursor: 'pointer',
                     outline: 'none',
-                    transition: 'background 0.15s, color 0.15s',
+                    transition: 'color 0.15s',
+                    marginBottom: -1,
                   }}
                 >
                   {cat.name}
@@ -1912,7 +1916,7 @@ function ClinicMenuScreen({
             style={{
               background: '#FFFFFF',
               border: '1px solid #E5E5E5',
-              borderRadius: 12,
+              borderRadius: 8,
               padding: '12px 14px',
               marginBottom: 8,
               cursor: 'pointer',
@@ -2069,8 +2073,8 @@ function WelcomeScreen({
       <h1
         style={{
           fontSize: 28,
-          fontWeight: 400,
-          fontFamily: "'IBM Plex Serif', serif",
+          fontWeight: 600,
+          fontFamily: "Inter, system-ui, sans-serif",
           marginBottom: 16,
           color: COLORS.text,
           textAlign: 'left',
@@ -2373,10 +2377,10 @@ function GoalsScreen({
         style={{
           width: '100%',
           minHeight: 120,
-          border: '1px solid #D1CEC7',
-          borderRadius: 12,
+          border: '1px solid #E5E5E5',
+          borderRadius: 6,
           background: '#FFFFFF',
-          padding: '14px 16px',
+          padding: '12px 14px',
           fontSize: 14,
           lineHeight: 1.6,
           outline: 'none',
@@ -2397,8 +2401,8 @@ function GoalsScreen({
             width: 48,
             height: 48,
             borderRadius: '50%',
-            border: isRecording ? `2px solid ${COLORS.success}` : `1px solid #D1CEC7`,
-            background: isRecording ? '#E8F0E8' : '#FFFFFF',
+            border: isRecording ? `2px solid #16A34A` : `1px solid #E5E5E5`,
+            background: isRecording ? '#F0FDF4' : '#F9FAFB',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2653,10 +2657,10 @@ function DemographicsScreen({
 }) {
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    border: '1px solid #D1CEC7',
-    borderRadius: 8,
-    padding: '10px 14px',
-    fontSize: 16,
+    border: '1px solid #E5E5E5',
+    borderRadius: 6,
+    padding: '8px 12px',
+    fontSize: 14,
     background: '#FFFFFF',
     outline: 'none',
     color: COLORS.text,
@@ -2711,13 +2715,13 @@ function DemographicsScreen({
                 onClick={() => setState(s => ({ ...s, isNYC: opt.value }))}
                 style={{
                   padding: '8px 20px',
-                  borderRadius: 999,
-                  border: state.isNYC === opt.value ? `1px solid ${COLORS.text}` : `1px solid ${COLORS.border}`,
+                  borderRadius: 6,
+                  border: state.isNYC === opt.value ? `1px solid #0A0A0A` : `1px solid #E5E5E5`,
                   fontSize: 14,
-                  background: state.isNYC === opt.value ? COLORS.text : 'transparent',
-                  color: state.isNYC === opt.value ? COLORS.white : COLORS.text,
+                  background: state.isNYC === opt.value ? '#0A0A0A' : '#FFFFFF',
+                  color: state.isNYC === opt.value ? '#FFFFFF' : '#0A0A0A',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.15s ease'
                 }}
               >
                 {opt.label}
@@ -2955,10 +2959,10 @@ function ProfileScreen({
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    border: '1px solid #D1CEC7',
-    borderRadius: 8,
-    padding: '10px 14px',
-    fontSize: 16,
+    border: '1px solid #E5E5E5',
+    borderRadius: 6,
+    padding: '8px 12px',
+    fontSize: 14,
     background: '#FFFFFF',
     outline: 'none',
     color: COLORS.text,
@@ -3736,14 +3740,14 @@ function ReportScreen({
             const isOptimal = plan.name === 'Optimal'
             
             return (
-              <div 
+              <div
                 key={plan.name}
                 onClick={() => setState(s => ({ ...s, expandedCombo: isExpanded ? null : plan.name }))}
                 style={{
-                  background: COLORS.bg,
-                  borderRadius: 12,
+                  background: '#FFFFFF',
+                  borderRadius: 8,
                   padding: 16,
-                  border: isOptimal ? `2px solid ${COLORS.success}` : `1px solid ${COLORS.border}`,
+                  border: isOptimal ? `2px solid #16A34A` : `1px solid #E5E5E5`,
                   marginBottom: 12,
                   cursor: 'pointer',
                   position: 'relative'
@@ -3755,12 +3759,12 @@ function ReportScreen({
                     position: 'absolute',
                     top: -10,
                     right: 16,
-                    background: COLORS.success,
-                    color: COLORS.white,
-                    fontSize: 14,
+                    background: '#16A34A',
+                    color: '#FFFFFF',
+                    fontSize: 11,
                     fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: 999,
+                    padding: '3px 8px',
+                    borderRadius: 4,
                     letterSpacing: '0.05em'
                   }}>
                     RECOMMENDED
@@ -3799,11 +3803,11 @@ function ReportScreen({
                         key={i}
                         onClick={() => openTreatmentDetail(t.treatmentName || '', t.treatmentId)}
                         style={{
-                          fontSize: 14,
-                          background: COLORS.navBg,
+                          fontSize: 13,
+                          background: '#F3F4F6',
                           padding: '4px 10px',
-                          borderRadius: 999,
-                          color: COLORS.text,
+                          borderRadius: 6,
+                          color: '#374151',
                           cursor: 'pointer',
                         }}
                       >
@@ -3892,10 +3896,10 @@ function ReportScreen({
                 key={i}
                 onClick={() => openTreatmentDetail(rec.name)}
                 style={{
-                  background: COLORS.bg,
-                  borderRadius: 10,
+                  background: '#FFFFFF',
+                  borderRadius: 8,
                   padding: '10px 14px',
-                  border: `1px solid ${COLORS.border}`,
+                  border: '1px solid #E5E5E5',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
@@ -3935,10 +3939,10 @@ function ReportScreen({
                 key={i}
                 onClick={() => openTreatmentDetail(rec.name)}
                 style={{
-                  background: COLORS.bg,
-                  borderRadius: 10,
+                  background: '#FFFFFF',
+                  borderRadius: 8,
                   padding: '10px 14px',
-                  border: `1px solid ${COLORS.border}`,
+                  border: '1px solid #E5E5E5',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
@@ -4758,23 +4762,23 @@ export default function LlunaApp({
         margin: '0 auto',
         height: '100dvh',
         overflow: 'hidden',
-        background: COLORS.bg,
+        background: '#FFFFFF',
         position: 'relative'
       }}
     >
       <div style={{
-        background: COLORS.outerBg,
+        background: '#FFFFFF',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        paddingTop: 16,
+        paddingTop: 0,
       }}>
         <div
           style={
             {
-              /* Top navigation — always 62px from top of container */
-                padding: '0 12px',
+              /* Top navigation bar */
+                padding: '0 16px',
                 boxSizing: 'border-box',
                 width: '100%',
                 display: 'flex',
@@ -4782,32 +4786,31 @@ export default function LlunaApp({
                 alignItems: 'stretch',
               flexShrink: 0,
               zIndex: 50,
-                background: 'transparent',
+                background: '#FFFFFF',
                 backdropFilter: 'none',
                 WebkitBackdropFilter: 'none',
-                borderBottom: 'none',
+                borderBottom: '1px solid #E5E5E5',
                 boxShadow: 'none',
             }
           }
         >
-            {/* Internal rectangle (only this occupies the real nav bar space) */}
+            {/* Internal nav bar */}
             <div
               style={{
                 width: '100%',
-                minHeight: 56,
-                padding: '12px 12px',
+                minHeight: 48,
+                padding: '0 0',
                 display: 'grid',
                 gridTemplateColumns: 'auto 1fr',
                 alignItems: 'center',
                 columnGap: 12,
                 boxSizing: 'border-box',
                 background: 'transparent',
-                backdropFilter: 'blur(12px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-                borderRadius: 16,
-                border: '1px solid rgba(226,221,216,0.6)',
+                backdropFilter: 'none',
+                WebkitBackdropFilter: 'none',
+                borderRadius: 0,
+                border: 'none',
                 boxShadow: 'none',
-                transition: 'background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
               }}
             >
               <a

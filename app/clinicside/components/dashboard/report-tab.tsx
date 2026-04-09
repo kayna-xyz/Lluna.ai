@@ -305,7 +305,7 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: '#22C55E' }}>
+            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: '#16A34A' }}>
               <ArrowUpRight className="h-3 w-3" />
               +{basketLift}% basket lift
             </div>
@@ -323,7 +323,7 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
                 <Target className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: budgetVsActualIncreaseRate >= 0 ? '#22C55E' : '#F59E0B' }}>
+            <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: budgetVsActualIncreaseRate >= 0 ? '#16A34A' : '#DC2626' }}>
               {budgetVsActualIncreaseRate >= 0 ? (
                 <ArrowUpRight className="h-3 w-3" />
               ) : (
@@ -429,13 +429,7 @@ export function TopReferrersSection() {
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    index === 0
-                      ? "bg-yellow-400 text-yellow-900"
-                      : index === 1
-                        ? "bg-gray-300 text-gray-700"
-                        : "bg-amber-600 text-amber-100"
-                  }`}
+                  className="h-6 w-6 rounded flex items-center justify-center text-xs font-bold bg-secondary text-secondary-foreground"
                 >
                   {index + 1}
                 </div>
@@ -694,17 +688,17 @@ export function ClientReportPanel({
                   return (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {durationLabel && (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">
+                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
                           {durationLabel}
                         </span>
                       )}
                       {recoveryLabel && (
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${recoveryDays === 0 ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}>
+                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
                           {recoveryLabel}
                         </span>
                       )}
                       {tags.map((tag) => (
-                        <span key={tag} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
+                        <span key={tag} className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
                           {tag}
                         </span>
                       ))}

@@ -179,17 +179,17 @@ export default function DashboardPage() {
 
   const navItemStyle = (tab: string): React.CSSProperties =>
     activeTab === tab
-      ? { background: '#000000', color: '#FFFFFF', borderRadius: 6 }
+      ? { background: '#F3F4F6', color: '#0A0A0A', fontWeight: 500, borderRadius: 6 }
       : { color: '#6B7280' }
 
   return (
     <div className="flex flex-col h-screen" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
       {/* ── Topbar ── */}
-      <div className="flex items-center justify-between px-4 shrink-0" style={{ background: '#000000', height: 48 }}>
-        <span style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 15 }}>Lluna</span>
+      <div className="flex items-center justify-between px-4 shrink-0" style={{ background: '#FFFFFF', height: 48, borderBottom: '1px solid #E5E5E5' }}>
+        <span style={{ color: '#0A0A0A', fontWeight: 600, fontSize: 15 }}>Lluna</span>
         <div className="flex items-center gap-3">
-          <Bell className="h-4 w-4" style={{ color: '#FFFFFF' }} />
-          <div className="flex items-center justify-center rounded-full" style={{ width: 28, height: 28, background: '#FFFFFF', color: '#000000', fontSize: 11, fontWeight: 600 }}>
+          <Bell className="h-4 w-4" style={{ color: '#6B7280' }} />
+          <div className="flex items-center justify-center rounded-full" style={{ width: 28, height: 28, background: '#F3F4F6', color: '#0A0A0A', fontSize: 11, fontWeight: 600 }}>
             M
           </div>
         </div>

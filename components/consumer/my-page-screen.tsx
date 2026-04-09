@@ -7,13 +7,13 @@ import type { MeActivitySession, MeActivityVisit } from "@/lib/me-activity-types
 import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
 
 const COLORS = {
-  text: "#2C2C2C",
-  muted: "#9E9A94",
-  border: "#E2DDD8",
+  text: "#0A0A0A",
+  muted: "#6B7280",
+  border: "#E5E5E5",
   bg: "#FFFFFF",
-  outer: "#F5F2EE",
-  accent: "#6B7E6B",
-  navBg: "#F0EDE8",
+  outer: "#F9FAFB",
+  accent: "#374151",
+  navBg: "#F3F4F6",
 }
 
 const DISPLAY_LOCALE = "en-US"
@@ -174,8 +174,8 @@ export function MyPageScreen({
             <h1
               style={{
                 fontSize: 20,
-                fontWeight: 400,
-                fontFamily: "'IBM Plex Serif', serif",
+                fontWeight: 600,
+                fontFamily: "Inter, system-ui, sans-serif",
                 color: COLORS.text,
                 margin: 0,
               }}
@@ -233,12 +233,12 @@ export function MyPageScreen({
                     {activity.badge && (
                       <span
                         style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: activity.type === "loyalty" ? "rgba(107, 126, 107, 0.15)" : "rgba(198, 125, 59, 0.15)",
-                          color: activity.type === "loyalty" ? COLORS.accent : "#C67D3B",
-                          padding: "4px 10px",
-                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          background: "#F3F4F6",
+                          color: "#374151",
+                          padding: "3px 8px",
+                          borderRadius: 6,
                         }}
                       >
                         {activity.badge}
@@ -259,7 +259,7 @@ export function MyPageScreen({
                       width: 7,
                       height: 7,
                       borderRadius: "50%",
-                      background: i === activityIndex ? COLORS.accent : COLORS.border,
+                      background: i === activityIndex ? "#0A0A0A" : "#E5E5E5",
                       cursor: "pointer",
                       transition: "background 0.3s ease",
                     }}
