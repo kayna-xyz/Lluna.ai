@@ -2746,9 +2746,8 @@ function GeneratingScreen({
     
     const fetchAIRecommendation = async () => {
       const recentTreatments = recentTreatmentsFromGoals(state.goals)
-      const fallback = generateReport(state).aiRecommendation
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 12000)
+      const timeout = setTimeout(() => controller.abort(), 30000)
 
       try {
         const response = await fetch('/api/recommend', {
@@ -2776,16 +2775,10 @@ function GeneratingScreen({
 
         if (!response.ok) {
           let details = ''
-          try {
-            details = await response.text()
-          } catch {
-            /* ignore */
-          }
+          try { details = await response.text() } catch { /* ignore */ }
           console.warn('[Lluna] /api/recommend non-ok:', response.status, details.slice(0, 300))
-          if (!cancelled) {
-            setState((s) => ({ ...s, aiRecommendation: fallback }))
-            setReportProgress(70)
-          }
+          // leave aiRecommendation null — ProfileScreen will retry the API
+          if (!cancelled) setReportProgress(70)
           return
         }
 
@@ -2795,11 +2788,9 @@ function GeneratingScreen({
           setReportProgress(70)
         }
       } catch (e) {
-        console.warn('[Lluna] /api/recommend error:', e)
-        if (!cancelled) {
-          setState((s) => ({ ...s, aiRecommendation: fallback }))
-          setReportProgress(70)
-        }
+        console.warn('[Lluna] /api/recommend error (will retry in ProfileScreen):', e)
+        // leave aiRecommendation null — ProfileScreen will retry the API
+        if (!cancelled) setReportProgress(70)
       } finally {
         clearTimeout(timeout)
       }
