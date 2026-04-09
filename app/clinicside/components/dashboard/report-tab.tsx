@@ -370,14 +370,14 @@ export function DashboardAnalyticsSection({ clients }: { clients: Client[] }) {
                   <Bar
                     dataKey="statedBudget"
                     name="Budget"
-                    fill="var(--muted)"
-                    radius={[3, 3, 0, 0]}
+                    fill="#C7D2FE"
+                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="actualSpend"
                     name="Actual"
-                    fill="var(--primary)"
-                    radius={[3, 3, 0, 0]}
+                    fill="#6366F1"
+                    radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -688,12 +688,12 @@ export function ClientReportPanel({
                   return (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {durationLabel && (
-                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
+                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" style={{ background: "#EEF2FF", color: "#4F46E5" }}>
                           {durationLabel}
                         </span>
                       )}
                       {recoveryLabel && (
-                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
+                        <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium" style={{ background: "#F0FDF4", color: "#16A34A" }}>
                           {recoveryLabel}
                         </span>
                       )}
