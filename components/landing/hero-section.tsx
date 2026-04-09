@@ -90,10 +90,10 @@ export function HeroSection() {
                 Book a Demo
               </a>
               <a
-                href="#how-it-works"
+                href="/clinicside/auth"
                 className="text-[14px] sm:text-[15px] text-muted-foreground hover:text-foreground transition-colors duration-300 whitespace-nowrap"
               >
-                See How It Works →
+                Enterprise sign in
               </a>
             </div>
           </div>
