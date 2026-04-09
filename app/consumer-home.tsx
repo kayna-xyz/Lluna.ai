@@ -2071,7 +2071,7 @@ function WelcomeScreen({
       
       <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, paddingRight: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-          <ContinueButton onClick={() => go(1)} />
+          <ContinueButton onClick={() => go(2)} />
         </div>
         <p style={{ fontSize: 11, color: COLORS.muted, textAlign: 'center' }}>
           Continue to agree with our{" "}
@@ -2338,16 +2338,12 @@ function GoalsScreen({
 
   return (
     <div style={{ paddingTop: 20, paddingBottom: 120 }}>
-      <SurveyHeader filled={1} onBack={() => go(1)} />
-      
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: COLORS.text }}>
+      <SurveyHeader filled={1} onBack={() => go(0)} />
+
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32, color: COLORS.text }}>
         What would you like to change?
       </h1>
-      
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 32, color: COLORS.text }}>
-        Tell us in your own words - an area you want to enhance, something that has been on your mind, or treatments you have tried before.
-      </p>
-      
+
       <textarea
         value={goals}
         onChange={(e) => setGoals(e.target.value)}
@@ -2425,14 +2421,10 @@ function ExperienceScreen({
     <div style={{ paddingTop: 20, paddingBottom: 120 }}>
       <SurveyHeader filled={2} onBack={() => go(2)} />
       
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: COLORS.text }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32, color: COLORS.text }}>
         Have you done this before?
       </h1>
-      
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 32, color: COLORS.text }}>
-        No right answer - this just helps us calibrate what to explain and what to skip.
-      </p>
-      
+
       <div>
         {options.map((opt) => (
           <RadioOption
@@ -2488,14 +2480,10 @@ function BudgetScreen({
     <div style={{ paddingTop: 20, paddingBottom: 120 }}>
       <SurveyHeader filled={3} onBack={() => go(3)} />
       
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: COLORS.text }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32, color: COLORS.text }}>
         What feels right to invest today?
       </h1>
-      
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 32, color: COLORS.text }}>
-        We will make sure every recommendation fits. No pressure to commit to anything.
-      </p>
-      
+
       <div>
         {presets.map((opt) => (
           <RadioOption
@@ -2601,64 +2589,26 @@ function RecoveryScreen({
   go: (n: number) => void 
 }) {
   const options = [
-    { 
-      value: 'lunchtime', 
-      label: "Lunchtime aesthetics",
-      description: "Quick recovery (1-3 days), subtle results, minimal downtime"
-    },
-    { 
-      value: 'transformative', 
-      label: "Go big for lasting change",
-      description: "Longer recovery (1-2 weeks+), more dramatic & longer-lasting results"
-    }
+    { value: 'lunchtime', label: "Lunchtime aesthetics" },
+    { value: 'transformative', label: "Go big for lasting change" },
   ]
 
   return (
     <div style={{ paddingTop: 20, paddingBottom: 120 }}>
       <SurveyHeader filled={5} onBack={() => go(5)} />
-      
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: COLORS.text }}>
+
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32, color: COLORS.text }}>
         What kind of results are you looking for?
       </h1>
-      
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 32, color: COLORS.text }}>
-        This helps us recommend the right treatments for your lifestyle.
-      </p>
-      
+
       <div>
         {options.map((opt) => (
-          <div
+          <RadioOption
             key={opt.value}
+            selected={recovery === opt.value}
+            label={opt.label}
             onClick={() => setRecovery(opt.value)}
-            style={{
-              padding: '16px 0',
-              borderBottom: `1px solid ${COLORS.border}`,
-              cursor: 'pointer'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  border: recovery === opt.value ? `1.5px solid ${COLORS.text}` : '1.5px solid #C8C2BB',
-                  background: recovery === opt.value ? COLORS.text : 'transparent',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0,
-                  marginTop: 2
-                }}
-              />
-              <div style={{ marginLeft: 12 }}>
-                <span style={{ fontSize: 15, color: COLORS.text, display: 'block' }}>
-                  {opt.label}
-                </span>
-                <span style={{ fontSize: 12, color: COLORS.muted, marginTop: 4, display: 'block' }}>
-                  {opt.description}
-                </span>
-              </div>
-            </div>
-          </div>
+          />
         ))}
       </div>
       
@@ -2696,14 +2646,10 @@ function DemographicsScreen({
     <div style={{ paddingTop: 20, paddingBottom: 120 }}>
       <SurveyHeader filled={5} onBack={() => go(6)} />
       
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: COLORS.text }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 32, color: COLORS.text }}>
         A little about you
       </h1>
-      
-      <p style={{ fontSize: 15, fontWeight: 400, lineHeight: 1.6, marginBottom: 32, color: COLORS.text }}>
-        Helps us personalize your report and make sure recommendations fit your life.
-      </p>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
         <div>
           <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
@@ -2761,7 +2707,7 @@ function DemographicsScreen({
       </div>
       
       <BottomCTA>
-        <ContinueButton onClick={() => go(8)} label="Build my report" />
+        <ContinueButton onClick={() => go(8)} label="Build my plan" />
       </BottomCTA>
     </div>
   )
@@ -2790,9 +2736,9 @@ function GeneratingScreen({
   }, [go])
   
   const items = [
-    "Analyzing your photo",
-    "Matching treatments to your goals",
-    "Building your personalized plan"
+    "Analyzing your goals",
+    "Matching treatments to your budget",
+    "Building your personalized plan",
   ]
 
   useEffect(() => {
@@ -2867,27 +2813,27 @@ function GeneratingScreen({
         if (cancelled) return
         setVisibleItems((v) => [...v, 0])
         setReportProgress((p) => Math.max(p, 20))
-      }, 600),
+      }, 1500),
     )
     timers.push(
       setTimeout(() => {
         if (cancelled) return
         setVisibleItems((v) => [...v, 1])
         setReportProgress((p) => Math.max(p, 40))
-      }, 1200),
+      }, 3500),
     )
     timers.push(
       setTimeout(() => {
         if (cancelled) return
         setVisibleItems((v) => [...v, 2])
         setReportProgress((p) => Math.max(p, 60))
-      }, 1600),
+      }, 6000),
     )
-    
+
     // Run API call and UI minimum delay in parallel
     const apiPromise = fetchAIRecommendation()
     const uiMinPromise = new Promise<void>((resolve) => {
-      timers.push(setTimeout(() => resolve(), 2000))
+      timers.push(setTimeout(() => resolve(), 4000))
     })
     
     Promise.all([apiPromise, uiMinPromise]).then(() => {
@@ -2923,12 +2869,8 @@ function GeneratingScreen({
         Building your plan...
       </h1>
       <ProcessingBar value={reportProgress} />
-      
-      <p style={{ fontSize: 15, lineHeight: 1.7, color: COLORS.muted, marginBottom: 48 }}>
-        We are looking at your photo, your goals, and your budget to put together something actually useful.
-      </p>
-      
-      <div>
+
+      <div style={{ marginTop: 48 }}>
         {items.map((item, i) => (
           <div
             key={i}
@@ -3015,14 +2957,14 @@ function ProfileScreen({
   return (
     <div style={{ paddingTop: 40, paddingBottom: 120 }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8, color: COLORS.text }}>
-        Your report is ready.
+        Your plan is ready.
       </h1>
       <ProcessingBar value={reportProgress} />
-      
-      <p style={{ fontSize: 15, color: COLORS.muted, marginBottom: 40 }}>
-        Create your profile to save your personalized treatment recommendations.
+
+      <p style={{ fontSize: 15, color: COLORS.muted, marginBottom: 40, marginTop: 8 }}>
+        Save your personalized recommendations.
       </p>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div>
           <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
@@ -3035,51 +2977,36 @@ function ProfileScreen({
             style={inputStyle}
           />
         </div>
-        
+
         <div>
           <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
-            Phone number
+            Phone or email
+          </label>
+          <input
+            type="text"
+            value={state.phone || state.email}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v.includes('@')) {
+                setState(s => ({ ...s, email: v, phone: '' }))
+              } else {
+                setState(s => ({ ...s, phone: v, email: '' }))
+              }
+            }}
+            style={inputStyle}
+          />
+        </div>
+
+        <div>
+          <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
+            {`Get $${Math.round(referBonusUsd)} off — share a friend's number`}
           </label>
           <input
             type="tel"
-            value={state.phone}
-            onChange={(e) => setState(s => ({ ...s, phone: e.target.value }))}
-            style={inputStyle}
-          />
-          <p style={{ fontSize: 11, color: COLORS.muted, marginTop: 4 }}>
-            So we can send you the report
-          </p>
-        </div>
-        
-        <div>
-          <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={state.email}
-            onChange={(e) => setState(s => ({ ...s, email: e.target.value }))}
-            style={inputStyle}
-          />
-          <p style={{ fontSize: 11, color: COLORS.muted, marginTop: 4 }}>
-            We do not send newsletters unless you ask
-          </p>
-        </div>
-        
-        <div>
-          <label style={{ fontSize: 14, color: COLORS.text, display: 'block', marginBottom: 8 }}>
-            Know someone who would love this?
-          </label>
-          <input
-            type="tel"
-            placeholder="A friend's number"
             value={state.referral}
             onChange={(e) => setState(s => ({ ...s, referral: e.target.value }))}
             style={inputStyle}
           />
-          <p style={{ fontSize: 11, color: COLORS.muted, marginTop: 4 }}>
-            {`A friend's number — you will both get $${Math.round(referBonusUsd)} off`}
-          </p>
         </div>
       </div>
 
@@ -3112,7 +3039,7 @@ function ProfileScreen({
       <BottomCTA>
         <ContinueButton
           disabled={reportLoading || !consented}
-          label={reportLoading ? 'Updating your plan…' : 'See my report'}
+          label={reportLoading ? 'Updating your plan…' : 'See what\'s best for me'}
           onClick={async () => {
             if (reportLoading) return
             setReportLoading(true)
@@ -4168,7 +4095,7 @@ export default function LlunaApp({
     clinicInfoName: string
   }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [], clinicInfoName: "" })
   const [navTabs, setNavTabs] = useState<string[]>(() =>
-    initialViaClinicLink ? ["Menu", "Report", "About"] : ["About"],
+    initialViaClinicLink ? ["Menu", "Best for you", "About"] : ["About"],
   )
   // Google Review 弹窗（顾问 final-solution 后触发）— 暂时关闭
   // const [showReviewModal, setShowReviewModal] = useState(false)
@@ -4650,13 +4577,13 @@ export default function LlunaApp({
     if (state.showProfile) return "Profile"
     return navTabs.includes("My Journey")
       ? "My Journey"
-      : navTabs.includes("Report")
-        ? "Report"
+      : navTabs.includes("Best for you")
+        ? "Best for you"
         : "About"
   }
 
   const handleTabClick = (tab: string) => {
-    if (!hasFullConsumerUi && (tab === "Menu" || tab === "Report")) return
+    if (!hasFullConsumerUi && (tab === "Menu" || tab === "Best for you")) return
     if (tab === "Menu") {
       setState(s => ({
         ...s,
@@ -4684,7 +4611,7 @@ export default function LlunaApp({
         showMy: false,
         showPrivacyPolicy: false,
       }))
-    } else if (tab === "Report") {
+    } else if (tab === "Best for you") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -4764,13 +4691,6 @@ export default function LlunaApp({
           />
         )
       case 1:
-        return (
-          <PhotoScreen 
-            photo={state.photo} 
-            setPhoto={(photo) => setState(s => ({ ...s, photo }))} 
-            go={go} 
-          />
-        )
       case 2:
         return (
           <GoalsScreen 
