@@ -672,81 +672,105 @@ export function ClientReportPanel({
                 <TreatmentSearchBar treatments={menuTreatments} />
               )}
 
-              {/* Category-based recommendations (enriched) — or plan fallback */}
-              {categoryRecommendations.length > 0 ? (
-                categoryRecommendations.map((cat) => (
-                  <Card key={cat.name} className="gap-2">
-                    <CardHeader className="pb-0">
-                      <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cat.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {cat.treatments.map((t, i) => (
-                        <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium">{t.treatmentName}</p>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {t.duration && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700">Lasts {t.duration}</span>
-                              )}
-                              {t.downtime && t.downtime !== "None" && (
-                                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-50 text-orange-700">↓ {t.downtime}</span>
-                              )}
+              {/* helper — inline so it closes over menuTreatments */}
+              {(() => {
+                const getMenuTags = (treatmentId: string): string[] => {
+                  const mt = menuTreatments.find((m) => m.id === treatmentId)
+                  return Array.isArray(mt?.tags) ? (mt!.tags as string[]) : []
+                }
+                const TagPills = ({ treatmentId }: { treatmentId: string }) => {
+                  const tags = getMenuTags(treatmentId)
+                  if (!tags.length) return null
+                  return (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {tags.map((tag) => (
+                        <span key={tag} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )
+                }
+
+                return (
+                  <>
+                {/* Category-based recommendations (enriched) — or plan fallback */}
+                {categoryRecommendations.length > 0 ? (
+                  categoryRecommendations.map((cat) => (
+                    <Card key={cat.name} className="gap-2">
+                      <CardHeader className="pb-0">
+                        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cat.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {cat.treatments.map((t, i) => (
+                          <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium">{t.treatmentName}</p>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {t.duration && (
+                                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700">Lasts {t.duration}</span>
+                                )}
+                                {t.downtime && t.downtime !== "None" && (
+                                  <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs bg-orange-50 text-orange-700">↓ {t.downtime}</span>
+                                )}
+                                {t.cost > 0 && (
+                                  <p className="text-sm font-semibold ml-1">${t.cost.toLocaleString()}</p>
+                                )}
+                              </div>
+                            </div>
+                            {t.description && (
+                              <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                            )}
+                            {(t.units || t.syringes || t.sessions) && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {t.units ? `${t.units} units ` : ""}
+                                {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""} ${t.fillerType || ""} ` : ""}
+                                {t.sessions ? `${t.sessions} session${t.sessions > 1 ? "s" : ""}` : ""}
+                              </p>
+                            )}
+                            <TagPills treatmentId={t.treatmentId} />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : planFallbacks.length > 0 ? (
+                  // Fallback: show AI-recommended plans (Essential / Optimal / Premium)
+                  planFallbacks.map((plan) => (
+                    <Card key={plan.name} className="gap-2">
+                      <CardHeader className="pb-0">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{plan.name} Plan</CardTitle>
+                          {plan.comboPrice > 0 && (
+                            <span className="text-sm font-semibold">${plan.comboPrice.toLocaleString()}</span>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {plan.treatments.map((t, i) => (
+                          <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-medium">{t.treatmentName}</p>
                               {t.cost > 0 && (
-                                <p className="text-sm font-semibold ml-1">${t.cost.toLocaleString()}</p>
+                                <p className="text-sm font-semibold shrink-0">${t.cost.toLocaleString()}</p>
                               )}
                             </div>
-                          </div>
-                          {t.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
-                          )}
-                          {(t.units || t.syringes || t.sessions) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {t.units ? `${t.units} units ` : ""}
-                              {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""} ${t.fillerType || ""} ` : ""}
-                              {t.sessions ? `${t.sessions} session${t.sessions > 1 ? "s" : ""}` : ""}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                ))
-              ) : planFallbacks.length > 0 ? (
-                // Fallback: show AI-recommended plans (Essential / Optimal / Premium)
-                planFallbacks.map((plan) => (
-                  <Card key={plan.name} className="gap-2">
-                    <CardHeader className="pb-0">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{plan.name} Plan</CardTitle>
-                        {plan.comboPrice > 0 && (
-                          <span className="text-sm font-semibold">${plan.comboPrice.toLocaleString()}</span>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {plan.treatments.map((t, i) => (
-                        <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium">{t.treatmentName}</p>
-                            {t.cost > 0 && (
-                              <p className="text-sm font-semibold shrink-0">${t.cost.toLocaleString()}</p>
+                            {t.description && (
+                              <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
                             )}
+                            {(t.units || t.syringes) && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {t.units ? `${t.units} units ` : ""}
+                                {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""}` : ""}
+                              </p>
+                            )}
+                            <TagPills treatmentId={t.treatmentId} />
                           </div>
-                          {t.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
-                          )}
-                          {(t.units || t.syringes) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {t.units ? `${t.units} units ` : ""}
-                              {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""}` : ""}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                ))
-              ) : !isEnriched ? (
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : !isEnriched ? (
                 // Loading skeleton while enrichment runs
                 <Card className="gap-2">
                   <CardHeader className="pb-0">
@@ -781,11 +805,15 @@ export function ClientReportPanel({
                         {t.description && (
                           <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
                         )}
+                        <TagPills treatmentId={t.treatmentId} />
                       </div>
                     ))}
                   </CardContent>
                 </Card>
               )}
+                  </>
+                )
+              })()}
 
             </div>
           </div>
