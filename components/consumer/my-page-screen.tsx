@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import type { MeActivitySession, MeActivityVisit } from "@/lib/me-activity-types"
 import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
+import { useI18n } from "@/lib/i18n"
 
 const COLORS = {
   text: "#0A0A0A",
@@ -38,6 +39,7 @@ export function MyPageScreen({
   mdTeam = [],
 }: ClinicInfoProps = {}) {
   const router = useRouter()
+  const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [loggedIn, setLoggedIn] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -193,7 +195,7 @@ export function MyPageScreen({
       {activities.length > 0 && (
         <div style={{ marginBottom: 28 }}>
           <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
-            CURRENT ACTIVITIES
+            {t("about_current_activities")}
           </p>
           <div
             style={{
@@ -275,7 +277,7 @@ export function MyPageScreen({
       {mdTeam.length > 0 && (
         <div style={{ marginBottom: 32 }}>
           <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
-            OUR TEAM
+            {t("about_our_team")}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mdTeam.map((member) => (

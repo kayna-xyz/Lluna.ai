@@ -11,6 +11,8 @@ import { useState, useEffect, useRef, useCallback, createContext, useContext, us
 import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
 import { normalizeMdTeam } from "@/lib/clinic-public-page"
 import { Camera, Mic, Check, ChevronRight, ChevronLeft, Pencil, HelpCircle, X, ChevronDown, ChevronUp, Plus } from "lucide-react"
+import { I18nProvider, useI18n } from "@/lib/i18n"
+import { LanguageSwitcher } from "@/components/consumer/language-switcher"
 
 type PricingTableRow = { label: string; values: Record<string, number | null> }
 type PricingTable = { columns: string[]; rows: PricingTableRow[] }
@@ -1711,6 +1713,7 @@ function ClinicMenuScreen({
   setTreatmentFilter: (v: 'popular' | 'price-low' | 'price-high' | 'comprehensive') => void
   clinicMenu: ClinicMenu | null
 }) {
+  const { t } = useI18n()
   const [treatmentSearch, setTreatmentSearch] = useState("")
   const [showSearch, setShowSearch] = useState(false)
   const [selectedTreatment, setSelectedTreatment] = useState<ClinicMenuTreatment | null>(null)
@@ -1851,7 +1854,7 @@ function ClinicMenuScreen({
               autoFocus
               value={treatmentSearch}
               onChange={(e) => setTreatmentSearch(e.target.value)}
-              placeholder="Search treatments…"
+              placeholder={t("menu_search_placeholder")}
               style={{
                 width: '100%',
                 fontSize: 14,
@@ -1873,7 +1876,7 @@ function ClinicMenuScreen({
             className="hide-scrollbar"
             style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}
           >
-            {[{ id: 'all', name: 'All' }, ...categories].map((cat) => {
+            {[{ id: 'all', name: t("menu_all") }, ...categories].map((cat) => {
               const active = selectedCategoryId === cat.id
               return (
                 <button
@@ -1902,7 +1905,7 @@ function ClinicMenuScreen({
 
         {visibleTreatments.length === 0 ? (
           <div style={{ padding: '10px 0', color: COLORS.muted, fontSize: 16 }}>
-            No treatments match your search.
+            {t("menu_no_results")}
           </div>
         ) : (
           visibleTreatments.map((treatment) => (
@@ -2031,6 +2034,7 @@ function WelcomeScreen({
   clinicName: string
 }) {
   const { logoUrl } = useContext(ConsumerClinicUiContext)
+  const { t } = useI18n()
   return (
     <div style={{ paddingTop: 80, paddingBottom: 120, position: 'relative', minHeight: 'calc(100vh - 80px)' }}>
       {logoUrl ? (
@@ -2085,12 +2089,12 @@ function WelcomeScreen({
           textAlign: 'left',
         }}
       >
-        1 minute to see what works best for you.
+        {t("bfy_subtitle")}
       </p>
       
       <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, paddingRight: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-          <ContinueButton onClick={() => go(2)} />
+          <ContinueButton onClick={() => go(2)} label={t("welcome_continue")} />
         </div>
         <p style={{ fontSize: 14, color: COLORS.muted, textAlign: 'center' }}>
           Continue to agree with our{" "}
@@ -2747,6 +2751,7 @@ function GeneratingScreen({
   setReportProgress: React.Dispatch<React.SetStateAction<number>>
   clinicSlug: string
 }) {
+  const { t } = useI18n()
   const [visibleItems, setVisibleItems] = useState<number[]>([])
   const goRef = useRef(go)
   useEffect(() => {
@@ -2875,7 +2880,7 @@ function GeneratingScreen({
   return (
     <div style={{ paddingTop: 100, paddingBottom: 120 }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16, color: COLORS.text }}>
-        Building your plan...
+        {t("report_loading")}
       </h1>
       <ProcessingBar value={reportProgress} />
 
@@ -4003,8 +4008,8 @@ function ReportScreen({
   )
 }
 
-// Main App Component
-export default function LlunaApp({
+// Main App Component (inner — wrapped by LlunaApp which provides I18nProvider)
+function LlunaAppInner({
   initialViaClinicLink = false,
 }: {
   /** 与首页 URL 一致：由服务端读 `?clinic=` / `?clinicSlug=`，避免 SSR 与客户端 hydration 不一致。 */
@@ -4060,9 +4065,16 @@ export default function LlunaApp({
     mdTeam: PublicMdTeamMember[]
     clinicInfoName: string
   }>({ tagline: null, activities: [], testimonials: [], referBonusUsd: 20, clinicPhone: "", clinicWorkTime: "", logoUrl: "", mdTeam: [], clinicInfoName: "" })
+  const { t } = useI18n()
   const [navTabs, setNavTabs] = useState<string[]>(() =>
     initialViaClinicLink ? ["Menu", "Best for you", "About"] : ["About"],
   )
+  const translatedNavTabs = navTabs.map((tab) => {
+    if (tab === "Menu") return t("nav_menu")
+    if (tab === "Best for you") return t("nav_best_for_you")
+    if (tab === "About") return t("nav_about")
+    return tab
+  })
   // Google Review 弹窗（顾问 final-solution 后触发）— 暂时关闭
   // const [showReviewModal, setShowReviewModal] = useState(false)
   const [history, setHistory] = useState<HistoryEntry[]>([])
@@ -4537,20 +4549,29 @@ export default function LlunaApp({
 
 
   const getActiveTab = () => {
-    if (state.showClinicMenu) return "Menu"
-    if (state.showMy) return "About"
+    if (state.showClinicMenu) return t("nav_menu")
+    if (state.showMy) return t("nav_about")
     if (state.showJourney) return "My Journey"
     if (state.showProfile) return "Profile"
     return navTabs.includes("My Journey")
       ? "My Journey"
       : navTabs.includes("Best for you")
-        ? "Best for you"
-        : "About"
+        ? t("nav_best_for_you")
+        : t("nav_about")
+  }
+
+  // Map translated tab label back to internal English key for handleTabClick
+  const getEnglishTab = (tab: string): string => {
+    if (tab === t("nav_menu")) return "Menu"
+    if (tab === t("nav_best_for_you")) return "Best for you"
+    if (tab === t("nav_about")) return "About"
+    return tab
   }
 
   const handleTabClick = (tab: string) => {
-    if (!hasFullConsumerUi && (tab === "Menu" || tab === "Best for you")) return
-    if (tab === "Menu") {
+    const englishTab = getEnglishTab(tab)
+    if (!hasFullConsumerUi && (englishTab === "Menu" || englishTab === "Best for you")) return
+    if (englishTab === "Menu") {
       setState(s => ({
         ...s,
         showClinicMenu: true,
@@ -4559,7 +4580,7 @@ export default function LlunaApp({
         showMy: false,
         showPrivacyPolicy: false,
       }))
-    } else if (tab === "My Journey") {
+    } else if (englishTab === "My Journey") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -4568,7 +4589,7 @@ export default function LlunaApp({
         showMy: false,
         showPrivacyPolicy: false,
       }))
-    } else if (tab === "Profile") {
+    } else if (englishTab === "Profile") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -4577,7 +4598,7 @@ export default function LlunaApp({
         showMy: false,
         showPrivacyPolicy: false,
       }))
-    } else if (tab === "Best for you") {
+    } else if (englishTab === "Best for you") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -4587,7 +4608,7 @@ export default function LlunaApp({
         showPrivacyPolicy: false,
         ...(s.screen >= 10 ? { screen: 10 } : {}),
       }))
-    } else if (tab === "About") {
+    } else if (englishTab === "About") {
       setState(s => ({
         ...s,
         showClinicMenu: false,
@@ -4781,24 +4802,12 @@ export default function LlunaApp({
           boxSizing: 'border-box',
           width: '100%',
         }}>
-          <a
-            href="https://www.lluna.ai/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center' }}
-            aria-label="Lluna"
-          >
-            <img
-              src="/brand-logo.png"
-              alt=""
-              style={{ display: 'block', objectFit: 'contain', width: 26, height: 26 }}
-            />
-          </a>
+          <LanguageSwitcher />
           <div style={{ flex: 1, minWidth: 0 }}>
             <NavPill
               activeTab={getActiveTab()}
               onTabClick={handleTabClick}
-              tabs={navTabs}
+              tabs={translatedNavTabs}
               isMobileNav={isMobileNav}
             />
           </div>
@@ -4831,5 +4840,17 @@ export default function LlunaApp({
       </div>
     </div>
     </ConsumerClinicUiContext.Provider>
+  )
+}
+
+export default function LlunaApp({
+  initialViaClinicLink = false,
+}: {
+  initialViaClinicLink?: boolean
+}) {
+  return (
+    <I18nProvider>
+      <LlunaAppInner initialViaClinicLink={initialViaClinicLink} />
+    </I18nProvider>
   )
 }
