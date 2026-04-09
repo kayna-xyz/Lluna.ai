@@ -3652,40 +3652,30 @@ function ReportScreen({
         </div>
       )}
       
-      {/* Summary/Overview Section — AI-generated, personalized */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ 
-          fontSize: 11, 
-          fontWeight: 500, 
-          letterSpacing: '0.1em', 
-          color: COLORS.muted,
-          marginBottom: 12 
-        }}>
-          YOUR OVERVIEW
-        </p>
-        <div style={{ 
-          background: COLORS.bg, 
-          borderRadius: 12, 
-          padding: 16,
-          border: `1px solid ${COLORS.border}`
-        }}>
-          {!summary ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ height: 14, borderRadius: 6, background: 'linear-gradient(90deg, #e8e5e0 25%, #f5f3ef 50%, #e8e5e0 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-              <div style={{ height: 14, borderRadius: 6, width: '75%', background: 'linear-gradient(90deg, #e8e5e0 25%, #f5f3ef 50%, #e8e5e0 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-            </div>
-          ) : (
-            <p style={{ fontSize: 14, lineHeight: 1.7, color: COLORS.text, margin: 0, animation: 'fadeIn 0.6s ease-in' }}>
-              {summary}
+      {/* Goals Section */}
+      {state.goals && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.1em',
+            color: COLORS.muted,
+            marginBottom: 12
+          }}>
+            YOUR GOALS
+          </p>
+          <div style={{
+            background: COLORS.bg,
+            borderRadius: 12,
+            padding: 16,
+            border: `1px solid ${COLORS.border}`
+          }}>
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: COLORS.text, margin: 0 }}>
+              {state.goals}
             </p>
-          )}
-          {aiRec?.skip && (
-            <p style={{ fontSize: 12, color: COLORS.accent, margin: 0, marginTop: 12, fontStyle: 'italic' }}>
-              {aiRec.skip}
-            </p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
       <style>{`
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -3951,28 +3941,6 @@ function ReportScreen({
         </div>
       )}
 
-      {aiRec?.holdOffNote && (
-        <div style={{
-          background: COLORS.bg,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 24
-        }}>
-          <p style={{ 
-            fontSize: 11, 
-            fontWeight: 500, 
-            letterSpacing: '0.1em', 
-            color: COLORS.muted,
-            margin: 0,
-            marginBottom: 8
-          }}>
-            SAFETY REMINDERS
-          </p>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: COLORS.text, margin: 0, marginTop: 8 }}>
-            {aiRec.holdOffNote}
-          </p>
-        </div>
-      )}
 
       {(() => {
         if (!aiRec || !aiRec.plans || aiRec.plans.length === 0) return null
@@ -4625,10 +4593,8 @@ export default function LlunaApp({
           clinicName={consumerUiValue.clinicName}
           tagline={consumerUiValue.tagline}
           logoUrl={consumerUiValue.logoUrl}
-          clinicPhone={consumerUiValue.clinicPhone}
-          clinicWorkTime={consumerUiValue.clinicWorkTime}
           activities={consumerUiValue.activities}
-          testimonials={consumerUiValue.testimonials}
+          mdTeam={consumerUiValue.mdTeam}
         />
       )
     }

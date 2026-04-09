@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getBrowserSupabase } from "@/lib/supabase/browser-client"
 import type { MeActivitySession, MeActivityVisit } from "@/lib/me-activity-types"
-import type { PublicMenuActivity, PublicMenuTestimonial } from "@/lib/clinic-public-page"
+import type { PublicMenuActivity, PublicMenuTestimonial, PublicMdTeamMember } from "@/lib/clinic-public-page"
 
 const COLORS = {
   text: "#2C2C2C",
@@ -22,10 +22,9 @@ type ClinicInfoProps = {
   clinicName?: string
   tagline?: string | null
   logoUrl?: string
-  clinicPhone?: string
-  clinicWorkTime?: string
   activities?: PublicMenuActivity[]
   testimonials?: PublicMenuTestimonial[]
+  mdTeam?: PublicMdTeamMember[]
 }
 
 /** Data: Supabase via GET /api/me/visit (writes) + GET /api/me/activity (reads user_clinic_visits + clients). */
@@ -34,10 +33,9 @@ export function MyPageScreen({
   clinicName,
   tagline,
   logoUrl,
-  clinicPhone,
-  clinicWorkTime,
   activities = [],
   testimonials = [],
+  mdTeam = [],
 }: ClinicInfoProps = {}) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -187,27 +185,21 @@ export function MyPageScreen({
             {tagline ? (
               <p style={{ fontSize: 12, color: COLORS.accent, margin: 0 }}>{tagline}</p>
             ) : null}
-            {clinicPhone ? (
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 2 }}>{clinicPhone}</p>
-            ) : null}
-            {clinicWorkTime ? (
-              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0 }}>{clinicWorkTime}</p>
-            ) : null}
           </div>
         </div>
       )}
 
       {/* ── Current Activities ─────────────────────────────────────────── */}
       {activities.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 12 }}>
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
             CURRENT ACTIVITIES
           </p>
           <div
             style={{
               background: COLORS.outer,
-              borderRadius: 12,
-              padding: 16,
+              borderRadius: 16,
+              padding: 24,
               border: `1px solid ${COLORS.border}`,
               position: "relative",
               overflow: "hidden",
@@ -222,7 +214,7 @@ export function MyPageScreen({
               setActivityIndex((i) => dx < 0 ? (i + 1) % n : (i - 1 + n) % n)
             }}
           >
-            <div style={{ position: "relative", minHeight: 60 }}>
+            <div style={{ position: "relative", minHeight: 80 }}>
               {activities.map((activity, i) => (
                 <div
                   key={i}
@@ -236,16 +228,16 @@ export function MyPageScreen({
                     pointerEvents: i === activityIndex ? "auto" : "none",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, margin: 0 }}>{activity.title}</h3>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: COLORS.text, margin: 0 }}>{activity.title}</h3>
                     {activity.badge && (
                       <span
                         style={{
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: 600,
                           background: activity.type === "loyalty" ? "rgba(107, 126, 107, 0.15)" : "rgba(198, 125, 59, 0.15)",
                           color: activity.type === "loyalty" ? COLORS.accent : "#C67D3B",
-                          padding: "3px 8px",
+                          padding: "4px 10px",
                           borderRadius: 999,
                         }}
                       >
@@ -253,19 +245,19 @@ export function MyPageScreen({
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 13, color: COLORS.muted, margin: 0 }}>{activity.description}</p>
+                  <p style={{ fontSize: 15, color: COLORS.muted, margin: 0, lineHeight: 1.55 }}>{activity.description}</p>
                 </div>
               ))}
             </div>
             {activities.length > 1 && (
-              <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 12 }}>
+              <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 16 }}>
                 {activities.map((_, i) => (
                   <div
                     key={i}
                     onClick={() => setActivityIndex(i)}
                     style={{
-                      width: 6,
-                      height: 6,
+                      width: 7,
+                      height: 7,
                       borderRadius: "50%",
                       background: i === activityIndex ? COLORS.accent : COLORS.border,
                       cursor: "pointer",
@@ -279,49 +271,67 @@ export function MyPageScreen({
         </div>
       )}
 
-      {/* ── Trusted By ────────────────────────────────────────────────── */}
-      {testimonials.length > 0 && (
+      {/* ── MD Team ───────────────────────────────────────────────────── */}
+      {mdTeam.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 12 }}>
-            TRUSTED BY
+          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.muted, marginBottom: 14 }}>
+            OUR TEAM
           </p>
-          <div
-            className="hide-scrollbar"
-            style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}
-          >
-            {testimonials.map((visitor, i) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {mdTeam.map((member) => (
               <div
-                key={i}
+                key={member.id}
                 style={{
-                  minWidth: 180,
                   background: COLORS.outer,
-                  borderRadius: 12,
-                  padding: 14,
+                  borderRadius: 16,
+                  padding: 20,
                   border: `1px solid ${COLORS.border}`,
+                  display: "flex",
+                  gap: 16,
+                  alignItems: "flex-start",
                 }}
               >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    background: COLORS.navBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 10,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: COLORS.accent,
-                  }}
-                >
-                  {visitor.name.split(/\s+/).filter(Boolean).map((n: string) => n[0]).join("") || "?"}
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt={member.name}
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                      border: `1px solid ${COLORS.border}`,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      background: COLORS.navBg,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: COLORS.accent,
+                    }}
+                  >
+                    {member.name.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").slice(0, 2)}
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: COLORS.text, margin: 0 }}>{member.name}</p>
+                  {member.experience && (
+                    <p style={{ fontSize: 12, color: COLORS.accent, margin: "2px 0 0" }}>{member.experience}</p>
+                  )}
+                  {member.about && (
+                    <p style={{ fontSize: 13, color: COLORS.muted, margin: "8px 0 0", lineHeight: 1.55 }}>{member.about}</p>
+                  )}
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text, display: "block" }}>{visitor.name}</span>
-                <span style={{ fontSize: 11, color: COLORS.accent, display: "block", marginTop: 2 }}>{visitor.role}</span>
-                <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 8, fontStyle: "italic" }}>
-                  &ldquo;{visitor.testimonial}&rdquo;
-                </p>
               </div>
             ))}
           </div>
@@ -329,22 +339,41 @@ export function MyPageScreen({
       )}
 
       {/* ── Divider before user section ───────────────────────────────── */}
-      {(clinicName || activities.length > 0 || testimonials.length > 0) && (
+      {(clinicName || activities.length > 0 || mdTeam.length > 0) && (
         <div style={{ borderTop: `1px solid ${COLORS.border}`, marginBottom: 28 }} />
       )}
 
       {/* ── User section ──────────────────────────────────────────────── */}
       {!loggedIn ? (
-        <p style={{ fontSize: 14, color: COLORS.muted, margin: 0, lineHeight: 1.6 }}>
-          Sign in to see clinics you have visited and treatment plans confirmed in the clinic dashboard.
-        </p>
+        <div>
+          <p style={{ fontSize: 14, color: COLORS.muted, margin: "0 0 20px", lineHeight: 1.6 }}>
+            Sign in to see clinics you have visited and treatment plans confirmed in the clinic dashboard.
+          </p>
+          <a
+            href="/join"
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "14px 20px",
+              fontSize: 15,
+              fontWeight: 600,
+              color: COLORS.bg,
+              background: COLORS.accent,
+              border: "none",
+              borderRadius: 12,
+              textAlign: "center",
+              textDecoration: "none",
+              cursor: "pointer",
+              boxSizing: "border-box",
+            }}
+          >
+            Sign up
+          </a>
+        </div>
       ) : (
         <>
-          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: COLORS.muted, margin: "0 0 4px" }}>
-            MY
-          </p>
           <h2 style={{ fontSize: 22, fontWeight: 600, color: COLORS.text, margin: "0 0 4px" }}>
-            {userName || "My"}
+            {userName || "Account"}
           </h2>
           {userEmail ? (
             <p style={{ fontSize: 13, color: COLORS.muted, margin: "0 0 28px" }}>{userEmail}</p>

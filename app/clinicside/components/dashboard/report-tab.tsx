@@ -493,7 +493,7 @@ export function ClientReportPanel({
 
   const isEnriched = typeof realRec?.enriched_at === "string" && !!realRec.enriched_at
 
-  // Category-based recommendations (new schema)
+  // Category-based recommendations (enrichment schema)
   const categoryRecommendations = Array.isArray(realRec?.categoryRecommendations)
     ? (realRec.categoryRecommendations as Record<string, unknown>[]).map((cat) => ({
         name: String(cat.name || ""),
@@ -512,6 +512,24 @@ export function ClientReportPanel({
             }))
           : [],
       })).filter((cat) => cat.name && cat.treatments.length > 0)
+    : []
+
+  // Fallback: plans from the original AI recommendation (Essential / Optimal / Premium)
+  const planFallbacks = Array.isArray(realRec?.plans)
+    ? (realRec.plans as Record<string, unknown>[]).map((plan) => ({
+        name: String(plan.name || ""),
+        comboPrice: Number(plan.comboPrice) || 0,
+        treatments: Array.isArray(plan.treatments)
+          ? (plan.treatments as Record<string, unknown>[]).map((t) => ({
+              treatmentId: String(t.treatmentId || ""),
+              treatmentName: String(t.treatmentName || ""),
+              description: String(t.description || t.reason || ""),
+              cost: Number(t.cost) || 0,
+              units: t.units != null ? Number(t.units) : null,
+              syringes: t.syringes != null ? Number(t.syringes) : null,
+            }))
+          : [],
+      })).filter((p) => p.name && p.treatments.length > 0)
     : []
 
   const zeroCostAddOns = Array.isArray(realRec?.zeroCostAddOns)
@@ -709,7 +727,7 @@ export function ClientReportPanel({
                 <TreatmentSearchBar treatments={menuTreatments} />
               )}
 
-              {/* Category-based recommendations */}
+              {/* Category-based recommendations (enriched) — or plan fallback */}
               {categoryRecommendations.length > 0 ? (
                 categoryRecommendations.map((cat) => (
                   <Card key={cat.name} className="gap-2">
@@ -741,6 +759,41 @@ export function ClientReportPanel({
                               {t.units ? `${t.units} units ` : ""}
                               {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""} ${t.fillerType || ""} ` : ""}
                               {t.sessions ? `${t.sessions} session${t.sessions > 1 ? "s" : ""}` : ""}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : planFallbacks.length > 0 ? (
+                // Fallback: show AI-recommended plans (Essential / Optimal / Premium)
+                planFallbacks.map((plan) => (
+                  <Card key={plan.name} className="gap-2">
+                    <CardHeader className="pb-0">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{plan.name} Plan</CardTitle>
+                        {plan.comboPrice > 0 && (
+                          <span className="text-sm font-semibold">${plan.comboPrice.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {plan.treatments.map((t, i) => (
+                        <div key={`${t.treatmentId}-${i}`} className="rounded-md border bg-muted/20 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium">{t.treatmentName}</p>
+                            {t.cost > 0 && (
+                              <p className="text-sm font-semibold shrink-0">${t.cost.toLocaleString()}</p>
+                            )}
+                          </div>
+                          {t.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                          )}
+                          {(t.units || t.syringes) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {t.units ? `${t.units} units ` : ""}
+                              {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? "s" : ""}` : ""}
                             </p>
                           )}
                         </div>
