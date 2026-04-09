@@ -3,7 +3,7 @@ import { getServiceSupabase } from '@/lib/supabase/admin'
 import { getAuthSupabase } from '@/lib/supabase/server-auth'
 import type { StoredReportData } from '@/lib/report-payload'
 import { resolveClinicForRequest } from '@/lib/tenant'
-import { enrichReportAsync, generateFastEnrichment } from '@/lib/report-enrichment'
+import { enrichReportAsync, generateFastEnrichment, generateCategoryRecsDirectly } from '@/lib/report-enrichment'
 
 
 function asRec(v: unknown): Record<string, unknown> {
@@ -120,33 +120,30 @@ export async function POST(req: Request) {
     if (error) console.error('clients insert error:', error)
   }
 
-  // ── 3. Fast enrichment: patientSummaryStructured + categoryRecommendations ──
-  const FAST_TIMEOUT_MS = 10000
-  const fastFallback = {
-    patientSummaryStructured: null,
-    categoryRecommendations: [] as import('@/lib/report-enrichment').CategoryRecommendation[],
-    zeroCostAddOns: [] as import('@/lib/report-enrichment').ZeroCostAddOn[],
-  }
-  const fastStart = Date.now()
-  const fast = await Promise.race([
-    generateFastEnrichment(clinicId, userInput, recommendation),
-    new Promise<typeof fastFallback>((resolve) => setTimeout(() => resolve(fastFallback), FAST_TIMEOUT_MS)),
-  ]).catch((e) => {
-    console.error('[new-report] fast enrichment failed:', e instanceof Error ? e.message : e)
-    return fastFallback
-  })
-  const fastMs = Date.now() - fastStart
-  console.log(`[new-report] fast enrichment done in ${fastMs}ms — categoryRecs:${fast.categoryRecommendations.length} zeroCost:${fast.zeroCostAddOns.length} patientSummary:${!!fast.patientSummaryStructured} timedOut:${fastMs >= FAST_TIMEOUT_MS - 100}`)
+  // ── 3. Category recs — direct await, no timeout race ─────────────────────────
+  const directStart = Date.now()
+  // 强制同步执行（绕过 after / timeout）
+  const catResult = await generateCategoryRecsDirectly(clinicId, userInput, recommendation)
+  console.log(`[new-report] generateCategoryRecsDirectly done in ${Date.now() - directStart}ms`)
+  console.log('FINAL:', JSON.stringify({ categoryRecommendations: catResult.categoryRecommendations.length, zeroCostAddOns: catResult.zeroCostAddOns.length }))
 
-  // Write fast results to DB so consultant sees them immediately
-  if (pendingReportId && (fast.patientSummaryStructured || fast.categoryRecommendations.length || fast.zeroCostAddOns.length)) {
+  // ── 4. Patient summary — fast race (non-blocking, best-effort) ────────────────
+  const FAST_TIMEOUT_MS = 8000
+  const patFallback = { patientSummaryStructured: null }
+  const patientSummaryResult = await Promise.race([
+    generateFastEnrichment(clinicId, userInput, recommendation).then((r) => ({ patientSummaryStructured: r.patientSummaryStructured })),
+    new Promise<typeof patFallback>((resolve) => setTimeout(() => resolve(patFallback), FAST_TIMEOUT_MS)),
+  ]).catch(() => patFallback)
+
+  // Write category recs + patient summary to DB immediately
+  if (pendingReportId && (catResult.categoryRecommendations.length || catResult.zeroCostAddOns.length || patientSummaryResult.patientSummaryStructured)) {
     const rd = asRec(reportData)
     const rec = asRec(rd.recommendation)
     const fastRec: Record<string, unknown> = {
       ...rec,
-      ...(fast.patientSummaryStructured ? { patientSummaryStructured: fast.patientSummaryStructured } : {}),
-      ...(fast.categoryRecommendations.length ? { categoryRecommendations: fast.categoryRecommendations } : {}),
-      ...(fast.zeroCostAddOns.length ? { zeroCostAddOns: fast.zeroCostAddOns } : {}),
+      ...(patientSummaryResult.patientSummaryStructured ? { patientSummaryStructured: patientSummaryResult.patientSummaryStructured } : {}),
+      ...(catResult.categoryRecommendations.length ? { categoryRecommendations: catResult.categoryRecommendations } : {}),
+      ...(catResult.zeroCostAddOns.length ? { zeroCostAddOns: catResult.zeroCostAddOns } : {}),
     }
     const fastRd = { ...rd, recommendation: fastRec }
     void supabase.from('pending_reports').update({ report_data: fastRd }).eq('id', pendingReportId)
@@ -154,7 +151,7 @@ export async function POST(req: Request) {
       .eq('clinic_id', clinicId).eq('session_id', sessionId)
   }
 
-  // ── 4. Fire background enrichment for consultantBrief + salesMethodology ─────
+  // ── 5. Fire background enrichment for consultantBrief + salesMethodology ─────
   if (pendingReportId) {
     after(() => enrichReportAsync(pendingReportId!, clinicId, userInput, planTreatmentIds))
   }
@@ -163,8 +160,8 @@ export async function POST(req: Request) {
     ok: true,
     sessionId,
     clinicId,
-    categoryRecommendations: fast.categoryRecommendations,
-    zeroCostAddOns: fast.zeroCostAddOns,
-    patientSummaryStructured: fast.patientSummaryStructured,
+    categoryRecommendations: catResult.categoryRecommendations,
+    zeroCostAddOns: catResult.zeroCostAddOns,
+    patientSummaryStructured: patientSummaryResult.patientSummaryStructured,
   })
 }

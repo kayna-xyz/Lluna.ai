@@ -214,6 +214,53 @@ export type EnrichmentFields = {
   enriched_at?: string
 }
 
+// ─── Direct category recs generation (no timeout, no race, awaited inline) ────
+
+export async function generateCategoryRecsDirectly(
+  clinicId: string,
+  userInput: Record<string, unknown>,
+  recommendation: Record<string, unknown>,
+): Promise<{ categoryRecommendations: CategoryRecommendation[]; zeroCostAddOns: ZeroCostAddOn[] }> {
+  const empty = { categoryRecommendations: [] as CategoryRecommendation[], zeroCostAddOns: [] as ZeroCostAddOn[] }
+
+  const { menu, source } = await resolveClinicMenu(clinicId).catch(() => ({
+    menu: { treatments: [] as ClinicMenuTreatment[] },
+    source: 'default' as const,
+  }))
+
+  const menuCtx = buildMenuContext(menu.treatments, new Set())
+  console.log(`[cat-recs-direct] clinicId:${clinicId} menu source:${source} treatments:${menu.treatments.length} ctx:${menuCtx ? 'ok' : 'EMPTY'}`)
+  if (!menuCtx) return empty
+
+  const plans = Array.isArray(recommendation.plans) ? (recommendation.plans as Record<string, unknown>[]) : []
+  const comboNames: string[] = []
+  for (const plan of plans) {
+    const treatments = Array.isArray(plan.treatments) ? (plan.treatments as Record<string, unknown>[]) : []
+    for (const t of treatments) {
+      const name = String(t.treatmentName || '').trim()
+      if (name && !comboNames.includes(name)) comboNames.push(name)
+    }
+  }
+  const comboText = comboNames.length > 0 ? comboNames.join(', ') : '(no combo data)'
+  console.log(`[cat-recs-direct] comboNames:${comboNames.length} [${comboNames.slice(0, 4).join(', ')}] plans:${plans.length}`)
+
+  const aiStart = Date.now()
+  try {
+    const { output } = await generateText({
+      model: getLlunaAnthropicModel(),
+      output: Output.object({ schema: categoryRecsSchema }),
+      system: CATEGORY_RECS_SYSTEM,
+      messages: [{ role: 'user', content: buildCategoryRecsPrompt(comboText, userInput, menuCtx) }],
+    })
+    console.log(`[cat-recs-direct] AI done in ${Date.now() - aiStart}ms — cats:${output.categoryRecommendations.length} zeroCost:${output.zeroCostAddOns.length}`)
+    console.log('FINAL categoryRecommendations:', JSON.stringify(output.categoryRecommendations.map(c => ({ name: c.name, count: c.treatments.length }))))
+    return output
+  } catch (e) {
+    console.error(`[cat-recs-direct] AI failed after ${Date.now() - aiStart}ms:`, e instanceof Error ? e.message : e)
+    return empty
+  }
+}
+
 // ─── Fast enrichment (runs synchronously in /api/new-report) ──────────────────
 
 export async function generateFastEnrichment(
