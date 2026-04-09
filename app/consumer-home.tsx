@@ -2813,27 +2813,27 @@ function GeneratingScreen({
         if (cancelled) return
         setVisibleItems((v) => [...v, 0])
         setReportProgress((p) => Math.max(p, 20))
-      }, 1500),
+      }, 600),
     )
     timers.push(
       setTimeout(() => {
         if (cancelled) return
         setVisibleItems((v) => [...v, 1])
         setReportProgress((p) => Math.max(p, 40))
-      }, 3500),
+      }, 1200),
     )
     timers.push(
       setTimeout(() => {
         if (cancelled) return
         setVisibleItems((v) => [...v, 2])
         setReportProgress((p) => Math.max(p, 60))
-      }, 6000),
+      }, 1600),
     )
 
     // Run API call and UI minimum delay in parallel
     const apiPromise = fetchAIRecommendation()
     const uiMinPromise = new Promise<void>((resolve) => {
-      timers.push(setTimeout(() => resolve(), 4000))
+      timers.push(setTimeout(() => resolve(), 2000))
     })
     
     Promise.all([apiPromise, uiMinPromise]).then(() => {
@@ -3860,16 +3860,6 @@ function ReportScreen({
                               {t.syringes ? `${t.syringes} syringe${t.syringes > 1 ? 's' : ''} ${t.fillerType || ''}` : ''}
                               {t.sessions ? `${t.sessions} session${t.sessions > 1 ? 's' : ''}` : ''}
                             </p>
-                            {(t.description || t.reason) && (
-                              <p style={{ fontSize: 11, color: COLORS.text, margin: 0, marginTop: 4, lineHeight: 1.5 }}>
-                                {t.description || t.reason}
-                              </p>
-                            )}
-                            {treatment?.description ? (
-                              <p style={{ fontSize: 11, color: COLORS.muted, margin: 0, marginTop: 4, fontStyle: 'italic' }}>
-                                {treatment.description}
-                              </p>
-                            ) : null}
                           </div>
                         )
                       })}

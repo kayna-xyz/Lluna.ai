@@ -120,48 +120,17 @@ export async function POST(req: Request) {
     if (error) console.error('clients insert error:', error)
   }
 
-  // ── 3. Category recs — direct await, no timeout race ─────────────────────────
-  const directStart = Date.now()
-  // 强制同步执行（绕过 after / timeout）
-  const catResult = await generateCategoryRecsDirectly(clinicId, userInput, recommendation)
-  console.log(`[new-report] generateCategoryRecsDirectly done in ${Date.now() - directStart}ms`)
-  console.log('FINAL:', JSON.stringify({ categoryRecommendations: catResult.categoryRecommendations.length, zeroCostAddOns: catResult.zeroCostAddOns.length }))
-
-  // ── 4. Patient summary — fast race (non-blocking, best-effort) ────────────────
-  const FAST_TIMEOUT_MS = 8000
-  const patFallback = { patientSummaryStructured: null }
-  const patientSummaryResult = await Promise.race([
-    generateFastEnrichment(clinicId, userInput, recommendation).then((r) => ({ patientSummaryStructured: r.patientSummaryStructured })),
-    new Promise<typeof patFallback>((resolve) => setTimeout(() => resolve(patFallback), FAST_TIMEOUT_MS)),
-  ]).catch(() => patFallback)
-
-  // Write category recs + patient summary to DB immediately
-  if (pendingReportId && (catResult.categoryRecommendations.length || catResult.zeroCostAddOns.length || patientSummaryResult.patientSummaryStructured)) {
-    const rd = asRec(reportData)
-    const rec = asRec(rd.recommendation)
-    const fastRec: Record<string, unknown> = {
-      ...rec,
-      ...(patientSummaryResult.patientSummaryStructured ? { patientSummaryStructured: patientSummaryResult.patientSummaryStructured } : {}),
-      ...(catResult.categoryRecommendations.length ? { categoryRecommendations: catResult.categoryRecommendations } : {}),
-      ...(catResult.zeroCostAddOns.length ? { zeroCostAddOns: catResult.zeroCostAddOns } : {}),
-    }
-    const fastRd = { ...rd, recommendation: fastRec }
-    void supabase.from('pending_reports').update({ report_data: fastRd }).eq('id', pendingReportId)
-    void supabase.from('clients').update({ report_data: fastRd })
-      .eq('clinic_id', clinicId).eq('session_id', sessionId)
-  }
-
-  // ── 5. Fire background enrichment for consultantBrief + salesMethodology ─────
+  // ── 3. Fire all enrichment in background (category recs run first in enrichReportAsync) ──
+  // enrichReportAsync: step 2 = category recs, step 3 = consultant brief, step 5 = sales
   if (pendingReportId) {
     after(() => enrichReportAsync(pendingReportId!, clinicId, userInput, planTreatmentIds))
   }
+
+  console.log(`[new-report] response sent — enrichment queued in after() for reportId:${pendingReportId}`)
 
   return Response.json({
     ok: true,
     sessionId,
     clinicId,
-    categoryRecommendations: catResult.categoryRecommendations,
-    zeroCostAddOns: catResult.zeroCostAddOns,
-    patientSummaryStructured: patientSummaryResult.patientSummaryStructured,
   })
 }
