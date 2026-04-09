@@ -462,7 +462,6 @@ export function ClientReportPanel({
   const [finalText, setFinalText] = useState("")
   const [finalPrice, setFinalPrice] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [aligning, setAligning] = useState(false)
   const [alignedTherapies, setAlignedTherapies] = useState<Record<string, unknown>[]>([])
   // expandedPlans removed — plans now shown as side-by-side cards
   const [menuTreatments, setMenuTreatments] = useState<ClinicMenuTreatment[]>([])
@@ -559,8 +558,6 @@ export function ClientReportPanel({
         : "—"
 
   const budgetNum = Number(realUi.budget) || 0
-  const uplift = Number(finalPrice) - budgetNum
-  const showUplift = budgetNum > 0 && Number(finalPrice) > 0 && uplift > 0
 
   return (
     <div className="space-y-4">
@@ -575,7 +572,7 @@ export function ClientReportPanel({
           {/* ── Asymmetric 2-col: 1/3 left, 2/3 right ── */}
           <div className="grid grid-cols-[1fr_2fr] gap-5 items-start">
 
-            {/* ════ LEFT: Patient Info + Budget Insight ════ */}
+            {/* ════ LEFT: Patient Info + Goals + Final Plan ════ */}
             <div className="space-y-4">
               <Card>
                 <CardHeader className="pb-0">
@@ -594,35 +591,16 @@ export function ClientReportPanel({
                       <span className="font-medium">{value}</span>
                     </div>
                   ))}
-                  <div className="border-t pt-2.5">
-                    <p className="text-xs text-muted-foreground mb-1">Goals</p>
-                    <p className="text-sm leading-snug">{String(realUi.goals || "—")}</p>
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* Budget Insight */}
+              {/* Client Goals */}
               <Card>
                 <CardHeader className="pb-0">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Budget Insight</CardTitle>
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Goals</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-muted-foreground">Budget</span>
-                    <span className="text-sm font-medium">{budgetNum > 0 ? `$${budgetNum.toLocaleString()}` : "—"}</span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-muted-foreground">Final Plan</span>
-                    <span className="text-sm font-semibold text-primary">
-                      {finalPlan?.total_price != null ? `$${Number(finalPlan.total_price).toLocaleString()}` : "—"}
-                    </span>
-                  </div>
-                  {showUplift && (
-                    <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-2 text-xs font-semibold text-emerald-700">
-                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-                      +{Math.round((uplift / budgetNum) * 100)}% above budget
-                    </div>
-                  )}
+                <CardContent>
+                  <p className="text-sm leading-snug">{String(realUi.goals || "—")}</p>
                 </CardContent>
               </Card>
 
@@ -634,37 +612,10 @@ export function ClientReportPanel({
                 <CardContent className="space-y-3">
                   <textarea
                     className="w-full min-h-[80px] rounded-md border bg-background p-2 text-sm"
-                    placeholder="Final plan notes for the file…"
+                    placeholder="Notes…"
                     value={finalText}
                     onChange={(e) => setFinalText(e.target.value)}
                   />
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={aligning || !finalText.trim()}
-                      onClick={async () => {
-                        setAligning(true)
-                        try {
-                          const res = await fetch("/api/align-final-plan", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ consultantText: finalText }),
-                          })
-                          const data = await res.json()
-                          if (res.ok && data.result) {
-                            setAlignedTherapies(data.result.therapies || [])
-                            setFinalPrice(String(data.result.total_price ?? ""))
-                          }
-                        } finally {
-                          setAligning(false)
-                        }
-                      }}
-                    >
-                      {aligning ? "Aligning…" : "Align with menu (AI)"}
-                    </Button>
-                  </div>
                   {alignedTherapies.length > 0 && (
                     <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
                       {alignedTherapies.map((t, i) => (
@@ -711,12 +662,6 @@ export function ClientReportPanel({
                       {submitting ? "Saving…" : "Save"}
                     </Button>
                   </div>
-                  {showUplift && (
-                    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                      <ArrowUpRight className="h-4 w-4 shrink-0" />
-                      <span>Budget uplift: <strong>+${uplift.toLocaleString()}</strong> above stated budget</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
