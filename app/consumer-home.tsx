@@ -1934,9 +1934,6 @@ function ClinicMenuScreen({
                 <span style={{ fontSize: 14, color: '#6B7280' }}>
                   {treatment.units}
                 </span>
-                {(treatment.posterUrl || treatment.beforeAfterUrl) && (
-                  <span style={{ fontSize: 14, color: COLORS.accent, letterSpacing: '0.04em' }}>PHOTOS</span>
-                )}
               </div>
             </div>
           </div>
@@ -4770,77 +4767,41 @@ export default function LlunaApp({
         position: 'relative',
         paddingTop: 0,
       }}>
-        <div
-          style={
-            {
-              /* Top navigation bar */
-                padding: '0 16px',
-                boxSizing: 'border-box',
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'stretch',
-              flexShrink: 0,
-              zIndex: 50,
-                background: '#FFFFFF',
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
-                borderBottom: '1px solid #E5E5E5',
-                boxShadow: 'none',
-            }
-          }
-        >
-            {/* Internal nav bar */}
-            <div
-              style={{
-                width: '100%',
-                minHeight: 48,
-                padding: '0 0',
-                display: 'grid',
-                gridTemplateColumns: 'auto 1fr',
-                alignItems: 'center',
-                columnGap: 12,
-                boxSizing: 'border-box',
-                background: 'transparent',
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
-                borderRadius: 0,
-                border: 'none',
-                boxShadow: 'none',
-              }}
-            >
-              <a
-                href="https://www.lluna.ai/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center' }}
-                aria-label="Lluna"
-              >
-                <img
-                  src="/brand-logo.png"
-                  alt=""
-                  width={28}
-                  height={28}
-                  style={{
-                    borderRadius: 0,
-                    display: 'block',
-                    objectFit: 'contain',
-                    width: 28,
-                    height: 28,
-                    maxWidth: 28,
-                    maxHeight: 28,
-                  }}
-                />
-              </a>
-              <div style={{ minWidth: 0 }}>
-                <NavPill
-                  activeTab={getActiveTab()}
-                  onTabClick={handleTabClick}
-                  tabs={navTabs}
-                  isMobileNav={isMobileNav}
-                />
-              </div>
-            </div>
+        {/* Top navigation bar */}
+        <div style={{
+          flexShrink: 0,
+          zIndex: 50,
+          background: '#FFFFFF',
+          borderBottom: '1px solid #E5E5E5',
+          height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 16px',
+          gap: 12,
+          boxSizing: 'border-box',
+          width: '100%',
+        }}>
+          <a
+            href="https://www.lluna.ai/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ flexShrink: 0, lineHeight: 0, display: 'flex', alignItems: 'center' }}
+            aria-label="Lluna"
+          >
+            <img
+              src="/brand-logo.png"
+              alt=""
+              style={{ display: 'block', objectFit: 'contain', width: 26, height: 26 }}
+            />
+          </a>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <NavPill
+              activeTab={getActiveTab()}
+              onTabClick={handleTabClick}
+              tabs={navTabs}
+              isMobileNav={isMobileNav}
+            />
+          </div>
         </div>
         
         {/* Screen Content — fills remaining height and scrolls */}
